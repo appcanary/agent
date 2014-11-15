@@ -5,35 +5,74 @@ package main
 type Gemfile Peg {
 }
 
-Gemfile <- (Git / Gem)+ Platforms Dependencies !.
+Gemfile <-  Git
+            Gem  
+            Platforms
+            Dependencies 
+            EndOfFile
 
-Git <- 'GIT\n' Remote Revision Specs
-Gem <- 'GEM\n' Remote Specs
-Platforms <- 'PLATFORMS\n' Platform+
-Dependencies <- 'DEPENDENCIES\n' Dependency+
+Git <- 'GIT' LineEnd
+        Remote
+        Revision
+        Specs
+        LineEnd
 
-Remote <- SP* 'remote: ' URL NL
-Revision <- SP* 'revision: ' SHA
+Gem <- 'GEM' LineEnd
+       Remote
+       Specs 
+       LineEnd
 
-Specs <- 'specs:\n' Spec+
-Spec <- SP* GemName Version NL
-GemName <- < ([[a-z]] / '-' / '_' / [0-9])+ > { fmt.Println(buffer[begin:end]) }
 
-Version <- '(' VersionOp? [0-9]+ ('.' [0-9]+)* ')'
-VersionOp <- Eq / Gt / Geq / TwiddleWakka
+Platforms <- 'PLATFORMS' LineEnd
+             Platform+
+             LineEnd
+
+
+Dependencies <- 'DEPENDENCIES' LineEnd
+                Spec+
+
+Remote <- Indent2 'remote:' Spaces < URL > LineEnd
+Revision <- Indent2 'revision:' Spaces < SHA > LineEnd
+
+Specs <- Indent2 'specs:' LineEnd
+          Spec+
+
+Spec <- Indent2+ GemName Spaces Version? LineEnd 
+GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ > { fmt.Println(buffer[begin:end]) } # TODO: What's legal in gem names
+
+
+Version <- '(' Constraint (', ' Constraint)* ')'
+Constraint <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
+VersionOp <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
 Eq <- '='
-Gt <- '>'
+Neq <- '!='
+Leq <- '<='
+Lt <- '<'
 Geq <- '>='
+Gt <- '>'
 TwiddleWakka <- '~>' # Yes this is the official name of the operator
 
-Platform <- SP* NotSP+ NL
+Platform <- NotNL+ LineEnd
 
-Dependency <- GemName Version? NL
+Dependency <- GemName Spacing Version? Spacing
 
 URL <- NotSP+ # TODO: make this proper
 SHA <- ([[a-z]] / [0-9])+ # TODO: this should be 20 bytes
 
 SP <- ' '
-NL <- '\n'
+NL <- '\r\n' / '\n' / '\r'
 NotNL <- (!NL .)
-NotSP <- (!SP .)
+NotSP <- (!(Space / NL) .)
+
+LineEnd <- Spaces EndOfLine
+
+Space <- ' ' / '\t'
+Spaces <- Space*
+
+SpaceComment	<- (Space / Comment)
+Spacing		<- SpaceComment*
+MustSpacing	<- SpaceComment+
+Comment		<- '#' (!EndOfLine .)* EndOfLine
+EndOfLine	<- '\r\n' / '\n' / '\r'
+EndOfFile	<- EndOfLine* !.
+Indent2 <- '  '
