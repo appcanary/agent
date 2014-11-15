@@ -6,11 +6,6 @@ import (
 	"log"
 )
 
-func Lol() {
-	fmt.Println("asdffsda")
-
-}
-
 func main() {
 	buffer, err := ioutil.ReadFile("test_gemfile.lock")
 	if err != nil {
