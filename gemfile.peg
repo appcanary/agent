@@ -54,12 +54,9 @@ TwiddleWakka <- '~>' # Yes this is the official name of the operator
 
 Platform <- NotNL+ LineEnd
 
-Dependency <- GemName Spacing Version? Spacing
-
 URL <- NotSP+ # TODO: make this proper
 SHA <- ([[a-z]] / [0-9])+ # TODO: this should be 20 bytes
 
-SP <- ' '
 NL <- '\r\n' / '\n' / '\r'
 NotNL <- (!NL .)
 NotSP <- (!(Space / NL) .)
@@ -69,10 +66,6 @@ LineEnd <- Spaces EndOfLine
 Space <- ' ' / '\t'
 Spaces <- Space*
 
-SpaceComment	<- (Space / Comment)
-Spacing		<- SpaceComment*
-MustSpacing	<- SpaceComment+
-Comment		<- '#' (!EndOfLine .)* EndOfLine
 EndOfLine	<- '\r\n' / '\n' / '\r'
 EndOfFile	<- EndOfLine* !.
 Indent2 <- '  '
