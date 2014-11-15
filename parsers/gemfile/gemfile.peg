@@ -1,6 +1,6 @@
 # Parsing Expression Grammar for Gemfile.lock files
 
-package main
+package gemfile
 
 type GemfileGrammar Peg {
      Gemfile

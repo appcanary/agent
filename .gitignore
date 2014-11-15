@@ -22,3 +22,12 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+
+.vendor/
+cmd/canary-agent/tmp/
+bin/
+
+*~
+\#*\#
+.\#*

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+
+	"github.com/mveytsman/canary-agent/parsers/gemfile"
 )
 
 func main() {
@@ -12,16 +14,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gemfile := &GemfileGrammar{Buffer: string(buffer)}
-	gemfile.Init()
+	gf := &gemfile.GemfileGrammar{Buffer: string(buffer)}
+	gf.Init()
 
-	if err := gemfile.Parse(); err != nil {
+	if err := gf.Parse(); err != nil {
 		log.Fatal(err)
 	}
 
-	gemfile.Execute()
+	gf.Execute()
 
-	for _, gem := range gemfile.Gems {
+	for _, gem := range gf.Gems {
 		fmt.Println(gem.Name + " : " + gem.Version)
 	}
 

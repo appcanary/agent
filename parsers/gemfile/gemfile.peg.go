@@ -1,4 +1,4 @@
-package main
+package gemfile
 
 import (
 	"fmt"
