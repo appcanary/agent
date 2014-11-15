@@ -1,0 +1,39 @@
+# Parsing Expression Grammar for Gemfile.lock files
+
+package main
+
+type Gemfile Peg {
+}
+
+Gemfile <- (Git / Gem)+ Platforms Dependencies !.
+
+Git <- 'GIT\n' Remote Revision Specs
+Gem <- 'GEM\n' Remote Specs
+Platforms <- 'PLATFORMS\n' Platform+
+Dependencies <- 'DEPENDENCIES\n' Dependency+
+
+Remote <- SP* 'remote: ' URL NL
+Revision <- SP* 'revision: ' SHA
+
+Specs <- 'specs:\n' Spec+
+Spec <- SP* GemName Version NL
+GemName <- < ([[a-z]] / '-' / '_' / [0-9])+ > { fmt.Println(buffer[begin:end]) }
+
+Version <- '(' VersionOp? [0-9]+ ('.' [0-9]+)* ')'
+VersionOp <- Eq / Gt / Geq / TwiddleWakka
+Eq <- '='
+Gt <- '>'
+Geq <- '>='
+TwiddleWakka <- '~>' # Yes this is the official name of the operator
+
+Platform <- SP* NotSP+ NL
+
+Dependency <- GemName Version? NL
+
+URL <- NotSP+ # TODO: make this proper
+SHA <- ([[a-z]] / [0-9])+ # TODO: this should be 20 bytes
+
+SP <- ' '
+NL <- '\n'
+NotNL <- (!NL .)
+NotSP <- (!SP .)
