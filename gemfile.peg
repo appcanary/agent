@@ -29,15 +29,15 @@ Platforms <- 'PLATFORMS' LineEnd
 
 
 Dependencies <- 'DEPENDENCIES' LineEnd
-                Spec+
+                Dependency+
 
-Remote <- Indent2 'remote:' Spaces < URL > LineEnd
-Revision <- Indent2 'revision:' Spaces < SHA > LineEnd
+Remote <- Indent2 'remote:' Spaces URL LineEnd
+Revision <- Indent2 'revision:' Spaces SHA LineEnd
 
 Specs <- Indent2 'specs:' LineEnd
-          Spec+
+         Dependency+
 
-Spec <- Indent2+ GemName Spaces Version? LineEnd 
+Dependency <- Indent2+ GemName Spaces Version? LineEnd 
 GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ > { fmt.Println(buffer[begin:end]) } # TODO: What's legal in gem names
 
 
