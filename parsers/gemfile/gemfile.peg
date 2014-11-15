@@ -6,7 +6,7 @@ type GemfileGrammar Peg {
      Gemfile
 }
 
-Gemfile <-  Git
+Gemfile <-  Git?
             Gem  
             Platforms
             Dependencies 

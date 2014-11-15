@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	buffer, err := ioutil.ReadFile("test_gemfile.lock")
+	buffer, err := ioutil.ReadFile("gemfile_test2.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
