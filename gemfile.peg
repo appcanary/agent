@@ -2,7 +2,8 @@
 
 package main
 
-type Gemfile Peg {
+type GemfileGrammar Peg {
+     Gemfile
 }
 
 Gemfile <-  Git
@@ -37,11 +38,13 @@ Revision <- Indent2 'revision:' Spaces SHA LineEnd
 Specs <- Indent2 'specs:' LineEnd
          Dependency+
 
-Dependency <- Indent2+ GemName Spaces Version? LineEnd 
-GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ > { fmt.Println(buffer[begin:end]) } # TODO: What's legal in gem names
+Dependency <- Indent2+ GemName { p.addGem(buffer[begin:end]) }
+              Spaces Version?
+              LineEnd 
+GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ >
 
 
-Version <- '(' Constraint (', ' Constraint)* ')'
+Version <- < '(' Constraint (', ' Constraint)* ')' > { p.addVersion(buffer[begin:end]) }
 Constraint <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
 VersionOp <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
 Eq <- '='
