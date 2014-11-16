@@ -23,7 +23,7 @@ func main() {
 
 	gf.Execute()
 
-	for _, gem := range gf.Gems {
+	for _, gem := range gf.Specs {
 		fmt.Println(gem.Name + " : " + gem.Version)
 	}
 

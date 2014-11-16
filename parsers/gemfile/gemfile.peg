@@ -30,21 +30,30 @@ Platforms <- 'PLATFORMS' LineEnd
 
 
 Dependencies <- 'DEPENDENCIES' LineEnd
-                Dependency+
+                 Dependency+
 
 Remote <- Indent2 'remote:' Spaces URL LineEnd
 Revision <- Indent2 'revision:' Spaces SHA LineEnd
 
 Specs <- Indent2 'specs:' LineEnd
-         Dependency+
+         Spec+
 
-Dependency <- Indent2+ GemName { p.addGem(buffer[begin:end]) }
+Spec <- Indent2+ GemName { p.addSpec(buffer[begin:end]) }
               Spaces Version?
               LineEnd 
+
+
+
+Dependency <- Indent2 GemName 
+              Spaces Version?
+              LineEnd
+
+
+
 GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ >
 
 
-Version <- < '(' Constraint (', ' Constraint)* ')' > { p.addVersion(buffer[begin:end]) }
+Version <- < '(' Constraint (', ' Constraint)* ')' > { p.addSpecVersion(buffer[begin:end]) }
 Constraint <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
 VersionOp <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
 Eq <- '='
