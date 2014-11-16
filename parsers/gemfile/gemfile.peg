@@ -7,19 +7,20 @@ type GemfileParser Peg {
      ParserState
 }
 
-Gemfile         <- (Git / Gem)+
+Gemfile         <- Source*
                    Platforms
                    Dependencies 
                    EndOfFile
 
+Source <- Git / Gem #/ Path / SVN
+
 Git             <- 'GIT' LineEnd
-                   Remote
-                   Revision
+                   Option*
                    Specs
                    LineEnd
 
 Gem             <- 'GEM' LineEnd
-                   Remote
+                   Option*
                    Specs 
                    LineEnd
 
@@ -31,8 +32,7 @@ Platforms       <- 'PLATFORMS' LineEnd
 Dependencies    <- 'DEPENDENCIES' LineEnd
                     Dependency+
 
-Remote          <- Indent2 'remote:' Spaces URL LineEnd
-Revision        <- Indent2 'revision:' Spaces SHA LineEnd
+Option          <- Indent2 [[a-z]]+ ': ' (!EndOfLine .)* LineEnd 
 
 Specs           <- Indent2 'specs:' LineEnd
                    Spec+
@@ -58,9 +58,6 @@ Constraint      <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
 VersionOp       <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
 
 Platform        <- Indent2 NotWhitespace+ LineEnd # TODO: Save platforms
-
-URL             <- NotWhitespace+ # TODO: make this proper
-SHA             <- ([[a-z]] / [0-9])+ # TODO: this should be 20 bytes
 
 Eq              <- '='
 Neq             <- '!='
