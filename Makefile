@@ -2,7 +2,7 @@
 
 all: build
 
-test:
+test: build
 	go test -v ./...
   
 build: 
