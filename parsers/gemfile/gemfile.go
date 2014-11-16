@@ -1,5 +1,13 @@
 package gemfile
 
+type ParserState int
+
+const (
+	ParsingSpec ParserState = iota
+	ParsingSpecDep
+	ParsingDependency
+)
+
 type Gemfile struct {
 	Specs        []Spec
 	Dependencies []Gem
@@ -15,33 +23,48 @@ type Spec struct {
 	Dependencies []Gem
 }
 
-func (g *Gemfile) addSpec(name string) {
-	// TODO: strip out duplicate git/svn sections (https://github.com/bundler/bundler/blob/master/lib/bundler/lockfile_parser.rb#L74)
-	g.Specs = append(g.Specs, Spec{Gem: Gem{Name: name}})
+/*
+// Defined in gemfile.peg.go
+type GemfileParser struct {
+	Gemfile
+	ParserState
+
+	Buffer string
+	buffer []rune
+	rules  [42]func() bool
+	Parse  func(rule ...int) error
+	Reset  func()
+	tokenTree
+}
+*/
+
+func (p *ParserState) setState(newState ParserState) {
+	*p = newState
 }
 
-func (g *Gemfile) addSpecVersion(version string) {
-	last := len(g.Specs) - 1
-	g.Specs[last].Version = version
+func (gp *GemfileParser) addGem(name string) {
+	switch gp.ParserState {
+	case ParsingSpec:
+		gp.Gemfile.Specs = append(gp.Gemfile.Specs, Spec{Gem: Gem{Name: name}})
+	case ParsingSpecDep:
+		last := len(gp.Gemfile.Specs) - 1
+		gp.Gemfile.Specs[last].Dependencies = append(gp.Gemfile.Specs[last].Dependencies, Gem{Name: name})
+	case ParsingDependency:
+		gp.Gemfile.Dependencies = append(gp.Gemfile.Dependencies, Gem{Name: name})
+	}
 }
 
-func (g *Gemfile) addSpecDep(name string) {
-	last := len(g.Specs) - 1
-	g.Specs[last].Dependencies = append(g.Specs[last].Dependencies, Gem{Name: name})
-}
-
-func (g *Gemfile) addSpecDepVersion(version string) {
-	lastSpec := len(g.Specs) - 1
-	lastDep := len(g.Specs[lastSpec].Dependencies) - 1
-	g.Specs[lastSpec].Dependencies[lastDep].Version = version
-}
-
-func (g *Gemfile) addDependency(name string) {
-	// TODO: strip out duplicate git/svn sections (https://github.com/bundler/bundler/blob/master/lib/bundler/lockfile_parser.rb#L74)
-	g.Dependencies = append(g.Dependencies, Gem{Name: name})
-}
-
-func (g *Gemfile) addDependencyVersion(version string) {
-	last := len(g.Dependencies) - 1
-	g.Dependencies[last].Version = version
+func (gp *GemfileParser) addVersion(version string) {
+	switch gp.ParserState {
+	case ParsingSpec:
+		last := len(gp.Gemfile.Specs) - 1
+		gp.Gemfile.Specs[last].Version = version
+	case ParsingSpecDep:
+		lastSpec := len(gp.Gemfile.Specs) - 1
+		lastDep := len(gp.Gemfile.Specs[lastSpec].Dependencies) - 1
+		gp.Gemfile.Specs[lastSpec].Dependencies[lastDep].Version = version
+	case ParsingDependency:
+		last := len(gp.Gemfile.Dependencies) - 1
+		gp.Gemfile.Dependencies[last].Version = version
+	}
 }

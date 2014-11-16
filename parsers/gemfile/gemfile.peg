@@ -2,86 +2,81 @@
 
 package gemfile
 
-type GemfileGrammar Peg {
+type GemfileParser Peg {
      Gemfile
+     ParserState
 }
 
-Gemfile <-  (Git / Gem / Platforms)+
-            Dependencies 
-            EndOfFile
+Gemfile         <- (Git / Gem)+
+                   Platforms
+                   Dependencies 
+                   EndOfFile
 
-Git <- 'GIT' LineEnd
-        Remote
-        Revision
-        Specs
-        LineEnd
+Git             <- 'GIT' LineEnd
+                   Remote
+                   Revision
+                   Specs
+                   LineEnd
 
-Gem <- 'GEM' LineEnd
-       Remote
-       Specs 
-       LineEnd
+Gem             <- 'GEM' LineEnd
+                   Remote
+                   Specs 
+                   LineEnd
 
-
-Platforms <- 'PLATFORMS' LineEnd
-             Platform+
-             LineEnd
-
-
-Dependencies <- 'DEPENDENCIES' LineEnd
-                 Dependency+
-
-Remote <- Indent2 'remote:' Spaces URL LineEnd
-Revision <- Indent2 'revision:' Spaces SHA LineEnd
-
-Specs <- Indent2 'specs:' LineEnd
-         Spec+
-
-Spec <- Indent4 GemName { p.addSpec(buffer[begin:end]) }
-        Spaces SpecVersion?
-        LineEnd
-        SpecDep*
-
-SpecDep <- Indent6 GemName { p.addSpecDep(buffer[begin:end]) }
-           Spaces  SpecDepVersion?
-           LineEnd 
-
-Dependency <- Indent2 GemName { p.addDependency(buffer[begin:end]) }
-              Spaces DependencyVersion?
-              LineEnd
-
-GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ >
+Platforms       <- 'PLATFORMS' LineEnd
+                   Platform+
+                   LineEnd
 
 
-SpecVersion <-  < Version > { p.addSpecVersion(buffer[begin:end])}
-SpecDepVersion <-  < Version > { p.addSpecDepVersion(buffer[begin:end])}
-DependencyVersion <- < Version > { p.addDependencyVersion(buffer[begin:end])}               
-Version <- '(' Constraint (', ' Constraint)* ')'
-Constraint <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
-VersionOp <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
-Eq <- '='
-Neq <- '!='
-Leq <- '<='
-Lt <- '<'
-Geq <- '>='
-Gt <- '>'
-TwiddleWakka <- '~>' # Yes this is the official name of the operator
+Dependencies    <- 'DEPENDENCIES' LineEnd
+                    Dependency+
 
-Platform <- NotNL+ LineEnd
+Remote          <- Indent2 'remote:' Spaces URL LineEnd
+Revision        <- Indent2 'revision:' Spaces SHA LineEnd
 
-URL <- NotSP+ # TODO: make this proper
-SHA <- ([[a-z]] / [0-9])+ # TODO: this should be 20 bytes
+Specs           <- Indent2 'specs:' LineEnd
+                   Spec+
 
-NL <- '\r\n' / '\n' / '\r'
-NotNL <- (!NL .)
-NotSP <- (!(Space / NL) .)
+Spec            <- Indent4 {p.setState(ParsingSpec)}
+                   GemVersion
+                   SpecDep*
 
-LineEnd <- Spaces EndOfLine
+SpecDep         <- Indent6 {p.setState(ParsingSpecDep)}
+                   GemVersion
 
-Space <- ' ' / '\t'
-Spaces <- Space*
+Dependency      <- Indent2 { p.setState(ParsingDependency) } 
+                   GemVersion
 
-EndOfLine	<- '\r\n' / '\n' / '\r'
-EndOfFile	<- EndOfLine* !.
-Indent2 <- '  '
-Indent4 <- '    '
-Indent6 <- '      '
+GemVersion      <- GemName 
+                   Spaces Version?
+                   LineEnd
+
+GemName         <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ > { p.addGem(buffer[begin:end])}
+
+Version         <- < '(' Constraint (', ' Constraint)* ')' > { p.addVersion(buffer[begin:end])}
+Constraint      <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
+VersionOp       <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
+
+Platform        <- Indent2 NotWhitespace+ LineEnd # TODO: Save platforms
+
+URL             <- NotWhitespace+ # TODO: make this proper
+SHA             <- ([[a-z]] / [0-9])+ # TODO: this should be 20 bytes
+
+Eq              <- '='
+Neq             <- '!='
+Leq             <- '<='
+Lt              <- '<'
+Geq             <- '>='
+Gt              <- '>'
+TwiddleWakka    <- '~>' # Yes this is the official name of the operator
+
+Space           <- ' ' / '\t'
+Spaces          <- Space*
+Indent2         <- Space Space
+Indent4         <- Space Space Space Space
+Indent6         <- Space Space Space Space Space Space
+
+EndOfLine       <- '\r\n' / '\n' / '\r'
+NotWhitespace   <- !(Space / EndOfLine) .
+LineEnd         <- Spaces EndOfLine
+EndOfFile       <- EndOfLine* !.

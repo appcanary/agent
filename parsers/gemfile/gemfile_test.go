@@ -17,7 +17,7 @@ func TestParser(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	gemfile := &GemfileGrammar{Buffer: string(buffer)}
+	gemfile := &GemfileParser{Buffer: string(buffer)}
 	gemfile.Init()
 
 	if err := gemfile.Parse(); err != nil {

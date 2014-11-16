@@ -14,7 +14,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gf := &gemfile.GemfileGrammar{Buffer: string(buffer)}
+	gf := &gemfile.GemfileParser{Buffer: string(buffer)}
 	gf.Init()
 
 	if err := gf.Parse(); err != nil {
