@@ -6,9 +6,7 @@ type GemfileGrammar Peg {
      Gemfile
 }
 
-Gemfile <-  Git?
-            Gem  
-            Platforms
+Gemfile <-  (Git / Gem / Platforms)+
             Dependencies 
             EndOfFile
 
@@ -38,22 +36,26 @@ Revision <- Indent2 'revision:' Spaces SHA LineEnd
 Specs <- Indent2 'specs:' LineEnd
          Spec+
 
-Spec <- Indent2+ GemName { p.addSpec(buffer[begin:end]) }
-              Spaces Version?
-              LineEnd 
+Spec <- Indent4 GemName { p.addSpec(buffer[begin:end]) }
+        Spaces SpecVersion?
+        LineEnd
+        SpecDep*
 
+SpecDep <- Indent6 GemName { p.addSpecDep(buffer[begin:end]) }
+           Spaces  SpecDepVersion?
+           LineEnd 
 
-
-Dependency <- Indent2 GemName 
-              Spaces Version?
+Dependency <- Indent2 GemName { p.addDependency(buffer[begin:end]) }
+              Spaces DependencyVersion?
               LineEnd
-
-
 
 GemName <- < ([[a-z]] / '-' / '_' / '!' / [0-9])+ >
 
 
-Version <- < '(' Constraint (', ' Constraint)* ')' > { p.addSpecVersion(buffer[begin:end]) }
+SpecVersion <-  < Version > { p.addSpecVersion(buffer[begin:end])}
+SpecDepVersion <-  < Version > { p.addSpecDepVersion(buffer[begin:end])}
+DependencyVersion <- < Version > { p.addDependencyVersion(buffer[begin:end])}               
+Version <- '(' Constraint (', ' Constraint)* ')'
 Constraint <- VersionOp? Spaces [0-9]+ ('.' [0-9]+)*
 VersionOp <- (Eq / Neq / Leq / Lt / Geq / Gt / TwiddleWakka)
 Eq <- '='
@@ -81,3 +83,5 @@ Spaces <- Space*
 EndOfLine	<- '\r\n' / '\n' / '\r'
 EndOfFile	<- EndOfLine* !.
 Indent2 <- '  '
+Indent4 <- '    '
+Indent6 <- '      '
