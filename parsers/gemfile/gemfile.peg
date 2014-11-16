@@ -7,20 +7,24 @@ type GemfileParser Peg {
      ParserState
 }
 
-Gemfile         <- Source*
+Gemfile         <- (Gem / Git / SVN / Path)*
                    Platforms
                    Dependencies 
                    EndOfFile
 
-Source <- Git / Gem #/ Path / SVN
+Gem             <- 'GEM' LineEnd { p.addSource(RubyGems) }
+                   Source
 
-Git             <- 'GIT' LineEnd
-                   Option*
-                   Specs
-                   LineEnd
+Git             <- 'GIT' LineEnd { p.addSource(Git) }
+                   Source
 
-Gem             <- 'GEM' LineEnd
-                   Option*
+SVN             <- 'SVN' LineEnd { p.addSource(SVN) }
+                   Source
+
+Path            <- 'PATH' LineEnd { p.addSource(Path) }
+                   Source
+
+Source          <- Option*
                    Specs 
                    LineEnd
 
@@ -28,11 +32,10 @@ Platforms       <- 'PLATFORMS' LineEnd
                    Platform+
                    LineEnd
 
-
 Dependencies    <- 'DEPENDENCIES' LineEnd
                     Dependency+
 
-Option          <- Indent2 [[a-z]]+ ': ' (!EndOfLine .)* LineEnd 
+Option          <- Indent2 < [[a-z]]+ ': ' (!EndOfLine .)* > LineEnd { p.addOption(buffer[begin:end])}
 
 Specs           <- Indent2 'specs:' LineEnd
                    Spec+

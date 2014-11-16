@@ -1,5 +1,7 @@
 package gemfile
 
+import "strings"
+
 type ParserState int
 
 const (
@@ -8,14 +10,30 @@ const (
 	ParsingDependency
 )
 
+type SourceType int
+
+const (
+	RubyGems SourceType = iota
+	Git
+	SVN
+	Path
+)
+
 type Gemfile struct {
 	Specs        []Spec
 	Dependencies []Gem
+	Sources      []Source
+}
+
+type Source struct {
+	Type    SourceType
+	Options map[string]string
 }
 
 type Gem struct {
 	Name    string
 	Version string
+	Source  *Source
 }
 
 type Spec struct {
@@ -67,4 +85,14 @@ func (gp *GemfileParser) addVersion(version string) {
 		last := len(gp.Gemfile.Dependencies) - 1
 		gp.Gemfile.Dependencies[last].Version = version
 	}
+}
+
+func (g *Gemfile) addSource(st SourceType) {
+	g.Sources = append(g.Sources, Source{Type: st, Options: map[string]string{}})
+}
+
+func (g *Gemfile) addOption(option string) {
+	l := strings.Split(option, ": ")
+	last := len(g.Sources) - 1
+	g.Sources[last].Options[l[0]] = l[1]
 }
