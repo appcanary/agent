@@ -33,7 +33,6 @@ type Source struct {
 type Gem struct {
 	Name    string
 	Version string
-	Source  *Source
 }
 
 type Spec struct {
