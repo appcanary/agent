@@ -27,13 +27,20 @@ func TestParser(t *testing.T) {
 	gemfile.Execute()
 
 	// The 'specs:' sections are parsed correctly
-	assert.Equal(railsGems, gemfile.Specs)
+	for i, spec := range gemfile.Specs {
+		assert.Equal(testGemfile[i].Name, spec.Name)
+		assert.Equal(testGemfile[i].Version, spec.Version)
+		assert.Equal(rubyGems, *spec.Source)
+		assert.Equal(testGemfile[i].Dependencies, spec.Dependencies)
+	}
 
 	// The DEPENDENCIES section is parsed correctly
 	assert.Equal([]Gem{Gem{Name: "rails"}}, gemfile.Dependencies)
 }
 
-var railsGems = []Spec{
+var rubyGems = Source{Type: RubyGems, Options: map[string]string{"remote": "https://rubygems.org/"}}
+
+var testGemfile = []Spec{
 	Spec{Gem: Gem{Name: "actionmailer", Version: "(4.1.7)"},
 		Dependencies: []Gem{
 			Gem{Name: "actionpack", Version: "(= 4.1.7)"},

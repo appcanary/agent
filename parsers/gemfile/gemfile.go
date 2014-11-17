@@ -38,6 +38,7 @@ type Gem struct {
 type Spec struct {
 	Gem
 	Dependencies []Gem
+	Source       *Source
 }
 
 /*
@@ -60,14 +61,15 @@ func (p *ParserState) setState(newState ParserState) {
 }
 
 func (gp *GemfileParser) addGem(name string) {
+	gem := Gem{Name: name}
 	switch gp.ParserState {
 	case ParsingSpec:
-		gp.Gemfile.Specs = append(gp.Gemfile.Specs, Spec{Gem: Gem{Name: name}})
+		gp.Gemfile.Specs = append(gp.Gemfile.Specs, Spec{Gem: gem, Source: &gp.Gemfile.Sources[len(gp.Gemfile.Sources)-1]})
 	case ParsingSpecDep:
 		last := len(gp.Gemfile.Specs) - 1
-		gp.Gemfile.Specs[last].Dependencies = append(gp.Gemfile.Specs[last].Dependencies, Gem{Name: name})
+		gp.Gemfile.Specs[last].Dependencies = append(gp.Gemfile.Specs[last].Dependencies, gem)
 	case ParsingDependency:
-		gp.Gemfile.Dependencies = append(gp.Gemfile.Dependencies, Gem{Name: name})
+		gp.Gemfile.Dependencies = append(gp.Gemfile.Dependencies, gem)
 	}
 }
 
