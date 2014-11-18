@@ -1,6 +1,9 @@
 package gemfile
 
-import "strings"
+import (
+	"io/ioutil"
+	"strings"
+)
 
 type ParserState int
 
@@ -55,6 +58,22 @@ type GemfileParser struct {
 	tokenTree
 }
 */
+
+func ParseGemfile(path string) (*Gemfile, error) {
+	buffer, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	parser := &GemfileParser{Buffer: string(buffer)}
+	parser.Init()
+	if err := parser.Parse(); err != nil {
+		return nil, err
+	}
+
+	parser.Execute()
+	return &parser.Gemfile, nil
+}
 
 func (p *ParserState) setState(newState ParserState) {
 	*p = newState

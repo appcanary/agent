@@ -33,12 +33,12 @@ Platforms       <- 'PLATFORMS' LineEnd
                    LineEnd
 
 Dependencies    <- 'DEPENDENCIES' LineEnd
-                    Dependency+
+                    Dependency*
 
 Option          <- Indent2 < [[a-z]]+ ': ' (!EndOfLine .)* > LineEnd { p.addOption(buffer[begin:end])}
 
 Specs           <- Indent2 'specs:' LineEnd
-                   Spec+
+                   Spec*
 
 Spec            <- Indent4 {p.setState(ParsingSpec)}
                    GemVersion

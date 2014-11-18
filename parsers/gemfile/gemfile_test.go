@@ -8,11 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParser(t *testing.T) {
-	// Generic parser test using the Gemfile.lock generated when requiring rails
-	assert := assert.New(t)
-
-	buffer, err := ioutil.ReadFile("test_files/Rails.Gemfile.lock")
+func parseGemfile(path string) *GemfileParser {
+	buffer, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,9 +20,22 @@ func TestParser(t *testing.T) {
 	if err := gemfile.Parse(); err != nil {
 		log.Fatal(err)
 	}
-
 	gemfile.Execute()
 
+	return gemfile
+}
+
+func TestEmpty(t *testing.T) {
+	// Make sure parser correctly parses empty Gemfile.lock's
+	assert := assert.New(t)
+	gemfile := parseGemfile("test_files/Empty.Gemfile.lock")
+	assert.Equal([]Spec(nil), gemfile.Specs)
+}
+
+func TestRails(t *testing.T) {
+	assert := assert.New(t)
+	// Generic parser test using the Gemfile.lock generated when requiring rails
+	gemfile := parseGemfile("test_files/Rails.Gemfile.lock")
 	// The 'specs:' sections are parsed correctly
 	for i, spec := range gemfile.Specs {
 		assert.Equal(testGemfile[i].Name, spec.Name)

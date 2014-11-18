@@ -1142,7 +1142,7 @@ func (p *GemfileParser) Init() {
 			position, tokenIndex, depth = position20, tokenIndex20, depth20
 			return false
 		},
-		/* 7 Dependencies <- <('D' 'E' 'P' 'E' 'N' 'D' 'E' 'N' 'C' 'I' 'E' 'S' LineEnd Dependency+)> */
+		/* 7 Dependencies <- <('D' 'E' 'P' 'E' 'N' 'D' 'E' 'N' 'C' 'I' 'E' 'S' LineEnd Dependency*)> */
 		func() bool {
 			position24, tokenIndex24, depth24 := position, tokenIndex, depth
 			{
@@ -1197,9 +1197,6 @@ func (p *GemfileParser) Init() {
 				}
 				position++
 				if !_rules[ruleLineEnd]() {
-					goto l24
-				}
-				if !_rules[ruleDependency]() {
 					goto l24
 				}
 			l26:
@@ -1313,7 +1310,7 @@ func (p *GemfileParser) Init() {
 			position, tokenIndex, depth = position28, tokenIndex28, depth28
 			return false
 		},
-		/* 9 Specs <- <(Indent2 ('s' 'p' 'e' 'c' 's' ':') LineEnd Spec+)> */
+		/* 9 Specs <- <(Indent2 ('s' 'p' 'e' 'c' 's' ':') LineEnd Spec*)> */
 		func() bool {
 			position40, tokenIndex40, depth40 := position, tokenIndex, depth
 			{
@@ -1347,9 +1344,6 @@ func (p *GemfileParser) Init() {
 				}
 				position++
 				if !_rules[ruleLineEnd]() {
-					goto l40
-				}
-				if !_rules[ruleSpec]() {
 					goto l40
 				}
 			l42:
