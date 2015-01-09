@@ -62,8 +62,6 @@ func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
 // This has to be called before exiting
 func (a *Agent) CloseWatches() {
 	for _, app := range a.apps {
-		for _, wf := range app.WatchedFiles {
-			wf.Close()
-		}
+		app.CloseWatches()
 	}
 }

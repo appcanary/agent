@@ -23,6 +23,6 @@ func TestAgent(t *testing.T) {
 	assert.Equal(1, len(app.WatchedFiles), "len app.WatchedFiles")
 
 	wf := app.WatchedFiles[0]
-	assert.Equal("./testdata/Gemfile.lock", wf.GetPath(), "gemfile path")
+	assert.Equal("testdata/Gemfile.lock", wf.GetPath(), "gem file path")
 
 }

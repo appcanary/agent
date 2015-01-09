@@ -28,7 +28,7 @@ func (g *Gemfile) GetPath() string {
 func (a *App) WatchFile(f File) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		lg.Fatal(err)
+		lg.Fatal(err.Error())
 	}
 
 	wf := &WatchedFile{File: f, Watcher: watcher}
@@ -36,40 +36,47 @@ func (a *App) WatchFile(f File) {
 		//TODO 	defer watcher.Close()
 		for {
 			select {
-
 			case event := <-watcher.Events:
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					//File is overwritten, we need to add a new watch to it
 					//TODO: we need to be smart about pausing here
 					err = wf.Watcher.Add(wf.GetPath())
 					if err != nil {
-						lg.Fatal(err)
+						lg.Fatal(err.Error())
 					}
 				}
 				// reread the gemfile
+				lg.Info("Rereading file: %s", wf.GetPath())
 				wf.Parse()
 				//a.Submit()
 			case err := <-watcher.Errors:
-				lg.Info("error:", err)
+				lg.Info("error:", err.Error())
 			}
 		}
 	}()
+	lg.Info("Reading file: %s", wf.GetPath())
 	wf.Parse()
 	//a.Submit()
 	err = wf.Watcher.Add(wf.GetPath())
 	if err != nil {
-		lg.Fatal(err)
+		lg.Fatal(err.Error())
 	}
 
 	//Add watched file to the apps list
 	a.WatchedFiles = append(a.WatchedFiles, wf)
 }
 
+func (a *App) CloseWatches() {
+	for _, wf := range a.WatchedFiles {
+		wf.Close()
+	}
+}
+
 func (g *Gemfile) Parse() interface{} {
 	gf, err := gemfile.ParseGemfile(g.Path)
 	if err != nil {
 		//TODO handle error more gracefully
-		lg.Fatal(err)
+		lg.Fatal(err.Error())
 	}
 	return gf
 }
