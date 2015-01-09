@@ -1,28 +1,69 @@
 package agent
 
 import (
-	"github.com/jinzhu/gorm"
-	"github.com/op/go-logging"
+	"fmt"
+	"path"
 
-	"github.com/mveytsman/canary-agent/data"
+	"github.com/op/go-logging"
 )
 
 var lg = logging.MustGetLogger("app-canary")
 
 type Agent struct {
 	conf *Conf
-	db   gorm.DB
+	apps map[string]*App
 }
 
-func NewAgent(confPath string) *Agent {
-	agent := &Agent{}
+type App struct {
+	agent        *Agent
+	Name         string
+	Path         string
+	AppType      AppType
+	WatchedFiles WatchedFiles
+}
 
-	agent.conf = NewConfFromFile(confPath)
-	agent.db = data.Initialize()
+type AppType int
 
-	// load the existing gemfiles yo'
+const (
+	UnknownApp AppType = iota
+	RubyApp
+)
 
-	agent.NewWatchedFile(agent.conf.Ruby.Projects[0][0], agent.conf.Ruby.Projects[0][1]+"/Gemfile.lock")
+func NewAgent(conf *Conf) *Agent {
+	agent := &Agent{conf: conf, apps: map[string]*App{}}
 
+	// load the existing gemfiles
+
+	for _, a := range conf.Apps {
+		if a.Type == "ruby" {
+			agent.AddApp(a.Name, a.Path, RubyApp)
+		}
+	}
 	return agent
+}
+
+func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
+	if a.apps[name] != nil {
+		panic(fmt.Sprintf("Already have an app %s", name))
+	}
+
+	app := &App{Name: name, Path: filepath, AppType: appType, agent: a}
+	a.apps[name] = app
+
+	if appType == RubyApp {
+		f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
+		app.WatchFile(f)
+	} else {
+		panic(fmt.Sprintf("Unrecognized app type %s", appType))
+	}
+	return app
+}
+
+// This has to be called before exiting
+func (a *Agent) CloseWatches() {
+	for _, app := range a.apps {
+		for _, wf := range app.WatchedFiles {
+			wf.Close()
+		}
+	}
 }

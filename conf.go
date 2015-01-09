@@ -2,21 +2,22 @@ package agent
 
 import (
 	"github.com/BurntSushi/toml"
-	logging "github.com/op/go-logging"
+	"github.com/op/go-logging"
 )
 
 var log = logging.MustGetLogger("canary-agent")
 
 type Conf struct {
-	// [database]
-	Database struct {
-		Location string
-	}
+	ServerName          string    `toml:"server_name"`
+	TrackSystemPackages bool      `toml:"track_system_packages"`
+	LogLevel            string    `toml:"log_level"`
+	Apps                []AppConf `toml:"apps"`
+}
 
-	// [ruby]
-	Ruby struct {
-		Projects [][]string
-	}
+type AppConf struct {
+	Name string `toml:"name"`
+	Type string `toml:"type"`
+	Path string `toml:"path"`
 }
 
 func NewConf() *Conf {

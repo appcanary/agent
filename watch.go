@@ -1,87 +1,81 @@
 package agent
 
 import (
-	"github.com/mveytsman/canary-agent/data"
 	"github.com/mveytsman/canary-agent/parsers/gemfile"
-
-	fsnotify "gopkg.in/fsnotify.v1"
+	"gopkg.in/fsnotify.v1"
 )
 
-type WatchedFile struct {
-	agent   *Agent
-	watcher *fsnotify.Watcher
-	path    string
-	appName string
+type File interface {
+	GetPath() string
+	Parse() interface{}
 }
 
-func (a *Agent) NewWatchedFile(appName string, path string) *WatchedFile {
-	wf := &WatchedFile{agent: a, appName: appName, path: path}
+type WatchedFile struct {
+	File
+	Watcher *fsnotify.Watcher
+}
+
+type WatchedFiles []*WatchedFile
+
+type Gemfile struct {
+	Path string
+}
+
+func (g *Gemfile) GetPath() string {
+	return g.Path
+}
+
+func (a *App) WatchFile(f File) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		lg.Fatal(err)
 	}
 
-	wf.watcher = watcher
+	wf := &WatchedFile{File: f, Watcher: watcher}
 	go func() {
+		//TODO 	defer watcher.Close()
 		for {
 			select {
+
 			case event := <-watcher.Events:
 				if event.Op&fsnotify.Remove == fsnotify.Remove {
 					//File is overwritten, we need to add a new watch to it
 					//TODO: we need to be smart about pausing here
-					err = wf.watcher.Add(path)
+					err = wf.Watcher.Add(wf.GetPath())
 					if err != nil {
 						lg.Fatal(err)
 					}
 				}
 				// reread the gemfile
-				wf.ReadGemfile()
+				wf.Parse()
+				//a.Submit()
 			case err := <-watcher.Errors:
 				lg.Info("error:", err)
 			}
 		}
 	}()
-	wf.ReadGemfile()
-	err = wf.watcher.Add(path)
+	wf.Parse()
+	//a.Submit()
+	err = wf.Watcher.Add(wf.GetPath())
 	if err != nil {
 		lg.Fatal(err)
 	}
 
-	return wf
+	//Add watched file to the apps list
+	a.WatchedFiles = append(a.WatchedFiles, wf)
 }
 
-func (wf *WatchedFile) ReadGemfile() {
-	db := wf.agent.db
-	gemfileModel := &data.Gemfile{}
-
-	db.FirstOrCreate(gemfileModel, data.Gemfile{AppName: wf.appName, Path: wf.path})
-
-	gf, err := gemfile.ParseGemfile(wf.path)
+func (g *Gemfile) Parse() interface{} {
+	gf, err := gemfile.ParseGemfile(g.Path)
 	if err != nil {
 		//TODO handle error more gracefully
 		lg.Fatal(err)
 	}
-
-	for _, spec := range gf.Specs {
-		gem := &data.Gem{}
-		db.Where(data.Gem{Name: spec.Name, GemfileId: gemfileModel.Id}).FirstOrInit(gem)
-		if db.NewRecord(gem) {
-			gem.Version = spec.Version
-			lg.Info("Installed a new gem " + gem.Name + " version " + gem.Version + " in Gemfile for app: " + gemfileModel.AppName)
-			db.Save(gem)
-		} else if gem.Version != spec.Version {
-			lg.Info("Changed gem " + gem.Name + " in Gemfile for app: " + gemfileModel.AppName + " from " + gem.Version + "to " + spec.Version)
-			gem.Version = spec.Version
-			db.Save(gem)
-		} else {
-			//lg.Info("Did not change " + gem.Name + " in Gemfile " + gemfileModel.AppName)
-		}
-	}
-	//TODO: record gems that are deleted
+	return gf
 }
 
 // TODO: make this a finalizer? :(
 func (wf *WatchedFile) Close() {
 	lg.Info("closing watcher")
-	wf.watcher.Close()
+	wf.Watcher.Close()
 }
