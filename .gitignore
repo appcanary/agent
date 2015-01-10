@@ -33,3 +33,7 @@ bin/
 *~
 \#*\#
 .\#*
+
+*.test
+*.out
+canary-agent
