@@ -30,7 +30,7 @@ const (
 	RubyApp
 )
 
-func NewAgent(conf *Conf) *Agent {
+func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, apps: map[string]*App{}}
 
 	// load the existing gemfiles
@@ -40,7 +40,11 @@ func NewAgent(conf *Conf) *Agent {
 			agent.AddApp(a.Name, a.Path, RubyApp)
 		}
 	}
-	agent.client = NewClient(conf.ApiKey, conf.ServerName)
+	if len(clients) > 0 {
+		agent.client = clients[0]
+	} else {
+		agent.client = NewClient(conf.ApiKey, conf.ServerName)
+	}
 	return agent
 }
 

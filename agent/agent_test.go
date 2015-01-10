@@ -3,6 +3,7 @@ package agent
 import (
 	"testing"
 
+	"github.com/mveytsman/canary-agent/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,7 +12,7 @@ func TestNewAgent(t *testing.T) {
 	conf := NewConf()
 	conf.ServerName = "test"
 	conf.Apps = []AppConf{AppConf{Name: "test", Type: "ruby", Path: "./testdata/"}}
-	agent := NewAgent(conf)
+	agent := NewAgent(conf, &mocks.Client{})
 	defer agent.CloseWatches()
 
 	assert.Equal(1, len(agent.apps), "len agent.apps")
@@ -24,7 +25,6 @@ func TestNewAgent(t *testing.T) {
 
 	wf := app.watchedFiles[0]
 	assert.Equal("testdata/Gemfile.lock", wf.GetPath(), "gem file path")
-
 }
 
 // //func TestAddApp(t *testing.T) {
