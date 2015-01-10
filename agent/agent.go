@@ -12,7 +12,7 @@ var lg = logging.MustGetLogger("app-canary")
 type Agent struct {
 	conf   *Conf
 	apps   map[string]*App
-	client CanaryClient
+	client Client
 }
 
 type App struct {

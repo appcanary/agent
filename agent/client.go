@@ -2,7 +2,7 @@ package agent
 
 var baseURL = "http://localhost:8080"
 
-type CanaryClient interface {
+type Client interface {
 	HeartBeat() bool
 	CheckServer(string) bool
 	RegisterServer(string)
@@ -10,34 +10,34 @@ type CanaryClient interface {
 	Submit(string, interface{})
 }
 
-type Client struct {
+type CanaryClient struct {
 	apiKey     string
 	serverName string
 }
 
-func NewClient(apiKey string, serverName string) *Client {
-	client := &Client{apiKey: apiKey, serverName: serverName}
+func NewClient(apiKey string, serverName string) *CanaryClient {
+	client := &CanaryClient{apiKey: apiKey, serverName: serverName}
 	return client
 }
 
-func (c *Client) HeartBeat() bool {
+func (c *CanaryClient) HeartBeat() bool {
 	//TODO
 	return true
 }
 
-func (c *Client) CheckServer(name string) bool {
+func (c *CanaryClient) CheckServer(name string) bool {
 	//TODO
 	return true
 }
 
-func (c *Client) RegisterServer(name string) {
+func (c *CanaryClient) RegisterServer(name string) {
 	//TODO
 }
 
-func (c *Client) RegisterApp(name string) {
+func (c *CanaryClient) RegisterApp(name string) {
 	//TODO
 }
 
-func (c *Client) Submit(app string, data interface{}) {
+func (c *CanaryClient) Submit(app string, data interface{}) {
 	//TODO
 }
