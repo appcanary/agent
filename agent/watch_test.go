@@ -26,21 +26,32 @@ func (m *MockFile) Parse() interface{} {
 func TestWatchFile(t *testing.T) {
 	tf, _ := ioutil.TempFile("", "gemfile")
 	filename := tf.Name()
-	tf.Write([]byte("lol"))
+	tf.Write([]byte("tst1"))
+	tf.Close()
 
 	app := &App{Name: "test", Path: filename}
 	f := new(MockFile)
-	f.On("GetPath").Return(tf.Name())
-	f.On("Parse").Return("a")
+	f.On("GetPath").Return(filename)
+
+	//We expect Parse to be called three, on first load, and after we modify the file, and after we overwrite it
+	f.On("Parse").Return("a").Times(3)
 	app.WatchFile(f)
 	defer app.CloseWatches()
 
 	//Modify the file to cause a refresh
-	tf, _ = os.Open(filename)
-	tf.Write([]byte("lol"))
+	tf, _ = os.OpenFile(filename, os.O_RDWR|os.O_APPEND, 0777)
+	tf.Write([]byte("tst2"))
 	tf.Close()
-	// Sleep to let the watcher catch the refresh
-	time.Sleep(1 * time.Second)
-	//	tf.
+	time.Sleep(100 * time.Millisecond)
+
+	//Move and overwrite the file to cause a refresh
+	os.Rename(filename, filename+".bak")
+	tf, _ = os.Create(filename)
+	tf.Write([]byte("tst3"))
+	tf.Close()
+	time.Sleep(200 * time.Millisecond)
+
 	f.Mock.AssertExpectations(t)
 }
+
+//TODO: test some pathological cases here
