@@ -49,6 +49,44 @@ func TestHeartBeat(t *testing.T) {
 	assert.True(serverInvoked, "server invoked")
 }
 
+func TestHeartBeatDeprecated(t *testing.T) {
+	assert := assert.New(t)
+	serverInvoked := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverInvoked = true
+		respond(w, 200, "false")
+	}))
+	defer ts.Close()
+
+	//overwrite the base URL to our testing server
+	baseURL = ts.URL
+
+	client := NewClient("my api key", "my server")
+	err := client.HeartBeat()
+	assert.Equal(err, ErrDeprecated, "false heartbeat response")
+
+	assert.True(serverInvoked, "server invoked")
+}
+
+func TestHeartBeatErrorHanding(t *testing.T) {
+	assert := assert.New(t)
+	serverInvoked := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverInvoked = true
+		respond(w, 500, "")
+	}))
+	defer ts.Close()
+
+	//overwrite the base URL to our testing server
+	baseURL = ts.URL
+
+	client := NewClient("my api key", "my server")
+	err := client.HeartBeat()
+	assert.Equal(err, ErrApi, "error with api server")
+
+	assert.True(serverInvoked, "server invoked")
+}
+
 //Sends an http.ResponseWriter a string and status
 func respond(w http.ResponseWriter, status int, v string) {
 	w.Header().Set("Content-Type", "text/plain")

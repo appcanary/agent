@@ -3,10 +3,17 @@ package agent
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"net/http"
 )
 
 var baseURL = "http://localhost:8080"
+
+var (
+	ErrApi        = errors.New("api error")
+	ErrDeprecated = errors.New("api deprecated")
+)
 
 type Client interface {
 	HeartBeat() error
@@ -33,6 +40,16 @@ func (c *CanaryClient) HeartBeat() error {
 	if err != nil {
 		return err
 	}
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	// check for a false heartbeat response -- indicating deprecated API version
+	if string(resBody) == "false" {
+		return ErrDeprecated
+	}
 	return nil
 }
 
@@ -49,5 +66,12 @@ func (c *CanaryClient) post(rPath string, body []byte) (*http.Response, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Canary-Api-Key", c.apiKey)
-	return client.Do(req)
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != 200 {
+		return nil, ErrApi
+	}
+	return res, nil
 }
