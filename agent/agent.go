@@ -10,8 +10,9 @@ import (
 var lg = logging.MustGetLogger("app-canary")
 
 type Agent struct {
-	conf *Conf
-	apps map[string]*App
+	conf   *Conf
+	apps   map[string]*App
+	client CanaryClient
 }
 
 type App struct {
@@ -19,7 +20,7 @@ type App struct {
 	Name         string
 	Path         string
 	AppType      AppType
-	WatchedFiles WatchedFiles
+	watchedFiles WatchedFiles
 }
 
 type AppType int
@@ -39,6 +40,7 @@ func NewAgent(conf *Conf) *Agent {
 			agent.AddApp(a.Name, a.Path, RubyApp)
 		}
 	}
+	agent.client = NewClient(conf.ApiKey, conf.ServerName)
 	return agent
 }
 

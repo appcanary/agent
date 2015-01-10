@@ -85,11 +85,11 @@ func (a *App) WatchFile(f File) {
 	}
 
 	//Add watched file to the apps list
-	a.WatchedFiles = append(a.WatchedFiles, wf)
+	a.watchedFiles = append(a.watchedFiles, wf)
 }
 
 func (a *App) CloseWatches() {
-	for _, wf := range a.WatchedFiles {
+	for _, wf := range a.watchedFiles {
 		wf.Close()
 	}
 }

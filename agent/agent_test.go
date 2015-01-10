@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAgent(t *testing.T) {
+func TestNewAgent(t *testing.T) {
 	assert := assert.New(t)
 	conf := NewConf()
 	conf.ServerName = "test"
@@ -20,9 +20,14 @@ func TestAgent(t *testing.T) {
 	assert.Equal("test", app.Name, "app name")
 	assert.Equal(RubyApp, app.AppType, "app type")
 	assert.Equal("./testdata/", app.Path, "app path")
-	assert.Equal(1, len(app.WatchedFiles), "len app.WatchedFiles")
+	assert.Equal(1, len(app.watchedFiles), "len app.WatchedFiles")
 
-	wf := app.WatchedFiles[0]
+	wf := app.watchedFiles[0]
 	assert.Equal("testdata/Gemfile.lock", wf.GetPath(), "gem file path")
 
 }
+
+// //func TestAddApp(t *testing.T) {
+// //	agent := &Agent{apps: map[string]*App{}}
+// 	agent.AddApp("test", "./testdata", RubyApp)
+// }

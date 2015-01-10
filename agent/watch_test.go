@@ -6,22 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
+	"github.com/mveytsman/canary-agent/mocks"
 )
-
-type MockFile struct {
-	mock.Mock
-}
-
-func (m *MockFile) GetPath() string {
-	args := m.Mock.Called()
-	return args.String(0)
-}
-
-func (m *MockFile) Parse() interface{} {
-	args := m.Mock.Called()
-	return args.Get(0)
-}
 
 func TestWatchFile(t *testing.T) {
 	tf, _ := ioutil.TempFile("", "gemfile")
@@ -30,7 +16,7 @@ func TestWatchFile(t *testing.T) {
 	tf.Close()
 
 	app := &App{Name: "test", Path: filename}
-	f := new(MockFile)
+	f := new(mocks.File)
 	f.On("GetPath").Return(filename)
 
 	//We expect Parse to be called three, on first load, and after we modify the file, and after we overwrite it

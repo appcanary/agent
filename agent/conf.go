@@ -9,6 +9,7 @@ var log = logging.MustGetLogger("canary-agent")
 
 type Conf struct {
 	ServerName          string    `toml:"server_name"`
+	ApiKey              string    `toml:"api_key"`
 	TrackSystemPackages bool      `toml:"track_system_packages"`
 	LogLevel            string    `toml:"log_level"`
 	Apps                []AppConf `toml:"apps"`
