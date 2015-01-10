@@ -21,17 +21,17 @@ type Client interface {
 }
 
 type CanaryClient struct {
-	apiKey     string
-	serverName string
+	apiKey string
+	server string
 }
 
-func NewClient(apiKey string, serverName string) *CanaryClient {
-	client := &CanaryClient{apiKey: apiKey, serverName: serverName}
+func NewClient(apiKey string, server string) *CanaryClient {
+	client := &CanaryClient{apiKey: apiKey, server: server}
 	return client
 }
 
 func (c *CanaryClient) HeartBeat() error {
-	body, err := json.Marshal(map[string]string{"server_name": c.serverName})
+	body, err := json.Marshal(map[string]string{"server": c.server})
 	if err != nil {
 		return err
 	}
@@ -53,8 +53,25 @@ func (c *CanaryClient) HeartBeat() error {
 	return nil
 }
 
-func (c *CanaryClient) Submit(app string, data interface{}) error {
-	//TODO
+func (c *CanaryClient) Submit(app string, deps interface{}) error {
+	depsJSON, err := json.Marshal(deps)
+	if err != nil {
+		return err
+	}
+
+	body, err := json.Marshal(map[string]string{
+		"server": c.server,
+		"app":    app,
+		"deps":   string(depsJSON),
+	})
+	if err != nil {
+		return err
+	}
+	res, err := c.post("/v1/submit", body)
+	_ = res
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

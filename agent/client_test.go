@@ -15,7 +15,7 @@ func TestNewClient(t *testing.T) {
 
 	client := NewClient("my api key", "my server")
 	assert.Equal(client.apiKey, "my api key", "api key")
-	assert.Equal(client.serverName, "my server", "server name")
+	assert.Equal(client.server, "my server", "server name")
 }
 
 func TestHeartBeat(t *testing.T) {
@@ -23,18 +23,18 @@ func TestHeartBeat(t *testing.T) {
 	serverInvoked := false
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverInvoked = true
-		assert.Equal(r.Method, "POST")
-		assert.Equal(r.URL.Path, "/v1/heartbeat")
-		assert.Equal(r.Header.Get("Content-Type"), "application/json")
+		assert.Equal(r.Method, "POST", "heartbeat method")
+		assert.Equal(r.URL.Path, "/v1/heartbeat", "heartbeat path")
+		assert.Equal(r.Header.Get("Content-Type"), "application/json", "heartbeat content type")
 
 		//authentication header
-		assert.Equal(r.Header.Get("X-Canary-Api-Key"), "my api key")
+		assert.Equal(r.Header.Get("X-Canary-Api-Key"), "my api key", "heartbeat api key")
 
 		//server name in body
-		expectedBody, _ := json.Marshal(map[string]string{"server_name": "my server"})
+		expectedBody, _ := json.Marshal(map[string]string{"server": "my server"})
 		body, _ := ioutil.ReadAll(r.Body)
 		r.Body.Close()
-		assert.Equal(body, expectedBody)
+		assert.Equal(body, expectedBody, "heartbeat body")
 		respond(w, 200, "true")
 	}))
 	defer ts.Close()
@@ -44,7 +44,7 @@ func TestHeartBeat(t *testing.T) {
 
 	client := NewClient("my api key", "my server")
 	err := client.HeartBeat()
-	assert.NoError(err)
+	assert.NoError(err, "heartbeat error")
 
 	assert.True(serverInvoked, "server invoked")
 }
@@ -82,7 +82,42 @@ func TestHeartBeatErrorHanding(t *testing.T) {
 
 	client := NewClient("my api key", "my server")
 	err := client.HeartBeat()
-	assert.Equal(err, ErrApi, "error with api server")
+	assert.Equal(err, ErrApi, "error with api serve")
+
+	assert.True(serverInvoked, "server invoked")
+}
+
+func TestSubmit(t *testing.T) {
+	assert := assert.New(t)
+	serverInvoked := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		serverInvoked = true
+		assert.Equal(r.Method, "POST", "submit method")
+		assert.Equal(r.URL.Path, "/v1/submit", "submit path")
+		assert.Equal(r.Header.Get("Content-Type"), "application/json", "submit content type")
+
+		//authentication header
+		assert.Equal(r.Header.Get("X-Canary-Api-Key"), "my api key", "submit api key")
+
+		//server name in body
+		expectedBody, _ := json.Marshal(map[string]string{
+			"server": "my server",
+			"app":    "some app",
+			"deps":   "\"foo bar baz\"",
+		})
+		body, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+		assert.Equal(body, expectedBody, "submit body")
+		respond(w, 200, "true")
+	}))
+	defer ts.Close()
+
+	//overwrite the base URL to our testing server
+	baseURL = ts.URL
+
+	client := NewClient("my api key", "my server")
+	err := client.Submit("some app", "foo bar baz")
+	assert.NoError(err)
 
 	assert.True(serverInvoked, "server invoked")
 }
