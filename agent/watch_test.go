@@ -15,12 +15,16 @@ func TestWatchFile(t *testing.T) {
 	tf.Write([]byte("tst1"))
 	tf.Close()
 
-	app := &App{Name: "test", Path: filename}
+	client := &mocks.Client{}
+	agent := &Agent{client: client}
+	app := &App{Name: "test", Path: filename, callback: agent.Submit}
 	f := new(mocks.File)
 	f.On("GetPath").Return(filename)
 
 	//We expect Parse to be called three, on first load, and after we modify the file, and after we overwrite it
 	f.On("Parse").Return("a").Times(3)
+	//We also expect to submit results to the server 3 times
+	client.On("Submit", "test", "a").Return(nil).Times(3)
 	app.WatchFile(f)
 	defer app.CloseWatches()
 
@@ -38,6 +42,7 @@ func TestWatchFile(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	f.Mock.AssertExpectations(t)
+	client.Mock.AssertExpectations(t)
 }
 
 //TODO: test some pathological cases here

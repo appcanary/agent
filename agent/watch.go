@@ -28,6 +28,10 @@ func (g *Gemfile) GetPath() string {
 	return g.Path
 }
 
+func (a *App) Submit(data interface{}) {
+	a.callback(a.Name, data)
+}
+
 func (a *App) WatchFile(f File) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -57,11 +61,11 @@ func (a *App) WatchFile(f File) {
 								lg.Fatal(err)
 							}
 							lg.Info("Rereading file after move: %s", wf.GetPath())
-							wf.Parse()
+							go a.Submit(wf.Parse())
 						}()
 					} else if isOp(event.Op, fsnotify.Write) {
 						lg.Info("Rereading file: %s", wf.GetPath())
-						wf.Parse()
+						go a.Submit(wf.Parse())
 					} // else: the op was chmod, do nothing
 					//go a.Submit(wf.Parse())
 				} else {
@@ -77,8 +81,7 @@ func (a *App) WatchFile(f File) {
 		}
 	}()
 	lg.Info("Reading file: %s", wf.GetPath())
-	wf.Parse()
-	//a.Submit()
+	go a.Submit(wf.Parse())
 	err = wf.Watcher.Add(wf.GetPath())
 	if err != nil {
 		lg.Fatal(err.Error())

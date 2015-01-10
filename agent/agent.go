@@ -16,11 +16,11 @@ type Agent struct {
 }
 
 type App struct {
-	agent        *Agent
 	Name         string
 	Path         string
 	AppType      AppType
 	watchedFiles WatchedFiles
+	callback     Submitter
 }
 
 type AppType int
@@ -30,22 +30,35 @@ const (
 	RubyApp
 )
 
+type Submitter func(string, interface{})
+
 func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, apps: map[string]*App{}}
-
-	// load the existing gemfiles
-
-	for _, a := range conf.Apps {
-		if a.Type == "ruby" {
-			agent.AddApp(a.Name, a.Path, RubyApp)
-		}
-	}
 	if len(clients) > 0 {
 		agent.client = clients[0]
 	} else {
 		agent.client = NewClient(conf.ApiKey, conf.ServerName)
 	}
+	// load the existing gemfiles
+	for _, a := range conf.Apps {
+		if a.Type == "ruby" {
+			agent.AddApp(a.Name, a.Path, RubyApp)
+		}
+	}
+
+	err := agent.client.HeartBeat()
+	if err != nil {
+		lg.Fatal(err)
+	}
+
 	return agent
+}
+
+func (a *Agent) Submit(name string, data interface{}) {
+	err := a.client.Submit(name, data)
+	if err != nil {
+		lg.Fatal(err)
+	}
 }
 
 func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
@@ -53,7 +66,7 @@ func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
 		panic(fmt.Sprintf("Already have an app %s", name))
 	}
 
-	app := &App{Name: name, Path: filepath, AppType: appType, agent: a}
+	app := &App{Name: name, Path: filepath, AppType: appType, callback: a.Submit}
 	a.apps[name] = app
 
 	if appType == RubyApp {
