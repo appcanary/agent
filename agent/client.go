@@ -41,13 +41,23 @@ func (c *CanaryClient) HeartBeat() error {
 		return err
 	}
 
-	resBody, err := ioutil.ReadAll(res.Body)
+	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
 
+	type heartbeatResponse struct {
+		Success bool
+	}
+
+	var t heartbeatResponse
+
+	err = json.Unmarshal(b, &t)
+	if err != nil {
+		return err
+	}
 	// check for a false heartbeat response -- indicating deprecated API version
-	if string(resBody) == "false" {
+	if t.Success == false {
 		return ErrDeprecated
 	}
 	return nil

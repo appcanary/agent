@@ -35,7 +35,7 @@ func TestHeartBeat(t *testing.T) {
 		body, _ := ioutil.ReadAll(r.Body)
 		r.Body.Close()
 		assert.Equal(body, expectedBody, "heartbeat body")
-		respond(w, 200, "true")
+		respond(w, 200, "{\"success\": true}")
 	}))
 	defer ts.Close()
 
@@ -54,7 +54,7 @@ func TestHeartBeatDeprecated(t *testing.T) {
 	serverInvoked := false
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverInvoked = true
-		respond(w, 200, "false")
+		respond(w, 200, "{\"success\": false}")
 	}))
 	defer ts.Close()
 
