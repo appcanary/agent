@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mveytsman/canary-agent/mocks"
+	"github.com/stateio/canary-agent/mocks"
 )
 
 func TestWatchFile(t *testing.T) {

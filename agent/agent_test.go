@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mveytsman/canary-agent/mocks"
-	"github.com/mveytsman/canary-agent/parsers/gemfile"
+	"github.com/stateio/canary-agent/mocks"
+	"github.com/stateio/canary-agent/parsers/gemfile"
 	"github.com/stretchr/testify/assert"
 )
 

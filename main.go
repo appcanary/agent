@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/mveytsman/canary-agent/agent"
+	"github.com/stateio/canary-agent/agent"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mveytsman/canary-agent/parsers/gemfile"
+	"github.com/stateio/canary-agent/parsers/gemfile"
 	"gopkg.in/fsnotify.v1"
 )
 
