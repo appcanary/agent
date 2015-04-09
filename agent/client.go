@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/stateio/canary-agent/agent/server"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
@@ -20,6 +21,7 @@ var (
 type Client interface {
 	HeartBeat() error
 	Submit(string, interface{}) error
+	CreateServer(*server.Server) error
 }
 
 type CanaryClient struct {
@@ -37,7 +39,7 @@ func (c *CanaryClient) HeartBeat() error {
 	if err != nil {
 		return err
 	}
-	res, err := c.post("/v1/heartbeat", body)
+	res, err := c.post("/v1/agent/heartbeat", body)
 	_ = res
 	if err != nil {
 		return err
@@ -87,6 +89,26 @@ func (c *CanaryClient) Submit(app string, deps interface{}) error {
 	return nil
 }
 
+func (c *CanaryClient) CreateServer(srv *server.Server) error {
+	body, err := json.Marshal(*srv)
+
+	if err != nil {
+		return err
+	}
+
+	res, err := c.post("/v1/agent/servers", body)
+	if err != nil {
+		return err
+	}
+
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(b, srv)
+}
+
 func (c *CanaryClient) post(rPath string, body []byte) (*http.Response, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", env.BaseUrl+rPath, bytes.NewBuffer(body))
@@ -94,12 +116,12 @@ func (c *CanaryClient) post(rPath string, body []byte) (*http.Response, error) {
 		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("X-Canary-Api-Key", c.apiKey)
+	req.Header.Add("Authorization", "Token "+c.apiKey)
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	if res.StatusCode != 200 {
+	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, ErrApi
 	}
 	return res, nil

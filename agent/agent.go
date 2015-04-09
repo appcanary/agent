@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"github.com/op/go-logging"
+	"github.com/stateio/canary-agent/agent/server"
 )
 
 var lg = logging.MustGetLogger("app-canary")
@@ -13,6 +14,7 @@ type Agent struct {
 	conf   *Conf
 	apps   map[string]*App
 	client Client
+	server *server.Server
 }
 
 type App struct {
@@ -39,14 +41,27 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	} else {
 		agent.client = NewClient(conf.ApiKey, conf.ServerName)
 	}
-	// load the existing gemfiles
-	for _, a := range conf.Apps {
-		if a.Type == "ruby" {
-			agent.AddApp(a.Name, a.Path, RubyApp)
-		}
+
+	// what do we know about thi machine?
+	agent.server = server.New()
+
+	err := agent.RegisterServer()
+	lg.Debug("Registered server, got: " + agent.server.UUID)
+	if err != nil {
+		lg.Fatal(err)
 	}
 
-	err := agent.client.HeartBeat()
+	// COMMENTED OUT FOR NOW
+	// load the existing gemfiles
+	// for _, a := range conf.Apps {
+	// 	if a.Type == "ruby" {
+	// 		agent.AddApp(a.Name, a.Path, RubyApp)
+	// 	}
+	// }
+
+	// First time ever we boot up on this machine
+
+	err = agent.client.HeartBeat()
 	if err != nil {
 		lg.Fatal(err)
 	}
@@ -76,6 +91,10 @@ func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
 		panic(fmt.Sprintf("Unrecognized app type %s", appType))
 	}
 	return app
+}
+
+func (a *Agent) RegisterServer() error {
+	return a.client.CreateServer(a.server)
 }
 
 // This has to be called before exiting
