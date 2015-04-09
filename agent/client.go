@@ -6,9 +6,11 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
-var baseURL = "http://localhost:8080"
+var env = umwelten.Fetch()
 
 var (
 	ErrApi        = errors.New("api error")
@@ -87,7 +89,7 @@ func (c *CanaryClient) Submit(app string, deps interface{}) error {
 
 func (c *CanaryClient) post(rPath string, body []byte) (*http.Response, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", baseURL+rPath, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", env.BaseUrl+rPath, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
