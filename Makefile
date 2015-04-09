@@ -2,14 +2,20 @@
 
 all: build
 
-test: build
+test: build-all
 	go test -v ./...
-  
-build: 
+
+setup:
 	@mkdir -p ./bin
 	@rm -f ./bin/*
-	peg parsers/gemfile/gemfile.peg
+
+build-all: setup peg-parser build
+
+build:
 	go build -o ./bin/canary-agent 
+
+peg-parser:
+	peg parsers/gemfile/gemfile.peg
 
 clean:
 	@rm -rf ./bin
