@@ -39,7 +39,7 @@ func (c *CanaryClient) HeartBeat() error {
 	if err != nil {
 		return err
 	}
-	res, err := c.post("/v1/agent/heartbeat", body)
+	res, err := c.post(umwelten.API_HEARTBEAT, body)
 	_ = res
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (c *CanaryClient) CreateServer(srv *server.Server) error {
 		return err
 	}
 
-	res, err := c.post("/v1/agent/servers", body)
+	res, err := c.post(umwelten.API_SERVERS, body)
 	if err != nil {
 		return err
 	}

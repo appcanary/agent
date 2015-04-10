@@ -8,41 +8,6 @@ type Umwelten struct {
 	ConfPath string
 }
 
-const (
-	defaultConfPath = "/etc/canary/canary.conf"
-	testConfPath    = "agent/testdata/test2.conf"
-	testLogo        = `		                                                      
-        ********** ********  ******** **********      
-       /////**/// /**/////  **////// /////**///       
-           /**    /**      /**           /**          
-           /**    /******* /*********    /**          
-           /**    /**////  ////////**    /**          
-           /**    /**             /**    /**          
-           /**    /******** ********     /**          
-           //     //////// ////////      //           
-      ****     ****   *******   *******   ********    
-     /**/**   **/**  **/////** /**////** /**/////     
-     /**//** ** /** **     //**/**    /**/**          
-     /** //***  /**/**      /**/**    /**/*******     
-     /**  //*   /**/**      /**/**    /**/**////      
-     /**   /    /**//**     ** /**    ** /**          
-     /**        /** //*******  /*******  /********    
-     //         //   ///////   ///////   ////////     
-`
-	strLogo = `
-                                                              
-        _//                                                   
-     _//   _//                                                
-    _//          _//    _// _//     _//    _/ _///_//   _//   
-    _//        _//  _//  _//  _// _//  _//  _//    _// _//    
-    _//       _//   _//  _//  _//_//   _//  _//      _///     
-     _//   _//_//   _//  _//  _//_//   _//  _//       _//     
-       _////    _// _///_///  _//  _// _///_///      _//      
-                                                   _//        
-                                                              `
-	testURL = "http://localhost:8080"
-)
-
 var env = &Umwelten{}
 
 func Init(env_str string) {
@@ -52,13 +17,13 @@ func Init(env_str string) {
 	}
 
 	if env.Prod {
-		env.BaseUrl = "https://lolprod.example.com"
-		env.Logo = strLogo
-		env.ConfPath = defaultConfPath
+		env.BaseUrl = PROD_URL
+		env.Logo = PROD_LOGO
+		env.ConfPath = DEFAULT_CONF_PATH
 	} else {
-		env.BaseUrl = "http://localhost:8080"
-		env.Logo = testLogo
-		env.ConfPath = testConfPath
+		env.BaseUrl = DEV_URL
+		env.Logo = DEV_LOGO
+		env.ConfPath = DEV_CONF_PATH
 	}
 }
 

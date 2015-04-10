@@ -45,12 +45,6 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	// what do we know about thi machine?
 	agent.server = server.New()
 
-	err := agent.RegisterServer()
-	lg.Debug("Registered server, got: " + agent.server.UUID)
-	if err != nil {
-		lg.Fatal(err)
-	}
-
 	// COMMENTED OUT FOR NOW
 	// load the existing gemfiles
 	// for _, a := range conf.Apps {
@@ -61,12 +55,16 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 
 	// First time ever we boot up on this machine
 
-	err = agent.client.HeartBeat()
+	return agent
+}
+
+func (a *Agent) Heartbeat() {
+	err := a.client.HeartBeat()
+
 	if err != nil {
 		lg.Fatal(err)
 	}
 
-	return agent
 }
 
 func (a *Agent) Submit(name string, data interface{}) {
@@ -93,8 +91,14 @@ func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
 	return app
 }
 
-func (a *Agent) RegisterServer() error {
-	return a.client.CreateServer(a.server)
+func (a *Agent) RegisterServer() {
+	err := a.client.CreateServer(a.server)
+
+	lg.Debug("Registered server, got: " + a.server.UUID)
+
+	if err != nil {
+		lg.Fatal(err)
+	}
 }
 
 // This has to be called before exiting

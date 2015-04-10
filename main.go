@@ -26,6 +26,10 @@ func main() {
 	// slurp env, instantiate agent
 	conf := agent.NewConfFromFile(env.ConfPath)
 	a := agent.NewAgent(conf)
+
+	a.RegisterServer()
+	// TODO: LOOP FOREVER
+	a.Heartbeat()
 	defer a.CloseWatches()
 
 	// wait for the right signal
