@@ -6,7 +6,7 @@ const (
 	DEV_URL  = "http://localhost:9999"
 
 	DEFAULT_CONF_PATH = "/etc/canary/canary.conf"
-	DEV_CONF_PATH     = "agent/testdata/test2.conf"
+	DEV_CONF_PATH     = "../test/data/test2.conf"
 )
 
 // api endpoints

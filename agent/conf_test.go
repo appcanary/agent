@@ -9,7 +9,7 @@ import (
 func TestConf(t *testing.T) {
 	assert := assert.New(t)
 
-	conf := NewConfFromFile("testdata/test.conf")
+	conf := NewConfFromFile("../test/data/test.conf")
 	assert.Equal("deployment1", conf.ServerName, "server_name")
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal(true, conf.TrackSystemPackages, "track_system_packages")
