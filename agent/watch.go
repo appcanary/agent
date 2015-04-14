@@ -35,36 +35,36 @@ func (a *App) Submit(data interface{}) {
 func (a *App) WatchFile(f File) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		lg.Fatal(err.Error())
+		log.Fatal(err.Error())
 	}
-	lg.Info("Starting watcher on %s", f.GetPath())
+	log.Info("Starting watcher on %s", f.GetPath())
 	wf := &WatchedFile{File: f, Watcher: watcher}
 	go func() {
 		for {
 			select {
 			case event, more := <-watcher.Events:
 				if more {
-					lg.Info("Got event %s", event.String())
+					log.Info("Got event %s", event.String())
 					if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
 						//If the file is renamed or removed we have to create a new watch after a delay
 						go func() {
-							lg.Info("File moved: %s", wf.GetPath())
+							log.Info("File moved: %s", wf.GetPath())
 							//TODO: be smarter about this delay
 							time.Sleep(100 * time.Millisecond)
 							if _, err := os.Stat(wf.GetPath()); err != nil {
 								// File doesn't exist
 								// TODO: this is something we should handle gracefully with a expanding timeout, and an error sent to our server
-								lg.Fatal(err)
+								log.Fatal(err)
 							}
 							err = wf.Watcher.Add(wf.GetPath())
 							if err != nil {
-								lg.Fatal(err)
+								log.Fatal(err)
 							}
-							lg.Info("Rereading file after move: %s", wf.GetPath())
+							log.Info("Rereading file after move: %s", wf.GetPath())
 							go a.Submit(wf.Parse())
 						}()
 					} else if isOp(event.Op, fsnotify.Write) {
-						lg.Info("Rereading file: %s", wf.GetPath())
+						log.Info("Rereading file: %s", wf.GetPath())
 						go a.Submit(wf.Parse())
 					} // else: the op was chmod, do nothing
 					//go a.Submit(wf.Parse())
@@ -73,18 +73,18 @@ func (a *App) WatchFile(f File) {
 				}
 			case err, more := <-watcher.Errors:
 				if more {
-					lg.Info("error:", err)
+					log.Info("error:", err)
 				} else {
 					break
 				}
 			}
 		}
 	}()
-	lg.Info("Reading file: %s", wf.GetPath())
+	log.Info("Reading file: %s", wf.GetPath())
 	go a.Submit(wf.Parse())
 	err = wf.Watcher.Add(wf.GetPath())
 	if err != nil {
-		lg.Fatal(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	//Add watched file to the apps list
@@ -102,14 +102,14 @@ func (g *Gemfile) Parse() interface{} {
 	if err != nil {
 		//TODO handle error more gracefully
 		//If we can't parse try again in a bit
-		lg.Fatal(err)
+		log.Fatal(err)
 	}
 	return gf
 }
 
 // TODO: make this a finalizer? :(
 func (wf *WatchedFile) Close() {
-	lg.Info("closing watcher")
+	log.Info("closing watcher")
 	wf.Watcher.Close()
 }
 
