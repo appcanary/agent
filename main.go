@@ -29,9 +29,19 @@ func main() {
 	conf := agent.NewConfFromFile(env.ConfPath)
 	a := agent.NewAgent(conf)
 
-	a.RegisterServer()
+	err = a.RegisterServer()
+	// realistically, the agent doesn't have to be aware of
+	// how we're going to be queueing retries
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// TODO: LOOP FOREVER
-	a.Heartbeat()
+	err = a.Heartbeat()
+	if err != nil {
+		log.Fatal("<3 ", err)
+	}
+
 	defer a.CloseWatches()
 
 	// wait for the right signal

@@ -8,7 +8,7 @@ import (
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
-var lg = umwelten.Log
+var log = umwelten.Log
 
 type Agent struct {
 	conf   *Conf
@@ -58,19 +58,14 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	return agent
 }
 
-func (a *Agent) Heartbeat() {
-	err := a.client.HeartBeat()
-
-	if err != nil {
-		lg.Fatal(err)
-	}
-
+func (self *Agent) Heartbeat() error {
+	return self.client.HeartBeat(self.server.UUID)
 }
 
 func (a *Agent) Submit(name string, data interface{}) {
 	err := a.client.Submit(name, data)
 	if err != nil {
-		lg.Fatal(err)
+		log.Fatal(err)
 	}
 }
 
@@ -86,21 +81,20 @@ func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
 		f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
 		app.WatchFile(f)
 	} else {
-		err_str := fmt.Sprintf("Unrecognized app type %s", appType)
-		lg.Fatal(err_str)
-		panic(err_str)
+		log.Fatal("Unrecognized app type ", appType)
 	}
 	return app
 }
 
-func (a *Agent) RegisterServer() {
-	err := a.client.CreateServer(a.server)
+func (self *Agent) RegisterServer() error {
+	err := self.client.CreateServer(self.server)
 
-	lg.Debug("Registered server, got: " + a.server.UUID)
+	log.Debug("Registered server, got: " + self.server.UUID)
 
 	if err != nil {
-		lg.Fatal(err)
+		return err
 	}
+	return nil
 }
 
 // This has to be called before exiting
