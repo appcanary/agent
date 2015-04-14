@@ -1,12 +1,16 @@
 package umwelten
 
+import "path/filepath"
+
+// consts can't be outputs of functions?
+var DEV_CONF_PATH, _ = filepath.Abs("test/data/test2.conf")
+
 // env vars
 const (
 	PROD_URL = "https://lolprod.example.com"
 	DEV_URL  = "http://localhost:9999"
 
 	DEFAULT_CONF_PATH = "/etc/canary/canary.conf"
-	DEV_CONF_PATH     = "../test/data/test2.conf"
 )
 
 // api endpoints
