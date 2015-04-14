@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/stateio/canary-agent/agent/server"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
 var env = umwelten.Fetch()
-var log = umwelten.Log
 
 var (
 	ErrApi        = errors.New("api error")
@@ -36,32 +36,32 @@ func NewClient(apiKey string, server string) *CanaryClient {
 	return client
 }
 
-func (c *CanaryClient) HeartBeat(uuid string) error {
-	body, err := json.Marshal(map[string]string{"server": c.server, "apps": "[{\"name\":\"foo\"}]"})
+func (self *CanaryClient) HeartBeat(uuid string) error {
+	// TODO MAKE REAL APPS
+	apps := []App{App{Name: "Foo", MonitoredFiles: "/var/www/foo/Gemfile.lock"}}
+
+	body, err := json.Marshal(map[string][]App{"apps": apps})
 	if err != nil {
 		return err
 	}
 
-	respBody, err := c.post(umwelten.API_HEARTBEAT+uuid, body)
+	respBody, err := self.post(umwelten.API_HEARTBEAT+uuid, body)
 	if err != nil {
 		return err
 	}
 
 	type heartbeatResponse struct {
-		Success bool
+		Heartbeat time.Time
 	}
 
 	var t heartbeatResponse
 
 	err = json.Unmarshal(respBody, &t)
+	log.Debug(fmt.Sprintf("Heartbeat: %s", t.Heartbeat))
 	if err != nil {
 		return err
 	}
 
-	// check for a false heartbeat response -- indicating deprecated API version
-	if t.Success == false {
-		return ErrDeprecated
-	}
 	return nil
 }
 

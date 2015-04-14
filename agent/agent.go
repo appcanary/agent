@@ -18,11 +18,12 @@ type Agent struct {
 }
 
 type App struct {
-	Name         string
-	Path         string
-	AppType      AppType
-	watchedFiles WatchedFiles
-	callback     Submitter
+	Name           string  `json:"name"`
+	Path           string  `json:"path,omitempty"`
+	AppType        AppType `json:"type,omitempty"`
+	watchedFiles   WatchedFiles
+	MonitoredFiles string `json:"monitoredFiles"`
+	callback       Submitter
 }
 
 type AppType int
