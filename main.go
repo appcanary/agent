@@ -9,6 +9,7 @@ import (
 )
 
 var env = umwelten.Fetch()
+var log = umwelten.Log
 
 func main() {
 	done := make(chan os.Signal, 1)
@@ -17,9 +18,10 @@ func main() {
 
 	fmt.Println(env.Logo)
 
+	log.Debug(env.ConfPath)
 	_, err := os.Stat(env.ConfPath)
 	if os.IsNotExist(err) {
-		fmt.Println("We need to implement getting the env info from the user")
+		log.Notice("We need to implement getting the env info from the user")
 		return
 	}
 

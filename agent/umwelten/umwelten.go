@@ -1,5 +1,9 @@
 package umwelten
 
+import "github.com/op/go-logging"
+
+var Log = logging.MustGetLogger("canary-agent")
+
 type Umwelten struct {
 	Logo     string
 	Env      string
@@ -17,10 +21,12 @@ func Init(env_str string) {
 	}
 
 	if env.Prod {
+		logging.SetLevel(logging.NOTICE, "canary-agent")
 		env.BaseUrl = PROD_URL
 		env.Logo = PROD_LOGO
 		env.ConfPath = DEFAULT_CONF_PATH
 	} else {
+		logging.SetLevel(logging.DEBUG, "canary-agent")
 		env.BaseUrl = DEV_URL
 		env.Logo = DEV_LOGO
 		env.ConfPath = DEV_CONF_PATH

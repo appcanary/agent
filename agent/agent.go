@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/op/go-logging"
 	"github.com/stateio/canary-agent/agent/server"
+	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
-var lg = logging.MustGetLogger("app-canary")
+var lg = umwelten.Log
 
 type Agent struct {
 	conf   *Conf
@@ -86,7 +86,9 @@ func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
 		f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
 		app.WatchFile(f)
 	} else {
-		panic(fmt.Sprintf("Unrecognized app type %s", appType))
+		err_str := fmt.Sprintf("Unrecognized app type %s", appType)
+		lg.Fatal(err_str)
+		panic(err_str)
 	}
 	return app
 }

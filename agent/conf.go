@@ -2,10 +2,8 @@ package agent
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/op/go-logging"
+	"github.com/stateio/canary-agent/agent/umwelten"
 )
-
-var log = logging.MustGetLogger("canary-agent")
 
 type Conf struct {
 	ServerName          string    `toml:"server_name"`
@@ -29,7 +27,7 @@ func NewConfFromFile(path string) *Conf {
 	conf := &Conf{}
 	_, err := toml.DecodeFile(path, &conf)
 	if err != nil {
-		log.Fatal(err)
+		umwelten.Log.Fatal(err)
 	}
 
 	return conf
