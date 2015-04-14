@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -12,6 +13,7 @@ import (
 )
 
 var env = umwelten.Fetch()
+var log = umwelten.Log
 
 var (
 	ErrApi        = errors.New("api error")
@@ -19,7 +21,7 @@ var (
 )
 
 type Client interface {
-	HeartBeat() error
+	HeartBeat(string) error
 	Submit(string, interface{}) error
 	CreateServer(*server.Server) error
 }
@@ -34,18 +36,13 @@ func NewClient(apiKey string, server string) *CanaryClient {
 	return client
 }
 
-func (c *CanaryClient) HeartBeat() error {
-	body, err := json.Marshal(map[string]string{"server": c.server})
-	if err != nil {
-		return err
-	}
-	res, err := c.post(umwelten.API_HEARTBEAT, body)
-	_ = res
+func (c *CanaryClient) HeartBeat(uuid string) error {
+	body, err := json.Marshal(map[string]string{"server": c.server, "apps": "[{\"name\":\"foo\"}]"})
 	if err != nil {
 		return err
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
+	respBody, err := c.post(umwelten.API_HEARTBEAT+uuid, body)
 	if err != nil {
 		return err
 	}
@@ -56,10 +53,11 @@ func (c *CanaryClient) HeartBeat() error {
 
 	var t heartbeatResponse
 
-	err = json.Unmarshal(b, &t)
+	err = json.Unmarshal(respBody, &t)
 	if err != nil {
 		return err
 	}
+
 	// check for a false heartbeat response -- indicating deprecated API version
 	if t.Success == false {
 		return ErrDeprecated
@@ -96,33 +94,44 @@ func (c *CanaryClient) CreateServer(srv *server.Server) error {
 		return err
 	}
 
-	res, err := c.post(umwelten.API_SERVERS, body)
+	respBody, err := c.post(umwelten.API_SERVERS, body)
 	if err != nil {
 		return err
 	}
 
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(b, srv)
+	return json.Unmarshal(respBody, srv)
 }
 
-func (c *CanaryClient) post(rPath string, body []byte) (*http.Response, error) {
+func (c *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
+	uri := env.BaseUrl + rPath
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", env.BaseUrl+rPath, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
+
+	// Ahem, http://stackoverflow.com/questions/17714494/golang-http-request-results-in-eof-errors-when-making-multiple-requests-successi
+	req.Close = true
+
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Token "+c.apiKey)
+
 	res, err := client.Do(req)
+	defer res.Body.Close()
+
 	if err != nil {
+		log.Debug("Do err: ", err.Error())
 		return nil, err
 	}
+
 	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, ErrApi
+		return nil, errors.New(fmt.Sprintf("API Error: %d %s", res.StatusCode, uri))
 	}
-	return res, nil
+
+	respBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return respBody, err
+	}
+
+	return respBody, nil
 }
