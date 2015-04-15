@@ -22,7 +22,7 @@ var (
 )
 
 type Client interface {
-	HeartBeat(string) error
+	HeartBeat(string, []*app.App) error
 	Submit(string, interface{}) error
 	CreateServer(*server.Server) error
 }
@@ -37,16 +37,16 @@ func NewClient(apiKey string, server string) *CanaryClient {
 	return client
 }
 
-func (self *CanaryClient) HeartBeat(uuid string) error {
-	// TODO MAKE REAL APPS
-	apps := []app.App{app.App{Name: "Foo", MonitoredFiles: "/var/www/foo/Gemfile.lock"}}
+func (self *CanaryClient) HeartBeat(uuid string, apps []*app.App) error {
 
-	body, err := json.Marshal(map[string][]app.App{"apps": apps})
+	body, err := json.Marshal(map[string][]*app.App{"apps": apps})
+
 	if err != nil {
 		return err
 	}
 
 	respBody, err := self.post(umwelten.API_HEARTBEAT+uuid, body)
+
 	if err != nil {
 		return err
 	}

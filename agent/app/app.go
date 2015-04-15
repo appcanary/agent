@@ -14,8 +14,8 @@ type Submitter func(string, interface{})
 
 type App struct {
 	Name           string  `json:"name"`
-	Path           string  `json:"path,omitempty"`
-	AppType        AppType `json:"type,omitempty"`
+	Path           string  `json:"-"`
+	AppType        AppType `json:"-"`
 	watchedFiles   WatchedFiles
 	MonitoredFiles string    `json:"monitoredFiles"`
 	Callback       Submitter `json:"-"`
@@ -66,11 +66,13 @@ func (a *App) WatchFile(f File) {
 								log.Fatal(err)
 							}
 							log.Info("Rereading file after move: %s", wf.GetPath())
-							go a.Submit(wf.Parse())
+							// TODO commented out for now
+							// go a.Submit(wf.Parse())
 						}()
 					} else if isOp(event.Op, fsnotify.Write) {
 						log.Info("Rereading file: %s", wf.GetPath())
-						go a.Submit(wf.Parse())
+						// TODO commented out for now
+						// go a.Submit(wf.Parse())
 					} // else: the op was chmod, do nothing
 					//go a.Submit(wf.Parse())
 				} else {
@@ -86,7 +88,8 @@ func (a *App) WatchFile(f File) {
 		}
 	}()
 	log.Info("Reading file: %s", wf.GetPath())
-	go a.Submit(wf.Parse())
+	// TODO commented out for now
+	// go a.Submit(wf.Parse())
 	err = wf.Watcher.Add(wf.GetPath())
 	if err != nil {
 		log.Fatal(err.Error())

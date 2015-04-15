@@ -29,13 +29,12 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	// what do we know about thi machine?
 	agent.server = server.New()
 
-	// COMMENTED OUT FOR NOW
 	// load the existing gemfiles
-	// for _, a := range conf.Apps {
-	// 	if a.Type == "ruby" {
-	// 		agent.AddApp(a.Name, a.Path, RubyApp)
-	// 	}
-	// }
+	for _, a := range conf.Apps {
+		if a.Type == "ruby" {
+			agent.AddApp(a.Name, a.Path, app.RubyApp)
+		}
+	}
 
 	// First time ever we boot up on this machine
 
@@ -43,7 +42,16 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 }
 
 func (self *Agent) Heartbeat() error {
-	return self.client.HeartBeat(self.server.UUID)
+
+	app_slice := make([]*app.App, len(self.apps), len(self.apps))
+
+	i := 0
+	for _, val := range self.apps {
+		app_slice[i] = val
+		i = i + 1
+	}
+
+	return self.client.HeartBeat(self.server.UUID, app_slice)
 }
 
 func (a *Agent) Submit(name string, data interface{}) {
@@ -54,11 +62,11 @@ func (a *Agent) Submit(name string, data interface{}) {
 }
 
 func (self *Agent) AddApp(name string, filepath string, appType app.AppType) *app.App {
-	if a.apps[name] != nil {
+	if self.apps[name] != nil {
 		log.Fatal("Already have an app ", name)
 	}
 
-	application := &app.App{Name: name, Path: filepath, AppType: appType, Callback: self.Submit}
+	application := &app.App{Name: name, Path: filepath, MonitoredFiles: filepath, AppType: appType, Callback: self.Submit}
 	self.apps[name] = application
 
 	if appType == app.RubyApp {
