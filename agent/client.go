@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/stateio/canary-agent/agent/app"
 	"github.com/stateio/canary-agent/agent/server"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
@@ -38,9 +39,9 @@ func NewClient(apiKey string, server string) *CanaryClient {
 
 func (self *CanaryClient) HeartBeat(uuid string) error {
 	// TODO MAKE REAL APPS
-	apps := []App{App{Name: "Foo", MonitoredFiles: "/var/www/foo/Gemfile.lock"}}
+	apps := []app.App{app.App{Name: "Foo", MonitoredFiles: "/var/www/foo/Gemfile.lock"}}
 
-	body, err := json.Marshal(map[string][]App{"apps": apps})
+	body, err := json.Marshal(map[string][]app.App{"apps": apps})
 	if err != nil {
 		return err
 	}

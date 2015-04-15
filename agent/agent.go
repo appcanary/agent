@@ -1,9 +1,9 @@
 package agent
 
 import (
-	"fmt"
 	"path"
 
+	"github.com/stateio/canary-agent/agent/app"
 	"github.com/stateio/canary-agent/agent/server"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
@@ -12,31 +12,14 @@ var log = umwelten.Log
 
 type Agent struct {
 	conf   *Conf
-	apps   map[string]*App
+	apps   map[string]*app.App
 	client Client
 	server *server.Server
 }
 
-type App struct {
-	Name           string  `json:"name"`
-	Path           string  `json:"path,omitempty"`
-	AppType        AppType `json:"type,omitempty"`
-	watchedFiles   WatchedFiles
-	MonitoredFiles string `json:"monitoredFiles"`
-	callback       Submitter
-}
-
-type AppType int
-
-const (
-	UnknownApp AppType = iota
-	RubyApp
-)
-
-type Submitter func(string, interface{})
-
 func NewAgent(conf *Conf, clients ...Client) *Agent {
-	agent := &Agent{conf: conf, apps: map[string]*App{}}
+	agent := &Agent{conf: conf, apps: map[string]*app.App{}}
+
 	if len(clients) > 0 {
 		agent.client = clients[0]
 	} else {
@@ -70,21 +53,21 @@ func (a *Agent) Submit(name string, data interface{}) {
 	}
 }
 
-func (a *Agent) AddApp(name string, filepath string, appType AppType) *App {
+func (self *Agent) AddApp(name string, filepath string, appType app.AppType) *app.App {
 	if a.apps[name] != nil {
-		panic(fmt.Sprintf("Already have an app %s", name))
+		log.Fatal("Already have an app ", name)
 	}
 
-	app := &App{Name: name, Path: filepath, AppType: appType, callback: a.Submit}
-	a.apps[name] = app
+	application := &app.App{Name: name, Path: filepath, AppType: appType, Callback: self.Submit}
+	self.apps[name] = application
 
-	if appType == RubyApp {
+	if appType == app.RubyApp {
 		f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
-		app.WatchFile(f)
+		application.WatchFile(f)
 	} else {
 		log.Fatal("Unrecognized app type ", appType)
 	}
-	return app
+	return application
 }
 
 func (self *Agent) RegisterServer() error {
@@ -100,7 +83,7 @@ func (self *Agent) RegisterServer() error {
 
 // This has to be called before exiting
 func (a *Agent) CloseWatches() {
-	for _, app := range a.apps {
-		app.CloseWatches()
+	for _, appli := range a.apps {
+		appli.CloseWatches()
 	}
 }
