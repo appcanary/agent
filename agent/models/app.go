@@ -1,4 +1,4 @@
-package app
+package models
 
 import (
 	"os"
@@ -28,11 +28,6 @@ const (
 	RubyApp
 )
 
-type File interface {
-	GetPath() string
-	Parse() interface{}
-}
-
 func (a *App) Submit(data interface{}) {
 	a.Callback(a.Name, data)
 }
@@ -42,33 +37,44 @@ func (a *App) WatchFile(f File) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
 	log.Info("Starting watcher on %s", f.GetPath())
 	wf := &WatchedFile{File: f, Watcher: watcher}
+
 	go func() {
 		for {
 			select {
 			case event, more := <-watcher.Events:
 				if more {
+
 					log.Info("Got event %s", event.String())
+
+					//If the file is renamed or removed we have to create a new watch after a delay
 					if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
-						//If the file is renamed or removed we have to create a new watch after a delay
+
 						go func() {
 							log.Info("File moved: %s", wf.GetPath())
+
 							//TODO: be smarter about this delay
 							time.Sleep(100 * time.Millisecond)
+
+							// File doesn't exist
 							if _, err := os.Stat(wf.GetPath()); err != nil {
-								// File doesn't exist
 								// TODO: this is something we should handle gracefully with a expanding timeout, and an error sent to our server
 								log.Fatal(err)
 							}
+
 							err = wf.Watcher.Add(wf.GetPath())
+
 							if err != nil {
 								log.Fatal(err)
 							}
+
 							log.Info("Rereading file after move: %s", wf.GetPath())
 							// TODO commented out for now
 							// go a.Submit(wf.Parse())
 						}()
+
 					} else if isOp(event.Op, fsnotify.Write) {
 						log.Info("Rereading file: %s", wf.GetPath())
 						// TODO commented out for now

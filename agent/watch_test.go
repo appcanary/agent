@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/mocks"
 )
 

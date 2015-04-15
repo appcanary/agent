@@ -3,8 +3,7 @@ package agent
 import (
 	"path"
 
-	"github.com/stateio/canary-agent/agent/app"
-	"github.com/stateio/canary-agent/agent/server"
+	. "github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
@@ -12,13 +11,13 @@ var log = umwelten.Log
 
 type Agent struct {
 	conf   *Conf
-	apps   map[string]*app.App
+	apps   map[string]*App
 	client Client
-	server *server.Server
+	server *Server
 }
 
 func NewAgent(conf *Conf, clients ...Client) *Agent {
-	agent := &Agent{conf: conf, apps: map[string]*app.App{}}
+	agent := &Agent{conf: conf, apps: map[string]*App{}}
 
 	if len(clients) > 0 {
 		agent.client = clients[0]
@@ -26,13 +25,13 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 		agent.client = NewClient(conf.ApiKey, conf.ServerName)
 	}
 
-	// what do we know about thi machine?
-	agent.server = server.New()
+	// what do we know about this machine?
+	agent.server = ThisServer()
 
 	// load the existing gemfiles
 	for _, a := range conf.Apps {
 		if a.Type == "ruby" {
-			agent.AddApp(a.Name, a.Path, app.RubyApp)
+			agent.AddApp(a.Name, a.Path, RubyApp)
 		}
 	}
 
@@ -43,7 +42,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 
 func (self *Agent) Heartbeat() error {
 
-	app_slice := make([]*app.App, len(self.apps), len(self.apps))
+	app_slice := make([]*App, len(self.apps), len(self.apps))
 
 	i := 0
 	for _, val := range self.apps {
@@ -61,15 +60,15 @@ func (a *Agent) Submit(name string, data interface{}) {
 	}
 }
 
-func (self *Agent) AddApp(name string, filepath string, appType app.AppType) *app.App {
+func (self *Agent) AddApp(name string, filepath string, appType AppType) *App {
 	if self.apps[name] != nil {
 		log.Fatal("Already have an app ", name)
 	}
 
-	application := &app.App{Name: name, Path: filepath, MonitoredFiles: filepath, AppType: appType, Callback: self.Submit}
+	application := &App{Name: name, Path: filepath, MonitoredFiles: filepath, AppType: appType, Callback: self.Submit}
 	self.apps[name] = application
 
-	if appType == app.RubyApp {
+	if appType == RubyApp {
 		f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
 		application.WatchFile(f)
 	} else {

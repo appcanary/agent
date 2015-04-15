@@ -9,8 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/stateio/canary-agent/agent/app"
-	"github.com/stateio/canary-agent/agent/server"
+	. "github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
@@ -22,9 +21,9 @@ var (
 )
 
 type Client interface {
-	HeartBeat(string, []*app.App) error
+	HeartBeat(string, []*App) error
 	Submit(string, interface{}) error
-	CreateServer(*server.Server) error
+	CreateServer(*Server) error
 }
 
 type CanaryClient struct {
@@ -37,9 +36,9 @@ func NewClient(apiKey string, server string) *CanaryClient {
 	return client
 }
 
-func (self *CanaryClient) HeartBeat(uuid string, apps []*app.App) error {
+func (self *CanaryClient) HeartBeat(uuid string, apps []*App) error {
 
-	body, err := json.Marshal(map[string][]*app.App{"apps": apps})
+	body, err := json.Marshal(map[string][]*App{"apps": apps})
 
 	if err != nil {
 		return err
@@ -88,7 +87,7 @@ func (c *CanaryClient) Submit(app string, deps interface{}) error {
 	return nil
 }
 
-func (c *CanaryClient) CreateServer(srv *server.Server) error {
+func (c *CanaryClient) CreateServer(srv *Server) error {
 	body, err := json.Marshal(*srv)
 
 	if err != nil {

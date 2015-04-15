@@ -1,4 +1,4 @@
-package agent
+package models
 
 import (
 	"github.com/stateio/canary-agent/agent/umwelten"

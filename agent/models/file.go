@@ -1,6 +1,11 @@
-package app
+package models
 
 import "gopkg.in/fsnotify.v1"
+
+type File interface {
+	GetPath() string
+	Parse() interface{}
+}
 
 type WatchedFile struct {
 	File
