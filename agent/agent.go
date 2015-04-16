@@ -80,10 +80,22 @@ func (self *Agent) AddApp(name string, filepath string, appType AppType) *App {
 func (self *Agent) RegisterServer() error {
 	err := self.client.CreateServer(self.server)
 
-	log.Debug("Registered server, got: " + self.server.UUID)
+	log.Debug("Registered server, got: %s", self.server.UUID)
 
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (self *Agent) RegisterApps() (err error) {
+	for _, app := range self.apps {
+		app.UUID, err = self.client.CreateApp(self.server.UUID, app)
+		if err != nil {
+			return err
+		}
+
+		log.Debug("Registered app %s, got: %s", app.Name, app.UUID)
 	}
 	return nil
 }

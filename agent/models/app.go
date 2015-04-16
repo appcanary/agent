@@ -19,6 +19,7 @@ type App struct {
 	watchedFiles   WatchedFiles
 	MonitoredFiles string    `json:"monitoredFiles"`
 	Callback       Submitter `json:"-"`
+	UUID           string    `json:"uuid,omitempty"`
 }
 
 type AppType int
