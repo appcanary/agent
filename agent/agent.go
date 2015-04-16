@@ -77,6 +77,11 @@ func (self *Agent) AddApp(name string, filepath string, appType AppType) *App {
 	return application
 }
 
+func (self *Agent) FirstRun() bool {
+	// the configuration didn't find a server uuid
+	return self.server.IsNew()
+}
+
 func (self *Agent) RegisterServer() error {
 	err := self.client.CreateServer(self.server)
 
@@ -90,12 +95,15 @@ func (self *Agent) RegisterServer() error {
 
 func (self *Agent) RegisterApps() (err error) {
 	for _, app := range self.apps {
-		app.UUID, err = self.client.CreateApp(self.server.UUID, app)
-		if err != nil {
-			return err
-		}
+		// don't register apps that have been registered
+		if app.IsNew() {
+			app.UUID, err = self.client.CreateApp(self.server.UUID, app)
+			if err != nil {
+				return err
+			}
 
-		log.Debug("Registered app %s, got: %s", app.Name, app.UUID)
+			log.Debug("Registered app %s, got: %s", app.Name, app.UUID)
+		}
 	}
 	return nil
 }

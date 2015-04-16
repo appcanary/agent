@@ -19,7 +19,7 @@ type App struct {
 	watchedFiles   WatchedFiles
 	MonitoredFiles string    `json:"monitoredFiles"`
 	Callback       Submitter `json:"-"`
-	UUID           string    `json:"uuid,omitempty"`
+	UUID           string    `json:"-"`
 }
 
 type AppType int
@@ -28,6 +28,10 @@ const (
 	UnknownApp AppType = iota
 	RubyApp
 )
+
+func (self *App) IsNew() bool {
+	return self.UUID == ""
+}
 
 func (a *App) Submit(data interface{}) {
 	a.Callback(a.Name, data)

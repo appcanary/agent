@@ -29,18 +29,15 @@ func main() {
 	conf := agent.NewConfFromFile(env.ConfPath)
 	a := agent.NewAgent(conf)
 
-	// TODO: skip registering if uuid is in conf
-	err = a.RegisterServer()
-	// realistically, the agent doesn't have to be aware of
-	// how we're going to be queueing retries
-	if err != nil {
-		log.Fatal(err)
-	}
+	if a.FirstRun() {
 
-	// TODO: LOOP FOREVER
-	err = a.Heartbeat()
-	if err != nil {
-		log.Fatal("<3 ", err)
+		err = a.RegisterServer()
+
+		// realistically, the agent doesn't have to be aware of
+		// how we're going to be queueing retries
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// TODO: submit watched files
@@ -48,6 +45,12 @@ func main() {
 
 	if err != nil {
 		log.Fatal("RegisterApps ", err)
+	}
+
+	// TODO: LOOP FOREVER
+	err = a.Heartbeat()
+	if err != nil {
+		log.Fatal("<3 ", err)
 	}
 
 	defer a.CloseWatches()
