@@ -10,6 +10,9 @@ type Umwelten struct {
 	Prod     bool
 	BaseUrl  string
 	ConfPath string
+	ConfFile string
+	VarPath  string
+	VarFile  string
 }
 
 var env = &Umwelten{}
@@ -20,16 +23,23 @@ func Init(env_str string) {
 		env.Prod = true
 	}
 
+	// to be overriden by cli options
 	if env.Prod {
 		logging.SetLevel(logging.NOTICE, "canary-agent")
 		env.BaseUrl = PROD_URL
 		env.Logo = PROD_LOGO
 		env.ConfPath = DEFAULT_CONF_PATH
+		env.ConfFile = DEFAULT_CONF_FILE
+		env.VarPath = DEFAULT_VAR_PATH
+		env.VarFile = DEFAULT_VAR_FILE
 	} else {
 		logging.SetLevel(logging.DEBUG, "canary-agent")
 		env.BaseUrl = DEV_URL
 		env.Logo = DEV_LOGO
 		env.ConfPath = DEV_CONF_PATH
+		env.ConfFile = DEV_CONF_FILE
+		env.VarPath = DEV_VAR_PATH
+		env.VarFile = DEV_VAR_FILE
 	}
 }
 

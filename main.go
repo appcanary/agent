@@ -18,37 +18,31 @@ func main() {
 
 	fmt.Println(env.Logo)
 
-	log.Debug(env.ConfPath)
-	_, err := os.Stat(env.ConfPath)
-	if os.IsNotExist(err) {
-		log.Notice("We need to implement getting the env info from the user")
-		return
-	}
-
 	// slurp env, instantiate agent
-	conf := agent.NewConfFromFile(env.ConfPath)
+	conf := agent.NewConfFromEnv()
 	a := agent.NewAgent(conf)
 
+	// possibly delegate FR check to the functions?
 	if a.FirstRun() {
 
-		err = a.RegisterServer()
+		log.Debug("Found no server config. Let's register!")
+		err := a.RegisterServer()
 
 		// realistically, the agent doesn't have to be aware of
 		// how we're going to be queueing retries
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
+		err = a.RegisterApps()
+		// TODO: submit watched files
 
-	// TODO: submit watched files
-	err = a.RegisterApps()
-
-	if err != nil {
-		log.Fatal("RegisterApps ", err)
+		if err != nil {
+			log.Fatal("RegisterApps ", err)
+		}
 	}
 
 	// TODO: LOOP FOREVER
-	err = a.Heartbeat()
+	err := a.Heartbeat()
 	if err != nil {
 		log.Fatal("<3 ", err)
 	}

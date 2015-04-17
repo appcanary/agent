@@ -26,7 +26,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	}
 
 	// what do we know about this machine?
-	agent.server = ThisServer()
+	agent.server = ThisServer(conf.Server.UUID)
 
 	// load the existing gemfiles
 	for _, a := range conf.Apps {
@@ -38,6 +38,17 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	// First time ever we boot up on this machine
 
 	return agent
+}
+
+func (self *Agent) UpdateConf() {
+	self.conf.Server.UUID = self.server.UUID
+
+	for _, app_conf := range self.conf.Apps {
+		cur_app := self.apps[app_conf.Name]
+		app_conf.UUID = cur_app.UUID
+	}
+
+	self.conf.PersistServerConf()
 }
 
 func (self *Agent) Heartbeat() error {
@@ -84,12 +95,13 @@ func (self *Agent) FirstRun() bool {
 
 func (self *Agent) RegisterServer() error {
 	err := self.client.CreateServer(self.server)
-
 	log.Debug("Registered server, got: %s", self.server.UUID)
 
 	if err != nil {
 		return err
 	}
+
+	self.UpdateConf()
 	return nil
 }
 
