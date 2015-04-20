@@ -1,8 +1,6 @@
 package agent
 
 import (
-	"path"
-
 	. "github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
@@ -14,10 +12,11 @@ type Agent struct {
 	apps   map[string]*App
 	client Client
 	server *Server
+	files  WatchedFiles
 }
 
 func NewAgent(conf *Conf, clients ...Client) *Agent {
-	agent := &Agent{conf: conf, apps: map[string]*App{}}
+	agent := &Agent{conf: conf, apps: map[string]*App{}, files: WatchedFiles{}}
 
 	if len(clients) > 0 {
 		agent.client = clients[0]
@@ -28,11 +27,9 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	// what do we know about this machine?
 	agent.server = ThisServer(conf.Server.UUID)
 
-	// load the existing gemfiles
-	for _, a := range conf.Apps {
-		if a.Type == "ruby" {
-			agent.AddApp(a.Name, a.Path, RubyApp)
-		}
+	// start watching files
+	for _, f := range conf.Files {
+		agent.files = append(agent.files, NewWatchedFile(f.Path))
 	}
 
 	// First time ever we boot up on this machine
@@ -40,16 +37,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	return agent
 }
 
-func (self *Agent) UpdateConf() {
-	self.conf.Server.UUID = self.server.UUID
-
-	for _, app_conf := range self.conf.Apps {
-		cur_app := self.apps[app_conf.Name]
-		app_conf.UUID = cur_app.UUID
-	}
-
-	self.conf.PersistServerConf()
-}
+// TODO modify to read files.
 
 func (self *Agent) Heartbeat() error {
 
@@ -71,22 +59,22 @@ func (a *Agent) Submit(name string, data interface{}) {
 	}
 }
 
-func (self *Agent) AddApp(name string, filepath string, appType AppType) *App {
-	if self.apps[name] != nil {
-		log.Fatal("Already have an app ", name)
-	}
+// func (self *Agent) AddApp(name string, filepath string, appType AppType) *App {
+// if self.apps[name] != nil {
+// 	log.Fatal("Already have an app ", name)
+// }
 
-	application := &App{Name: name, Path: filepath, MonitoredFiles: filepath, AppType: appType, Callback: self.Submit}
-	self.apps[name] = application
+// application := &App{Name: name, Path: filepath, MonitoredFiles: filepath, AppType: appType, Callback: self.Submit}
+// self.apps[name] = application
 
-	if appType == RubyApp {
-		f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
-		application.WatchFile(f)
-	} else {
-		log.Fatal("Unrecognized app type ", appType)
-	}
-	return application
-}
+// if appType == RubyApp {
+// 	f := &Gemfile{Path: path.Join(filepath, "Gemfile.lock")}
+// 	application.WatchFile(f)
+// } else {
+// 	log.Fatal("Unrecognized app type ", appType)
+// }
+// return application
+// }
 
 func (self *Agent) FirstRun() bool {
 	// the configuration didn't find a server uuid
@@ -105,24 +93,30 @@ func (self *Agent) RegisterServer() error {
 	return nil
 }
 
-func (self *Agent) RegisterApps() (err error) {
-	for _, app := range self.apps {
-		// don't register apps that have been registered
-		if app.IsNew() {
-			app.UUID, err = self.client.CreateApp(self.server.UUID, app)
-			if err != nil {
-				return err
-			}
+func (self *Agent) UpdateConf() {
+	self.conf.Server.UUID = self.server.UUID
 
-			log.Debug("Registered app %s, got: %s", app.Name, app.UUID)
-		}
-	}
-	return nil
+	self.conf.PersistServerConf(env)
 }
+
+// func (self *Agent) RegisterApps() (err error) {
+// 	for _, app := range self.apps {
+// 		// don't register apps that have been registered
+// 		if app.IsNew() {
+// 			app.UUID, err = self.client.CreateApp(self.server.UUID, app)
+// 			if err != nil {
+// 				return err
+// 			}
+//
+// 			log.Debug("Registered app %s, got: %s", app.Name, app.UUID)
+// 		}
+// 	}
+// 	return nil
+// }
 
 // This has to be called before exiting
 func (a *Agent) CloseWatches() {
-	for _, appli := range a.apps {
-		appli.CloseWatches()
+	for _, file := range a.files {
+		file.RemoveHook()
 	}
 }

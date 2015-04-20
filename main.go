@@ -22,23 +22,25 @@ func main() {
 	conf := agent.NewConfFromEnv()
 	a := agent.NewAgent(conf)
 
-	// possibly delegate FR check to the functions?
+	// possibly delegate 1stR check to the functions?
 	if a.FirstRun() {
 
 		log.Debug("Found no server config. Let's register!")
 		err := a.RegisterServer()
 
-		// realistically, the agent doesn't have to be aware of
+		// the agent doesn't have to be aware of
 		// how we're going to be queueing retries
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = a.RegisterApps()
-		// TODO: submit watched files
+		// err = a.WatchFiles()
+		// err = a.RegisterApps()
 
 		if err != nil {
 			log.Fatal("RegisterApps ", err)
 		}
+
+		// TODO: submit watched files
 	}
 
 	// TODO: LOOP FOREVER
