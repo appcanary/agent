@@ -41,15 +41,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 
 func (self *Agent) Heartbeat() error {
 
-	app_slice := make([]*App, len(self.apps), len(self.apps))
-
-	i := 0
-	for _, val := range self.apps {
-		app_slice[i] = val
-		i = i + 1
-	}
-
-	return self.client.HeartBeat(self.server.UUID, app_slice)
+	return self.client.HeartBeat(self.server.UUID, self.files)
 }
 
 func (a *Agent) Submit(name string, data interface{}) {

@@ -13,9 +13,10 @@ type File interface {
 }
 
 type WatchedFile struct {
-	Path string
+	Name string `json:"name"`
+	Path string `json:"monitoredFiles"`
 	// File
-	Watcher *fsnotify.Watcher
+	Watcher *fsnotify.Watcher `json:"-"`
 }
 
 type WatchedFiles []*WatchedFile

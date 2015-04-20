@@ -21,7 +21,7 @@ var (
 )
 
 type Client interface {
-	HeartBeat(string, []*App) error
+	HeartBeat(string, WatchedFiles) error
 	Submit(string, interface{}) error
 	CreateServer(*Server) error
 	CreateApp(string, *App) (string, error)
@@ -37,9 +37,9 @@ func NewClient(apiKey string, server string) *CanaryClient {
 	return client
 }
 
-func (self *CanaryClient) HeartBeat(uuid string, apps []*App) error {
+func (self *CanaryClient) HeartBeat(uuid string, files WatchedFiles) error {
 
-	body, err := json.Marshal(map[string][]*App{"apps": apps})
+	body, err := json.Marshal(map[string]WatchedFiles{"apps": files})
 
 	if err != nil {
 		return err
