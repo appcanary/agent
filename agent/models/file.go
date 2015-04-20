@@ -1,30 +1,40 @@
 package models
 
 import (
+	"io/ioutil"
 	"os"
 	"time"
 
+	"github.com/stateio/canary-agent/agent/umwelten"
 	"gopkg.in/fsnotify.v1"
 )
+
+var log = umwelten.Log
 
 type File interface {
 	GetPath() string
 	Parse() interface{}
 }
 
+type FileChangeHandler func(*WatchedFile)
+
 type WatchedFile struct {
-	Name string `json:"name"`
-	Path string `json:"monitoredFiles"`
-	// File
-	Watcher *fsnotify.Watcher `json:"-"`
+	Name         string            `json:"name"`
+	Path         string            `json:"monitoredFiles"`
+	Watcher      *fsnotify.Watcher `json:"-"`
+	OnFileChange FileChangeHandler `json:"-"`
 }
 
 type WatchedFiles []*WatchedFile
 
-func NewWatchedFile(path string) *WatchedFile {
-	file := &WatchedFile{Path: path}
+func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
+	file := &WatchedFile{Path: path, OnFileChange: callback}
 	file.AddHook()
 	return file
+}
+
+func (self *WatchedFile) Contents() ([]byte, error) {
+	return ioutil.ReadFile(self.Path)
 }
 
 // TODO: make this a finalizer? :(
@@ -72,16 +82,16 @@ func (self *WatchedFile) AddHook() {
 							}
 
 							log.Info("Rereading file after move: %s", self.Path)
-							// TODO commented out for now
-							// go a.Submit(wf.Parse())
+							go self.OnFileChange(self)
 						}()
 
 					} else if isOp(event.Op, fsnotify.Write) {
 						log.Info("Rereading file: %s", self.Path)
+						go self.OnFileChange(self)
 						// TODO commented out for now
 						// go a.Submit(wf.Parse())
 					} // else: the op was chmod, do nothing
-					//go a.Submit(wf.Parse())
+
 				} else {
 					break //done = true
 				}
@@ -96,8 +106,9 @@ func (self *WatchedFile) AddHook() {
 	}()
 
 	log.Info("Reading file: %s", self.Path)
-	// TODO commented out for now
-	// go a.Submit(wf.Parse())
+
+	go self.OnFileChange(self)
+
 	err = self.Watcher.Add(self.Path)
 	if err != nil {
 		log.Fatal(err.Error())

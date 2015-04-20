@@ -22,7 +22,10 @@ func main() {
 	conf := agent.NewConfFromEnv()
 	a := agent.NewAgent(conf)
 
-	// possibly delegate 1stR check to the functions?
+	// we probably can't reliably fingerprint servers, so
+	// we don't even try. therefore, if we find an existing
+	// uuid, we should reuse it. TODO: what if the uuid fails
+	// during the heartbeat?
 	if a.FirstRun() {
 
 		log.Debug("Found no server config. Let's register!")
@@ -33,14 +36,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		// err = a.WatchFiles()
-		// err = a.RegisterApps()
 
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// TODO: submit watched files
 	}
 
 	// TODO: LOOP FOREVER

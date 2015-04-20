@@ -23,6 +23,7 @@ var (
 type Client interface {
 	HeartBeat(string, WatchedFiles) error
 	Submit(string, interface{}) error
+	SendFile(string, []byte)
 	CreateServer(*Server) error
 }
 
@@ -64,6 +65,10 @@ func (self *CanaryClient) HeartBeat(uuid string, files WatchedFiles) error {
 	}
 
 	return nil
+}
+
+func (c *CanaryClient) SendFile(path string, contents []byte) {
+
 }
 
 func (c *CanaryClient) Submit(app string, deps interface{}) error {
