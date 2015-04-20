@@ -37,7 +37,7 @@ func main() {
 		// err = a.RegisterApps()
 
 		if err != nil {
-			log.Fatal("RegisterApps ", err)
+			log.Fatal(err)
 		}
 
 		// TODO: submit watched files

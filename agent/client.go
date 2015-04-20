@@ -24,7 +24,6 @@ type Client interface {
 	HeartBeat(string, WatchedFiles) error
 	Submit(string, interface{}) error
 	CreateServer(*Server) error
-	CreateApp(string, *App) (string, error)
 }
 
 type CanaryClient struct {
@@ -102,34 +101,6 @@ func (c *CanaryClient) CreateServer(srv *Server) error {
 	}
 
 	return json.Unmarshal(respBody, srv)
-}
-
-func (self *CanaryClient) CreateApp(serverUUID string, app *App) (string, error) {
-	body, err := json.Marshal(*app)
-
-	if err != nil {
-		return "", err
-	}
-
-	respBody, err := self.post(umwelten.API_SERVERS+serverUUID+"/apps", body)
-
-	if err != nil {
-		return "", err
-	}
-
-	type createAppResponse struct {
-		UUID string `json:"uuid"`
-	}
-
-	var t createAppResponse
-
-	err = json.Unmarshal(respBody, &t)
-
-	if err != nil {
-		return "", err
-	}
-
-	return t.UUID, nil
 }
 
 func (c *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
