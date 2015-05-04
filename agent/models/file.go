@@ -28,6 +28,7 @@ type WatchedFile struct {
 
 type WatchedFiles []*WatchedFile
 
+// TODO: time.Now() needs to be called whenever it updates
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
 	file.AddHook()
@@ -38,9 +39,8 @@ func (self *WatchedFile) Contents() ([]byte, error) {
 	return ioutil.ReadFile(self.Path)
 }
 
-// TODO: make this a finalizer? :(
 func (self *WatchedFile) RemoveHook() {
-	log.Info("closing watcher")
+	log.Debug("closing watcher")
 	self.Watcher.Close()
 }
 
@@ -56,8 +56,8 @@ func (self *WatchedFile) AddHook() {
 	go func() {
 		for {
 			select {
-			case event, more := <-watcher.Events:
-				if more {
+			case event, ok := <-watcher.Events:
+				if ok {
 
 					log.Info("Got event %s", event.String())
 
@@ -89,15 +89,15 @@ func (self *WatchedFile) AddHook() {
 					} else if isOp(event.Op, fsnotify.Write) {
 						log.Info("Rereading file: %s", self.Path)
 						go self.OnFileChange(self)
-						// TODO commented out for now
-						// go a.Submit(wf.Parse())
-					} // else: the op was chmod, do nothing
+					}
+					// else: the op was chmod, do nothing
 
 				} else {
-					break //done = true
+					break
 				}
-			case err, more := <-watcher.Errors:
-				if more {
+
+			case err, ok := <-watcher.Errors:
+				if ok {
 					log.Info("error:", err)
 				} else {
 					break

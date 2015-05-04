@@ -24,8 +24,7 @@ func main() {
 
 	// we probably can't reliably fingerprint servers, so
 	// we don't even try. therefore, if we find an existing
-	// uuid, we should reuse it. TODO: what if the uuid fails
-	// during the heartbeat?
+	// uuid, we should reuse it.
 	if a.FirstRun() {
 
 		log.Debug("Found no server config. Let's register!")
@@ -39,9 +38,9 @@ func main() {
 
 	}
 
+	// TODO: if a request fails, it needs to be queued up
 	a.StartWatching()
 
-	// TODO: if a request fails, it needs to be queued up
 	// TODO: LOOP FOREVER
 	err := a.Heartbeat()
 	if err != nil {
