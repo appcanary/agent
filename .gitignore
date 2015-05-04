@@ -37,3 +37,4 @@ bin/
 *.test
 *.out
 canary-agent
+test/var/
