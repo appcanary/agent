@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/stateio/canary-agent/agent"
 	"github.com/stateio/canary-agent/agent/umwelten"
@@ -41,11 +42,17 @@ func main() {
 	// TODO: if a request fails, it needs to be queued up
 	a.StartWatching()
 
-	// TODO: LOOP FOREVER
-	err := a.Heartbeat()
-	if err != nil {
-		log.Fatal("<3 ", err)
-	}
+	go func() {
+		tick := time.Tick(env.HeartbeatDuration)
+
+		for {
+			err := a.Heartbeat()
+			if err != nil {
+				log.Fatal("<3 ", err)
+			}
+			<-tick
+		}
+	}()
 
 	defer a.CloseWatches()
 
