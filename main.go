@@ -39,6 +39,9 @@ func main() {
 
 	}
 
+	a.StartWatching()
+
+	// TODO: if a request fails, it needs to be queued up
 	// TODO: LOOP FOREVER
 	err := a.Heartbeat()
 	if err != nil {

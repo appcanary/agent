@@ -22,31 +22,30 @@ var (
 
 type Client interface {
 	HeartBeat(string, WatchedFiles) error
-	Submit(string, interface{}) error
-	SendFile(string, []byte)
+	SendFile(string, []byte) error
 	CreateServer(*Server) error
 }
 
 type CanaryClient struct {
 	apiKey string
-	server string
+	server *Server
 }
 
-func NewClient(apiKey string, server string) *CanaryClient {
+func NewClient(apiKey string, server *Server) *CanaryClient {
 	client := &CanaryClient{apiKey: apiKey, server: server}
 	return client
 }
 
 func (self *CanaryClient) HeartBeat(uuid string, files WatchedFiles) error {
 
-	body, err := json.Marshal(map[string]WatchedFiles{"apps": files})
+	body, err := json.Marshal(map[string]WatchedFiles{"files": files})
 
 	if err != nil {
 		return err
 	}
 
 	// TODO SANITIZE UUID input cos this feels abusable
-	respBody, err := self.post(umwelten.API_HEARTBEAT+uuid, body)
+	respBody, err := self.post(umwelten.API_HEARTBEAT+"/"+uuid, body)
 
 	if err != nil {
 		return err
@@ -67,30 +66,22 @@ func (self *CanaryClient) HeartBeat(uuid string, files WatchedFiles) error {
 	return nil
 }
 
-func (c *CanaryClient) SendFile(path string, contents []byte) {
-
-}
-
-func (c *CanaryClient) Submit(app string, deps interface{}) error {
-	depsJSON, err := json.Marshal(deps)
-	if err != nil {
-		return err
-	}
-
-	body, err := json.Marshal(map[string]string{
-		"server": c.server,
-		"app":    app,
-		"deps":   string(depsJSON),
+func (self *CanaryClient) SendFile(path string, contents []byte) error {
+	file_json, err := json.Marshal(map[string]string{
+		"name":     "",
+		"path":     path,
+		"kind":     "gemfile",
+		"contents": string(contents),
 	})
+
 	if err != nil {
 		return err
 	}
-	res, err := c.post("/v1/submit", body)
-	_ = res
-	if err != nil {
-		return err
-	}
-	return nil
+
+	_, err = self.put(umwelten.API_SERVERS+"/"+self.server.UUID, file_json)
+
+	return err
+
 }
 
 func (c *CanaryClient) CreateServer(srv *Server) error {
@@ -108,10 +99,18 @@ func (c *CanaryClient) CreateServer(srv *Server) error {
 	return json.Unmarshal(respBody, srv)
 }
 
-func (c *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
+func (self *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
+	return self.send("POST", rPath, body)
+}
+
+func (self *CanaryClient) put(rPath string, body []byte) ([]byte, error) {
+	return self.send("PUT", rPath, body)
+}
+
+func (c *CanaryClient) send(method string, rPath string, body []byte) ([]byte, error) {
 	uri := env.BaseUrl + rPath
 	client := &http.Client{}
-	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(body))
+	req, err := http.NewRequest(method, uri, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}

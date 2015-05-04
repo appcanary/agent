@@ -20,23 +20,23 @@ type Agent struct {
 func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: WatchedFiles{}}
 
-	if len(clients) > 0 {
-		agent.client = clients[0]
-	} else {
-		agent.client = NewClient(conf.ApiKey, conf.ServerName)
-	}
-
 	// what do we know about this machine?
 	agent.server = ThisServer(conf.Server.UUID)
 
-	// start watching files
-	for _, f := range conf.Files {
-		agent.files = append(agent.files, NewWatchedFile(f.Path, agent.OnFileChange))
+	if len(clients) > 0 {
+		agent.client = clients[0]
+	} else {
+		agent.client = NewClient(conf.ApiKey, agent.server)
 	}
 
-	// First time ever we boot up on this machine
-
 	return agent
+}
+
+// instantiate structs, fs hook
+func (self *Agent) StartWatching() {
+	for _, f := range self.conf.Files {
+		self.files = append(self.files, NewWatchedFile(f.Path, self.OnFileChange))
+	}
 }
 
 func (self *Agent) OnFileChange(file *WatchedFile) {
@@ -55,20 +55,14 @@ func (self *Agent) OnFileChange(file *WatchedFile) {
 	b64enc.Close()
 
 	// TODO queue this up somehow?
-	self.client.SendFile(file.Path, buffer.Bytes())
-	// fmt.Printf("\n%s\n", buffer)
-
+	err = self.client.SendFile(file.Path, buffer.Bytes())
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (self *Agent) Heartbeat() error {
 	return self.client.HeartBeat(self.server.UUID, self.files)
-}
-
-func (a *Agent) Submit(name string, data interface{}) {
-	err := a.client.Submit(name, data)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func (self *Agent) FirstRun() bool {

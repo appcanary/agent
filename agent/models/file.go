@@ -19,8 +19,9 @@ type File interface {
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
-	Name         string            `json:"name"`
-	Path         string            `json:"monitoredFiles"`
+	Kind         string            `json:"kind"`
+	Path         string            `json:"path"`
+	UpdatedAt    time.Time         `json:"updated-at"`
 	Watcher      *fsnotify.Watcher `json:"-"`
 	OnFileChange FileChangeHandler `json:"-"`
 }
@@ -28,7 +29,7 @@ type WatchedFile struct {
 type WatchedFiles []*WatchedFile
 
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
-	file := &WatchedFile{Path: path, OnFileChange: callback}
+	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
 	file.AddHook()
 	return file
 }
