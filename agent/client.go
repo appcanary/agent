@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	. "github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
@@ -21,7 +22,7 @@ var (
 )
 
 type Client interface {
-	HeartBeat(string, WatchedFiles) error
+	Heartbeat(string, WatchedFiles) error
 	SendFile(string, []byte) error
 	CreateServer(*Server) error
 }
@@ -36,7 +37,7 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 	return client
 }
 
-func (self *CanaryClient) HeartBeat(uuid string, files WatchedFiles) error {
+func (self *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 
 	body, err := json.Marshal(map[string]WatchedFiles{"files": files})
 
@@ -121,13 +122,19 @@ func (c *CanaryClient) send(method string, rPath string, body []byte) ([]byte, e
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Token "+c.apiKey)
 
-	res, err := client.Do(req)
-	defer res.Body.Close()
+	var res *http.Response
+	err = backoff.Retry(func() error {
+		res, err = client.Do(req)
+		return err
+	},
+		backoff.NewExponentialBackOff())
 
 	if err != nil {
 		log.Debug("Do err: ", err.Error())
 		return nil, err
 	}
+
+	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, errors.New(fmt.Sprintf("API Error: %d %s", res.StatusCode, uri))

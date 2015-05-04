@@ -62,7 +62,7 @@ func (self *Agent) OnFileChange(file *WatchedFile) {
 }
 
 func (self *Agent) Heartbeat() error {
-	return self.client.HeartBeat(self.server.UUID, self.files)
+	return self.client.Heartbeat(self.server.UUID, self.files)
 }
 
 func (self *Agent) FirstRun() bool {
