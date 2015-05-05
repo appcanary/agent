@@ -1,15 +1,6 @@
 package agent
 
-import (
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-)
-
+/*
 func TestNewClient(t *testing.T) {
 	assert := assert.New(t)
 
@@ -128,3 +119,4 @@ func respond(w http.ResponseWriter, status int, v string) {
 	w.WriteHeader(status)
 	w.Write([]byte(v))
 }
+*/

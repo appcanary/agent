@@ -1,14 +1,8 @@
 package agent
 
-import (
-	"io/ioutil"
-	"os"
-	"testing"
-	"time"
+// import . "github.com/stateio/canary-agent/agent/models"
 
-	. "github.com/stateio/canary-agent/agent/models"
-	"github.com/stateio/canary-agent/mocks"
-)
+/*
 
 func TestWatchFile(t *testing.T) {
 	tf, _ := ioutil.TempFile("", "gemfile")
@@ -45,5 +39,6 @@ func TestWatchFile(t *testing.T) {
 	f.Mock.AssertExpectations(t)
 	client.Mock.AssertExpectations(t)
 }
+*/
 
 //TODO: test some pathological cases here

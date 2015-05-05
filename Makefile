@@ -9,7 +9,7 @@ setup:
 	@mkdir -p ./bin
 	@rm -f ./bin/*
 
-build-all: setup peg-parser build
+build-all: setup build
 
 build:
 	go build -o ./bin/canary-agent 
