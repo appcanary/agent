@@ -2,20 +2,26 @@ package mocks
 
 import "github.com/stretchr/testify/mock"
 
+import models "github.com/stateio/canary-agent/agent/models"
+
 type Client struct {
 	mock.Mock
 }
 
-func (m *Client) HeartBeat() error {
+func (m *Client) Heartbeat(_a0 string, _a1 models.WatchedFiles) error {
 	ret := m.Called()
+
 	r0 := ret.Error(0)
 
 	return r0
 }
+func (m *Client) SendFile(_a0 string, _a1 []byte) error {
+	ret := m.Called()
 
-func (m *Client) Submit(_a0 string, _a1 interface{}) error {
-	ret := m.Called(_a0, _a1)
 	r0 := ret.Error(0)
 
 	return r0
+}
+func (m *Client) CreateServer(_a0 *models.Server) (string, error) {
+	return m.Called().String(0), nil
 }
