@@ -123,6 +123,9 @@ func (c *CanaryClient) send(method string, rPath string, body []byte) ([]byte, e
 	req.Header.Add("Authorization", "Token "+c.apiKey)
 
 	var res *http.Response
+
+	// if the request fails for whatever reason, keep
+	// trying to reach the server
 	err = backoff.Retry(func() error {
 		res, err = client.Do(req)
 		return err

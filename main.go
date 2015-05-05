@@ -23,25 +23,24 @@ func main() {
 	conf := agent.NewConfFromEnv()
 	a := agent.NewAgent(conf)
 
-	// we probably can't reliably fingerprint servers, so
-	// we don't even try. therefore, if we find an existing
-	// uuid, we should reuse it.
+	// we prob can't reliably fingerprint servers.
+	// so instead, we assign a uuid by registering
 	if a.FirstRun() {
 
 		log.Debug("Found no server config. Let's register!")
 		err := a.RegisterServer()
 
-		// the agent doesn't have to be aware of
-		// how we're going to be queueing retries
 		if err != nil {
 			log.Fatal(err)
 		}
 
 	}
 
-	// TODO: if a request fails, it needs to be queued up
+	// Add hooks to files, and push them over
+	// whenever they change
 	a.StartWatching()
 
+	// send a heartbeat every ~60min, forever
 	go func() {
 		tick := time.Tick(env.HeartbeatDuration)
 
