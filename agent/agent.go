@@ -71,12 +71,13 @@ func (self *Agent) FirstRun() bool {
 }
 
 func (self *Agent) RegisterServer() error {
-	err := self.client.CreateServer(self.server)
-	log.Debug("Registered server, got: %s", self.server.UUID)
+	uuid, err := self.client.CreateServer(self.server)
 
 	if err != nil {
 		return err
 	}
+	self.server.UUID = uuid
+	log.Debug("Registered server, got: %s", self.server.UUID)
 
 	self.UpdateConf()
 	return nil

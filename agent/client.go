@@ -24,7 +24,7 @@ var (
 type Client interface {
 	Heartbeat(string, WatchedFiles) error
 	SendFile(string, []byte) error
-	CreateServer(*Server) error
+	CreateServer(*Server) (string, error)
 }
 
 type CanaryClient struct {
@@ -85,19 +85,24 @@ func (self *CanaryClient) SendFile(path string, contents []byte) error {
 
 }
 
-func (c *CanaryClient) CreateServer(srv *Server) error {
+func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 	body, err := json.Marshal(*srv)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	respBody, err := c.post(umwelten.API_SERVERS, body)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return json.Unmarshal(respBody, srv)
+	var respServer struct {
+		UUID string `json:"uuid"`
+	}
+
+	json.Unmarshal(respBody, &respServer)
+	return respServer.UUID, nil
 }
 
 func (self *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
