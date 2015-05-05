@@ -6,8 +6,9 @@ import (
 )
 
 // consts can't be outputs of functions?
-var DEV_CONF_PATH, _ = filepath.Abs("test/data/")
-var DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test2.conf")
+var DEV_CONF_PATH string
+
+var DEV_CONF_FILE string
 
 var DEV_VAR_PATH, _ = filepath.Abs("test/var")
 var DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")

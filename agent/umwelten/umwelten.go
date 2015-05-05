@@ -1,6 +1,8 @@
 package umwelten
 
 import (
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/op/go-logging"
@@ -45,6 +47,20 @@ func Init(env_str string) {
 	} else {
 		logging.SetLevel(logging.DEBUG, "canary-agent")
 
+		// filepath.Abs was resolving to a different folder
+		// depending on whether it was run from main or a test
+		DEV_CONF_PATH, _ = filepath.Abs("test/data")
+		if _, err := os.Stat(DEV_CONF_PATH); err != nil {
+			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
+		}
+		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test2.conf")
+
+		DEV_VAR_PATH, _ = filepath.Abs("test/var")
+		if _, err := os.Stat(DEV_VAR_PATH); err != nil {
+			DEV_VAR_PATH, _ = filepath.Abs("../test/var")
+		}
+		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")
+
 		env.BaseUrl = DEV_URL
 
 		env.Logo = DEV_LOGO
@@ -56,6 +72,7 @@ func Init(env_str string) {
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
+
 	}
 }
 
