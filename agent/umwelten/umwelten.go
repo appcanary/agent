@@ -47,6 +47,7 @@ func Init(env_str string) {
 	} else {
 		logging.SetLevel(logging.DEBUG, "canary-agent")
 
+		// ###### resolve path
 		// filepath.Abs was resolving to a different folder
 		// depending on whether it was run from main or a test
 		DEV_CONF_PATH, _ = filepath.Abs("test/data")
@@ -60,6 +61,8 @@ func Init(env_str string) {
 			DEV_VAR_PATH, _ = filepath.Abs("../test/var")
 		}
 		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")
+
+		// set dev vals
 
 		env.BaseUrl = DEV_URL
 
@@ -78,4 +81,20 @@ func Init(env_str string) {
 
 func Fetch() *Umwelten {
 	return env
+}
+
+func ApiHeartbeatPath(ident string) string {
+	return ApiPath(API_HEARTBEAT) + "/" + ident
+}
+
+func ApiServersPath() string {
+	return ApiPath(API_SERVERS)
+}
+
+func ApiServerPath(ident string) string {
+	return ApiServersPath() + "/" + ident
+}
+
+func ApiPath(resource string) string {
+	return env.BaseUrl + resource
 }

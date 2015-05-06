@@ -46,7 +46,7 @@ func (self *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 	}
 
 	// TODO SANITIZE UUID input cos this feels abusable
-	respBody, err := self.post(umwelten.API_HEARTBEAT+"/"+uuid, body)
+	respBody, err := self.post(umwelten.ApiHeartbeatPath(uuid), body)
 
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (self *CanaryClient) SendFile(path string, contents []byte) error {
 		return err
 	}
 
-	_, err = self.put(umwelten.API_SERVERS+"/"+self.server.UUID, file_json)
+	_, err = self.put(umwelten.ApiServerPath(self.server.UUID), file_json)
 
 	return err
 
@@ -92,7 +92,7 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 		return "", err
 	}
 
-	respBody, err := c.post(umwelten.API_SERVERS, body)
+	respBody, err := c.post(umwelten.ApiServersPath(), body)
 	if err != nil {
 		return "", err
 	}
@@ -113,8 +113,7 @@ func (self *CanaryClient) put(rPath string, body []byte) ([]byte, error) {
 	return self.send("PUT", rPath, body)
 }
 
-func (c *CanaryClient) send(method string, rPath string, body []byte) ([]byte, error) {
-	uri := env.BaseUrl + rPath
+func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(method, uri, bytes.NewBuffer(body))
 	if err != nil {
