@@ -1,17 +1,13 @@
 package umwelten
 
-import (
-	"path/filepath"
-	"time"
-)
+import "time"
 
 // consts can't be outputs of functions?
 var DEV_CONF_PATH string
-
 var DEV_CONF_FILE string
 
-var DEV_VAR_PATH, _ = filepath.Abs("test/var")
-var DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")
+var DEV_VAR_PATH string
+var DEV_VAR_FILE string
 
 // env vars
 const (
