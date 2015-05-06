@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewAgent(t *testing.T) {
+func TestAgent(t *testing.T) {
 	assert := assert.New(t)
 
 	// setup

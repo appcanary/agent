@@ -58,6 +58,7 @@ func (self *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 
 	var t heartbeatResponse
 
+	// TODO: do something with heartbeat resp
 	err = json.Unmarshal(respBody, &t)
 	log.Debug(fmt.Sprintf("Heartbeat: %s", t.Heartbeat))
 	if err != nil {

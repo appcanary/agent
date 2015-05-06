@@ -1,5 +1,89 @@
 package agent
 
+import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stateio/canary-agent/agent/models"
+	"github.com/stateio/canary-agent/agent/umwelten"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestHeartbeat(t *testing.T) {
+	// setup
+	assert := assert.New(t)
+	umwelten.Init("test")
+	test_api_key := "my api key"
+	test_server_uuid := "server uuid"
+
+	filePath := NewConfFromEnv().Files[0].Path
+	file := models.NewWatchedFile(filePath, testCallbackNOP)
+	files := models.WatchedFiles{file}
+
+	client := NewClient(test_api_key, &models.Server{UUID: test_server_uuid})
+
+	serverInvoked := false
+	ts := testServer(assert, "POST", "{\"success\": true}", func(r *http.Request) {
+		serverInvoked = true
+
+		assert.Equal(r.Header.Get("Authorization"), "Token "+test_api_key, "heartbeat api key")
+
+		body, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+
+		var datBody map[string][]map[string]string
+		if err := json.Unmarshal(body, &datBody); err != nil {
+			panic(err)
+		}
+
+		json_files := datBody["files"]
+
+		// does the json we send look roughly like
+		// it's supposed to?
+		assert.NotNil(json_files)
+		monitored_file := json_files[0]
+
+		assert.Equal(monitored_file["kind"], "gemfile")
+		assert.NotNil(monitored_file["path"])
+		assert.NotNil(monitored_file["updated-at"])
+	})
+
+	// the client uses BaseUrl to set up queries.
+	env.BaseUrl = ts.URL
+
+	// actual test execution
+	client.Heartbeat(test_server_uuid, files)
+
+	ts.Close()
+	file.RemoveHook()
+	assert.True(serverInvoked)
+}
+
+func testCallbackNOP(foo *models.WatchedFile) {
+	// NOP
+}
+
+//Sends an http.ResponseWriter a string and status
+func tsrespond(w http.ResponseWriter, status int, v string) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(status)
+	w.Write([]byte(v))
+}
+
+func testServer(assert *assert.Assertions, method string, responseBody string, callback func(*http.Request)) *httptest.Server {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(r.Method, method, "method")
+		assert.Equal(r.Header.Get("Content-Type"), "application/json", "content type")
+		callback(r)
+		tsrespond(w, 200, responseBody)
+	}))
+
+	return ts
+}
+
 /*
 func TestNewClient(t *testing.T) {
 	assert := assert.New(t)
