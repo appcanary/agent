@@ -9,57 +9,93 @@ import (
 
 	"github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestHeartbeat(t *testing.T) {
-	// setup
-	assert := assert.New(t)
+type TestJsonRequest map[string]interface{}
+
+//[]map[string]string
+
+type ClientTestSuite struct {
+	suite.Suite
+	api_key     string
+	server_uuid string
+	files       models.WatchedFiles
+	client      Client
+}
+
+func TestClient(t *testing.T) {
+	suite.Run(t, new(ClientTestSuite))
+}
+
+func (self *ClientTestSuite) SetupTest() {
 	umwelten.Init("test")
-	test_api_key := "my api key"
-	test_server_uuid := "server uuid"
+	self.api_key = "my api key"
+	self.server_uuid = "server uuid"
 
 	filePath := NewConfFromEnv().Files[0].Path
 	file := models.NewWatchedFile(filePath, testCallbackNOP)
-	files := models.WatchedFiles{file}
+	self.files = models.WatchedFiles{file}
 
-	client := NewClient(test_api_key, &models.Server{UUID: test_server_uuid})
+	self.client = NewClient(self.api_key, &models.Server{UUID: self.server_uuid})
+
+}
+
+func (self *ClientTestSuite) TestHeartbeat() {
 
 	serverInvoked := false
-	ts := testServer(assert, "POST", "{\"success\": true}", func(r *http.Request) {
+	ts := testServer(self, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		assert.Equal(r.Header.Get("Authorization"), "Token "+test_api_key, "heartbeat api key")
+		self.Equal(r.Header.Get("Authorization"), "Token "+self.api_key, "heartbeat api key")
 
-		body, _ := ioutil.ReadAll(r.Body)
-		r.Body.Close()
-
-		var datBody map[string][]map[string]string
-		if err := json.Unmarshal(body, &datBody); err != nil {
-			panic(err)
-		}
-
-		json_files := datBody["files"]
+		json_files := rBody["files"].([]interface{})
 
 		// does the json we send look roughly like
 		// it's supposed to?
-		assert.NotNil(json_files)
-		monitored_file := json_files[0]
+		self.NotNil(json_files)
+		monitored_file := json_files[0].(map[string]interface{})
 
-		assert.Equal(monitored_file["kind"], "gemfile")
-		assert.NotNil(monitored_file["path"])
-		assert.NotNil(monitored_file["updated-at"])
+		self.Equal(monitored_file["kind"], "gemfile")
+		self.NotNil(monitored_file["path"])
+		self.NotNil(monitored_file["updated-at"])
 	})
 
 	// the client uses BaseUrl to set up queries.
 	env.BaseUrl = ts.URL
 
 	// actual test execution
-	client.Heartbeat(test_server_uuid, files)
+	self.client.Heartbeat(self.server_uuid, self.files)
 
 	ts.Close()
-	file.RemoveHook()
-	assert.True(serverInvoked)
+	self.files[0].RemoveHook()
+	self.True(serverInvoked)
+}
+
+func (self *ClientTestSuite) TestSendFile() {
+	test_file_path := "/var/foo/whatever"
+
+	serverInvoked := false
+	ts := testServer(self, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
+		serverInvoked = true
+
+		self.Equal(r.Header.Get("Authorization"), "Token "+self.api_key, "heartbeat api key")
+
+		json := rBody
+
+		self.NotNil(json["name"])
+		self.Equal(json["path"], test_file_path)
+		self.Equal(json["kind"], "gemfile")
+
+	})
+
+	env.BaseUrl = ts.URL
+
+	contents, _ := self.files[0].Contents()
+	self.client.SendFile(test_file_path, contents)
+
+	ts.Close()
+	self.True(serverInvoked)
 }
 
 func testCallbackNOP(foo *models.WatchedFile) {
@@ -73,12 +109,21 @@ func tsrespond(w http.ResponseWriter, status int, v string) {
 	w.Write([]byte(v))
 }
 
-func testServer(assert *assert.Assertions, method string, responseBody string, callback func(*http.Request)) *httptest.Server {
+func testServer(assert *ClientTestSuite, method string, respondWithBody string, callback func(*http.Request, TestJsonRequest)) *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(r.Method, method, "method")
 		assert.Equal(r.Header.Get("Content-Type"), "application/json", "content type")
-		callback(r)
-		tsrespond(w, 200, responseBody)
+
+		body, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+
+		var datBody TestJsonRequest
+		if err := json.Unmarshal(body, &datBody); err != nil {
+			panic(err)
+		}
+
+		callback(r, datBody)
+		tsrespond(w, 200, respondWithBody)
 	}))
 
 	return ts

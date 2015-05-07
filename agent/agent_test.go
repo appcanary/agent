@@ -39,5 +39,5 @@ func TestAgent(t *testing.T) {
 	// close the hooks before asserting expectations
 	// since the SendFiles happen in a go routine
 	agent.CloseWatches()
-	client.AssertExpectations(t)
+	defer client.AssertExpectations(t)
 }
