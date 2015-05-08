@@ -2,7 +2,7 @@ package models
 
 type Server struct {
 	Hostname string `json:"hostname"`
-	Uname    string `json:"name"`
+	Uname    string `json:"uname"`
 	Ip       string `json:"ip"`
 	UUID     string `json:"uuid,omitempty"`
 }
