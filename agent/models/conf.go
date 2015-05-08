@@ -8,24 +8,13 @@ import (
 )
 
 type Conf struct {
-	ServerName          string      `toml:"server_name"`
-	ApiKey              string      `toml:"api_key"`
-	TrackSystemPackages bool        `toml:"track_system_packages"`
-	LogLevel            string      `toml:"log_level"`
-	Apps                []*AppConf  `toml:"apps"`
-	Files               []*FileConf `toml:"files"`
-	Server              *ServerConf `toml:"server"`
+	ApiKey string      `toml:"api_key"`
+	Files  []*FileConf `toml:"files"`
+	Server *ServerConf `toml:"server"`
 }
 
 type FileConf struct {
 	Path string `toml:"path"`
-}
-
-type AppConf struct {
-	Name string `toml:"name"`
-	Type string `toml:"type"`
-	Path string `toml:"path"`
-	UUID string `toml:"uuid"`
 }
 
 type ServerConf struct {

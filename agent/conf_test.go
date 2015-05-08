@@ -9,14 +9,13 @@ import (
 func TestConf(t *testing.T) {
 	assert := assert.New(t)
 
-	conf := NewConfFromFile("../test/data/test.conf")
-	assert.Equal("deployment1", conf.ServerName, "server_name")
+	env.ConfFile = "../test/data/test.conf"
+	env.VarFile = "../test/data/test_server.conf"
+	conf := NewConfFromEnv()
 	assert.Equal("APIKEY", conf.ApiKey)
-	assert.Equal(true, conf.TrackSystemPackages, "track_system_packages")
-	assert.Equal("info", conf.LogLevel, "log_level")
-	assert.Equal(1, len(conf.Apps), "len of apps")
-	app := conf.Apps[0]
-	assert.Equal("my cool app", app.Name, "app name")
-	assert.Equal("ruby", app.Type, "app type")
-	assert.Equal("/foo/bar/baz", app.Path, "app path")
+	assert.Equal(1, len(conf.Files), "len of files")
+	file := conf.Files[0]
+	assert.Equal("/foo/bar/baz", file.Path, "file path")
+
+	assert.Equal("123456", conf.Server.UUID)
 }

@@ -34,13 +34,3 @@ func NewConfFromEnv() *Conf {
 
 	return conf
 }
-
-func NewConfFromFile(path string) *Conf {
-	conf := &Conf{}
-	_, err := toml.DecodeFile(path, &conf)
-	if err != nil {
-		umwelten.Log.Fatal(err)
-	}
-
-	return conf
-}
