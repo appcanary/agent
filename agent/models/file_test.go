@@ -6,7 +6,7 @@ import (
 
 	"io/ioutil"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stateio/testify/assert"
 )
 
 // create a tempfile, add a hook, see if hook gets called
@@ -19,17 +19,15 @@ func TestWatchFile(t *testing.T) {
 	tf.Write([]byte(file_content))
 	tf.Close()
 
-	cbInvoked := false
+	timer := time.Tick(5 * time.Second)
+	cbInvoked := make(chan bool)
 	testcb := func(nop *WatchedFile) {
-		cbInvoked = true
+		cbInvoked <- true
 	}
 
 	wfile := NewWatchedFile(tf.Name(), testcb)
-	assert.False(cbInvoked)
 
 	wfile.AddHook()
-	// mimic time delay inside WatchFile
-	time.Sleep(100 * time.Millisecond)
 
 	// let's make sure the file got written to
 	read_contents, _ := wfile.Contents()
@@ -37,19 +35,30 @@ func TestWatchFile(t *testing.T) {
 
 	// but really we want to know if the
 	// callback was ever invoked
-	assert.True(cbInvoked)
+	select {
+	case invoked := <-cbInvoked:
+		assert.True(invoked)
+
+	case _ = <-timer:
+		assert.True(false)
+	}
 
 	// solid. on boot it worked. But what
 	// if we changed the file contents?
-	cbInvoked = false
 
 	newContents := []byte("HelloWorld\n")
 	err := ioutil.WriteFile(tf.Name(), newContents, 0777)
 	assert.Nil(err)
 
 	// let's wait again just in case.
-	time.Sleep(100 * time.Millisecond)
-	assert.True(cbInvoked)
+	select {
+	case invoked := <-cbInvoked:
+		assert.True(invoked)
+
+	case _ = <-timer:
+		assert.True(false)
+	}
+
 	wfile.RemoveHook()
 }
 

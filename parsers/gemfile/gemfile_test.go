@@ -3,7 +3,7 @@ package gemfile
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stateio/testify/assert"
 )
 
 func TestEmpty(t *testing.T) {

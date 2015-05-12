@@ -9,7 +9,7 @@ import (
 
 	"github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
-	"github.com/stretchr/testify/suite"
+	"github.com/stateio/testify/suite"
 )
 
 type TestJsonRequest map[string]interface{}

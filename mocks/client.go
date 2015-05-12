@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/stretchr/testify/mock"
+import "github.com/stateio/testify/mock"
 
 import models "github.com/stateio/canary-agent/agent/models"
 

@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stateio/testify/assert"
 )
 
 func TestConf(t *testing.T) {

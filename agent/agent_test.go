@@ -5,7 +5,7 @@ import (
 
 	"github.com/stateio/canary-agent/agent/umwelten"
 	"github.com/stateio/canary-agent/mocks"
-	"github.com/stretchr/testify/assert"
+	"github.com/stateio/testify/assert"
 )
 
 func TestAgent(t *testing.T) {
