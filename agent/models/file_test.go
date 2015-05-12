@@ -1,6 +1,7 @@
 package models
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -59,6 +60,29 @@ func TestWatchFile(t *testing.T) {
 		assert.True(false)
 	}
 
+	wfile.RemoveHook()
+}
+
+func TestWatchFileFailure(t *testing.T) {
+	assert := assert.New(t)
+
+	file_content := "tst1"
+	tf, _ := ioutil.TempFile("", "gems.lock")
+	tf.Write([]byte(file_content))
+	tf.Close()
+
+	// timer := time.Tick(5 * time.Second)
+	cbInvoked := make(chan bool)
+	testcb := func(nop *WatchedFile) {
+		cbInvoked <- true
+	}
+
+	wfile := NewWatchedFile(tf.Name(), testcb)
+
+	wfile.AddHook()
+	os.Remove(tf.Name())
+	time.Sleep(200 * time.Millisecond)
+	assert.True(true)
 	wfile.RemoveHook()
 }
 
