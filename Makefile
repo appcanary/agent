@@ -3,7 +3,7 @@
 all: build
 
 test: build-all
-	go test -v ./...
+	go test -v ./... -race
 
 setup:
 	@mkdir -p ./bin
