@@ -55,70 +55,74 @@ func (self *WatchedFile) AddHook() {
 		log.Fatal(err.Error())
 	}
 
-	log.Info("Starting watcher on %s", self.Path)
 	self.Watcher = watcher
 
-	go func() {
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if ok {
-
-					log.Info("Got event %s", event.String())
-
-					//If the file is renamed or removed we have to create a new watch after a delay
-					if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
-
-						go func() {
-							log.Info("File moved: %s", self.Path)
-
-							//TODO: be smarter about this delay
-							time.Sleep(100 * time.Millisecond)
-
-							// File doesn't exist
-							if _, err := os.Stat(self.Path); err != nil {
-								// TODO: this is something we should handle gracefully with a expanding timeout, and an error sent to our server
-								log.Fatal(err)
-							}
-
-							err = self.Watcher.Add(self.Path)
-
-							if err != nil {
-								log.Fatal(err)
-							}
-
-							log.Info("Rereading file after move: %s", self.Path)
-							go self.OnFileChange(self)
-						}()
-
-					} else if isOp(event.Op, fsnotify.Write) {
-						log.Info("Rereading file: %s", self.Path)
-						go self.OnFileChange(self)
-					}
-					// else: the op was chmod, do nothing
-
-				} else {
-					break
-				}
-
-			case err, ok := <-watcher.Errors:
-				if ok {
-					log.Info("error:", err)
-				} else {
-					break
-				}
-			}
-		}
-	}()
-
 	log.Info("Reading file: %s", self.Path)
-
 	go self.OnFileChange(self)
 
+	log.Info("Starting watcher on %s", self.Path)
 	err = self.Watcher.Add(self.Path)
+
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	go self.ChangeListener()
+
+}
+
+func (self *WatchedFile) ChangeListener() {
+	for {
+		select {
+		case event, ok := <-self.Watcher.Events:
+			if ok {
+
+				log.Info("Got event %s", event.String())
+
+				//If the file is renamed or removed we have to create a new watch after a delay
+				if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
+					go self.HandleRemoved()
+
+				} else if isOp(event.Op, fsnotify.Write) {
+					log.Info("Rereading file: %s", self.Path)
+					go self.OnFileChange(self)
+				}
+				// else: the op was chmod, do nothing
+
+			} else {
+				break
+			}
+
+		case err, ok := <-self.Watcher.Errors:
+			if ok {
+				log.Info("error:", err)
+			} else {
+				break
+			}
+		}
+	}
+}
+
+func (self *WatchedFile) HandleRemoved() {
+	log.Info("File moved: %s", self.Path)
+
+	//TODO: be smarter about this delay
+	time.Sleep(100 * time.Millisecond)
+
+	// File doesn't exist
+	if _, err := os.Stat(self.Path); err != nil {
+		// TODO: this is something we should handle gracefully with a expanding timeout, and an error sent to our server
+		log.Fatal(err)
+	}
+
+	err := self.Watcher.Add(self.Path)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Info("Rereading file after move: %s", self.Path)
+	go self.OnFileChange(self)
 
 }
 
