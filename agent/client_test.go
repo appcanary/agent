@@ -34,7 +34,7 @@ func (self *ClientTestSuite) SetupTest() {
 	self.server_uuid = "server uuid"
 
 	filePath := NewConfFromEnv().Files[0].Path
-	file := models.NewWatchedFile(filePath, testCallbackNOP)
+	file := models.NewWatchedFileWithHook(filePath, testCallbackNOP)
 	self.files = models.WatchedFiles{file}
 
 	self.client = NewClient(self.api_key, &models.Server{UUID: self.server_uuid})

@@ -29,9 +29,14 @@ type WatchedFile struct {
 type WatchedFiles []*WatchedFile
 
 // TODO: time.Now() needs to be called whenever it updates
+func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFile {
+	file := NewWatchedFile(path, callback)
+	file.AddHook()
+	return file
+}
+
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
-	file.AddHook()
 	return file
 }
 

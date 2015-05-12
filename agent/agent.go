@@ -35,7 +35,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 // instantiate structs, fs hook
 func (self *Agent) StartWatching() {
 	for _, f := range self.conf.Files {
-		self.files = append(self.files, NewWatchedFile(f.Path, self.OnFileChange))
+		self.files = append(self.files, NewWatchedFileWithHook(f.Path, self.OnFileChange))
 	}
 }
 
