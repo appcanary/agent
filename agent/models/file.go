@@ -36,7 +36,12 @@ func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFil
 }
 
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
-	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now(), Watcher: watcher}
 	return file
 }
 
@@ -50,18 +55,11 @@ func (self *WatchedFile) RemoveHook() {
 }
 
 func (self *WatchedFile) AddHook() {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	self.Watcher = watcher
-
 	log.Info("Reading file: %s", self.Path)
 	go self.OnFileChange(self)
 
 	log.Info("Starting watcher on %s", self.Path)
-	err = self.Watcher.Add(self.Path)
+	err := self.Watcher.Add(self.Path)
 
 	if err != nil {
 		log.Fatal(err.Error())
@@ -72,7 +70,9 @@ func (self *WatchedFile) AddHook() {
 }
 
 func (self *WatchedFile) ChangeListener() {
-	for {
+	keepListening := true
+	for keepListening {
+		// shouldBreak := false
 		select {
 		case event, ok := <-self.Watcher.Events:
 			if ok {
@@ -90,7 +90,7 @@ func (self *WatchedFile) ChangeListener() {
 				// else: the op was chmod, do nothing
 
 			} else {
-				break
+				keepListening = false
 			}
 
 		case err, ok := <-self.Watcher.Errors:
