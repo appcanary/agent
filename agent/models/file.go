@@ -1,8 +1,6 @@
 package models
 
 import (
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -20,13 +18,13 @@ type File interface {
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
-	Kind         string            `json:"kind"`
-	Path         string            `json:"path"`
-	UpdatedAt    time.Time         `json:"updated-at"`
-	Watcher      *fsnotify.Watcher `json:"-"`
-	OnFileChange FileChangeHandler `json:"-"`
-	errors       chan error
-	done         chan bool
+	Kind          string            `json:"kind"`
+	Path          string            `json:"path"`
+	UpdatedAt     time.Time         `json:"updated-at"`
+	Watcher       *fsnotify.Watcher `json:"-"`
+	OnFileChange  FileChangeHandler `json:"-"`
+	resetListener chan bool
+	done          chan bool
 }
 
 type WatchedFiles []*WatchedFile
@@ -44,7 +42,7 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 		log.Fatal(err.Error())
 	}
 
-	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now(), Watcher: watcher, errors: make(chan error, 1), done: make(chan bool, 1)}
+	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now(), Watcher: watcher, resetListener: make(chan bool, 1), done: make(chan bool, 1)}
 	return file
 }
 
@@ -54,41 +52,36 @@ func (self *WatchedFile) Contents() ([]byte, error) {
 
 func (self *WatchedFile) RemoveHook() {
 	log.Debug("closing watcher")
-	// should close errors channel as well, no?
 	self.done <- true
 	self.Watcher.Close()
 }
 
 func (self *WatchedFile) AddHook() {
-	self.errors <- errors.New("Start!")
+	self.resetListener <- true
 	go self.ChangeListener()
 
 	go func() {
 		for {
 			select {
 			case <-self.done:
-				fmt.Println("Closing lol")
 				return
-			case err := <-self.errors:
-				fmt.Println("LOL")
+			case <-self.resetListener:
 				// keep trying to listen to this, in perpetuity.
-				if err != nil {
-					log.Debug("Adding file watcher to %s", self.Path)
-					err = self.Watcher.Add(self.Path)
+				log.Debug("Adding file watcher to %s", self.Path)
+				err := self.Watcher.Add(self.Path)
 
-					if err == nil {
-						log.Debug("Reading file: %s", self.Path)
-						go self.OnFileChange(self)
+				if err == nil {
+					log.Debug("Reading file: %s", self.Path)
+					go self.OnFileChange(self)
 
-					} else {
-						log.Debug("Failed to add watcher on %s", self.Path)
+				} else {
+					log.Debug("Failed to add watcher on %s", self.Path)
 
-						// try again in a bit
-						go func() {
-							time.Sleep(100 * time.Millisecond)
-							self.errors <- err
-						}()
-					}
+					// try again in a bit, arbitrary time limit
+					go func() {
+						time.Sleep(100 * time.Millisecond)
+						self.resetListener <- true
+					}()
 				}
 			}
 		}
@@ -107,7 +100,7 @@ func (self *WatchedFile) ChangeListener() {
 
 				//If the file is renamed or removed we have to create a new watch after a delay
 				if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
-					self.errors <- errors.New("moved file")
+					self.resetListener <- true
 
 				} else if isOp(event.Op, fsnotify.Write) {
 					log.Debug("Rereading file: %s", self.Path)

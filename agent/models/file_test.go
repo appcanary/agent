@@ -93,12 +93,14 @@ func TestWatchFileFailureTwo(t *testing.T) {
 	assert := assert.New(t)
 
 	file_content := []byte("tst1")
-	file_name := "/tmp/foobar"
-	err := ioutil.WriteFile(file_name, file_content, 0644)
-	assert.Nil(err)
+	tf, _ := ioutil.TempFile("", "gems.lock")
+	tf.Write([]byte(file_content))
+	tf.Close()
+	file_name := tf.Name()
 
 	cbInvoked := make(chan bool)
 	invokedCount := make(chan int)
+	done := make(chan bool)
 	testcb := func(nop *WatchedFile) {
 		cbInvoked <- true
 	}
@@ -110,11 +112,12 @@ func TestWatchFileFailureTwo(t *testing.T) {
 		counter := 0
 		for {
 			select {
-			case _ = <-cbInvoked:
+			case <-cbInvoked:
 				counter++
 
-			case _ = <-timer:
+			case <-timer:
 				invokedCount <- counter
+				done <- true
 				return
 			}
 
@@ -125,19 +128,20 @@ func TestWatchFileFailureTwo(t *testing.T) {
 	// file gets read on hook add
 	wfile.AddHook()
 
+	time.Sleep(200 * time.Millisecond)
 	// file gets read on rewrite
-	fmt.Println("sending a write")
+	fmt.Println("write 2")
 	file_content = []byte("hello\ntest2\n")
-	err = ioutil.WriteFile(file_name, file_content, 0644)
+	err := ioutil.WriteFile(file_name, file_content, 0644)
 	time.Sleep(200 * time.Millisecond)
 
 	// we remove and recreate the file,
 	// triggering a rehook and re-read
-	fmt.Println("first removal")
+	fmt.Println("removal 1")
 	os.Remove(file_name)
 	time.Sleep(200 * time.Millisecond)
 
-	fmt.Println("recreating file")
+	fmt.Println("write 3")
 	file_content = []byte("hello\nMOAR\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
@@ -145,7 +149,7 @@ func TestWatchFileFailureTwo(t *testing.T) {
 
 	// we write to the file, triggering
 	// another re-read
-	fmt.Println("sending a write 2")
+	fmt.Println("write 4")
 	file_content = []byte("hello\ntest3\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
@@ -153,27 +157,30 @@ func TestWatchFileFailureTwo(t *testing.T) {
 
 	// we remove and recreate the file,
 	// triggering a rehook yet another re-read
-	fmt.Println("2nd removal")
+	fmt.Println("removal 2")
 	os.Remove(file_name)
 	time.Sleep(200 * time.Millisecond)
 
-	fmt.Println("re-recreating file")
+	fmt.Println("write 5")
 	file_content = []byte("hello\ntest lol\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
-	time.Sleep(150 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
-	fmt.Println("send write 3")
+	fmt.Println("write 6")
 	file_content = []byte("hello\ntest lol3\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
 	time.Sleep(200 * time.Millisecond)
 
+	fmt.Println("cleaning up")
+	// we wrote the file five times, plus the init read
 	assert.Equal(6, <-invokedCount)
 
 	// cleanup
-	os.Remove(file_name)
+	<-done
 	wfile.RemoveHook()
+	os.Remove(file_name)
 }
 
 /*
