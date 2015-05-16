@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -79,10 +80,99 @@ func TestWatchFileFailure(t *testing.T) {
 
 	wfile := NewWatchedFile(tf.Name(), testcb)
 
-	wfile.AddHook()
-	os.Remove(tf.Name())
-	time.Sleep(200 * time.Millisecond)
+	assert.NotPanics(func() {
+		wfile.AddHook()
+		os.Remove(tf.Name())
+		time.Sleep(200 * time.Millisecond)
+	})
 	assert.True(true)
+	wfile.RemoveHook()
+}
+
+func TestWatchFileFailureTwo(t *testing.T) {
+	assert := assert.New(t)
+
+	file_content := []byte("tst1")
+	file_name := "/tmp/foobar"
+	err := ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+
+	cbInvoked := make(chan bool)
+	invokedCount := make(chan int)
+	testcb := func(nop *WatchedFile) {
+		cbInvoked <- true
+	}
+
+	wfile := NewWatchedFile(file_name, testcb)
+
+	go func() {
+		timer := time.Tick(3000 * time.Millisecond)
+		counter := 0
+		for {
+			select {
+			case _ = <-cbInvoked:
+				counter++
+
+			case _ = <-timer:
+				invokedCount <- counter
+				return
+			}
+
+		}
+
+	}()
+
+	// file gets read on hook add
+	wfile.AddHook()
+
+	// file gets read on rewrite
+	fmt.Println("sending a write")
+	file_content = []byte("hello\ntest2\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	time.Sleep(200 * time.Millisecond)
+
+	// we remove and recreate the file,
+	// triggering a rehook and re-read
+	fmt.Println("first removal")
+	os.Remove(file_name)
+	time.Sleep(200 * time.Millisecond)
+
+	fmt.Println("recreating file")
+	file_content = []byte("hello\nMOAR\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	time.Sleep(200 * time.Millisecond)
+
+	// we write to the file, triggering
+	// another re-read
+	fmt.Println("sending a write 2")
+	file_content = []byte("hello\ntest3\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	time.Sleep(200 * time.Millisecond)
+
+	// we remove and recreate the file,
+	// triggering a rehook yet another re-read
+	fmt.Println("2nd removal")
+	os.Remove(file_name)
+	time.Sleep(200 * time.Millisecond)
+
+	fmt.Println("re-recreating file")
+	file_content = []byte("hello\ntest lol\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	time.Sleep(150 * time.Millisecond)
+
+	fmt.Println("send write 3")
+	file_content = []byte("hello\ntest lol3\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	time.Sleep(200 * time.Millisecond)
+
+	assert.Equal(6, <-invokedCount)
+
+	// cleanup
+	os.Remove(file_name)
 	wfile.RemoveHook()
 }
 
