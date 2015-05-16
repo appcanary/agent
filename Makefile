@@ -5,6 +5,9 @@ all: build
 test: build-all
 	go test -v ./... -race
 
+testr: build-all
+	go test -v ./... -race -run $(t)
+
 setup:
 	@mkdir -p ./bin
 	@rm -f ./bin/*
@@ -19,3 +22,4 @@ peg-parser:
 
 clean:
 	@rm -rf ./bin
+
