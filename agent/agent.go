@@ -46,18 +46,23 @@ func (self *Agent) OnFileChange(file *WatchedFile) {
 	contents, err := file.Contents()
 
 	if err != nil {
-		// again, we need to recover from this
-		log.Fatal(err)
+		// we couldn't read it; something weird is happening
+		// let's just wait until this callback gets issued
+		// again when the file reappears.
+		log.Info("File contents error: %s", err)
+		return
 	}
 	buffer := new(bytes.Buffer)
 	b64enc := base64.NewEncoder(base64.StdEncoding, buffer)
 	b64enc.Write(contents)
 	b64enc.Close()
 
-	// TODO queue this up somehow?
 	err = self.client.SendFile(file.Path, buffer.Bytes())
 	if err != nil {
-		log.Fatal(err)
+		// TODO: some kind of queuing mechanism to keep trying
+		// beyond the exponential backoff in the client.
+		// What if the connection fails for whatever reason?
+		log.Info("Sendfile error: %s", err)
 	}
 }
 

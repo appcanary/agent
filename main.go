@@ -15,6 +15,9 @@ var log = umwelten.Log
 func main() {
 	done := make(chan os.Signal, 1)
 
+	addServer := make(chan bool, 1)
+	beatHeart := make(chan bool, 1)
+
 	umwelten.Init(os.Getenv("CANARY_ENV"))
 
 	fmt.Println(env.Logo)
@@ -26,16 +29,30 @@ func main() {
 	// we prob can't reliably fingerprint servers.
 	// so instead, we assign a uuid by registering
 	if a.FirstRun() {
-
 		log.Debug("Found no server config. Let's register!")
-		err := a.RegisterServer()
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
+		addServer <- true
+	} else {
+		beatHeart <- true
 	}
 
+	go func() {
+		for {
+			select {
+			case <-addServer:
+				err := a.RegisterServer()
+
+				// keep trying until we succeed
+				if err != nil {
+					addServer <- true
+				} else {
+					beatHeart <- true
+					return
+				}
+			}
+		}
+	}()
+
+	<-beatHeart
 	// Add hooks to files, and push them over
 	// whenever they change
 	a.StartWatching()
@@ -47,7 +64,7 @@ func main() {
 		for {
 			err := a.Heartbeat()
 			if err != nil {
-				log.Fatal("<3 ", err)
+				log.Info("<3 error: %s", err)
 			}
 			<-tick
 		}
