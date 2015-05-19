@@ -2,6 +2,7 @@ package agent
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stateio/canary-agent/agent/umwelten"
 	"github.com/stateio/canary-agent/mocks"
@@ -14,6 +15,11 @@ func TestAgent(t *testing.T) {
 	// setup
 	umwelten.Init("test")
 	conf := NewConfFromEnv()
+
+	// conf paths are absolute, which will
+	// fail across diff testing envs.
+	conf.Files[0].Path = env.ConfFile
+
 	client := &mocks.Client{}
 	agent := NewAgent(conf, client)
 
@@ -36,8 +42,13 @@ func TestAgent(t *testing.T) {
 	client.On("Heartbeat").Return(nil).Once()
 	agent.Heartbeat()
 
+	// the filewatcher needs enough time to
+	// actually be able to start watching
+	// the file. This is clunky, but less clunky
+	// than hacking some channel into this.
+	<-time.After(200 * time.Millisecond)
 	// close the hooks before asserting expectations
 	// since the SendFiles happen in a go routine
-	agent.CloseWatches()
+	defer agent.CloseWatches()
 	defer client.AssertExpectations(t)
 }
