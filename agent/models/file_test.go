@@ -30,7 +30,7 @@ func TestWatchFile(t *testing.T) {
 
 	wfile := NewWatchedFile(tf.Name(), testcb)
 
-	wfile.AddHook()
+	wfile.StartListener()
 
 	// let's make sure the file got written to
 	read_contents, _ := wfile.Contents()
@@ -114,10 +114,10 @@ func TestWatchFileHookLoop(t *testing.T) {
 	wfile := NewWatchedFile(file_name, testcb)
 
 	// file gets read on hook add
-	wfile.AddHook()
+	wfile.StartListener()
 	<-cbInvoked
 
-	// file gets read on rewrite
+	// // file gets read on rewrite
 	fmt.Println("--> write 2")
 	file_content = []byte("hello test2\n")
 	err := ioutil.WriteFile(file_name, file_content, 0644)
