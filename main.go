@@ -15,9 +15,6 @@ var log = umwelten.Log
 func main() {
 	done := make(chan os.Signal, 1)
 
-	addServer := make(chan bool, 1)
-	beatHeart := make(chan bool, 1)
-
 	umwelten.Init(os.Getenv("CANARY_ENV"))
 
 	fmt.Println(env.Logo)
@@ -30,29 +27,17 @@ func main() {
 	// so instead, we assign a uuid by registering
 	if a.FirstRun() {
 		log.Debug("Found no server config. Let's register!")
-		addServer <- true
-	} else {
-		beatHeart <- true
+
+		for err := a.RegisterServer(); err != nil; {
+			// we don't need to wait here because of the backoff
+			// exponential decay library; by the time we hit this
+			// point we've been trying for about, what, an hour?
+			log.Info("Register server error: %s", err)
+			err = a.RegisterServer()
+		}
+
 	}
 
-	go func() {
-		for {
-			select {
-			case <-addServer:
-				err := a.RegisterServer()
-
-				// keep trying until we succeed
-				if err != nil {
-					addServer <- true
-				} else {
-					beatHeart <- true
-					return
-				}
-			}
-		}
-	}()
-
-	<-beatHeart
 	// Add hooks to files, and push them over
 	// whenever they change
 	a.StartWatching()
