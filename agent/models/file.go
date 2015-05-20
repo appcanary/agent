@@ -44,50 +44,50 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	return file
 }
 
-func (self *WatchedFile) Contents() ([]byte, error) {
-	return ioutil.ReadFile(self.Path)
+func (wf *WatchedFile) Contents() ([]byte, error) {
+	return ioutil.ReadFile(wf.Path)
 }
 
-func (self *WatchedFile) RemoveHook() {
+func (wf *WatchedFile) RemoveHook() {
 	log.Debug("closing watcher")
-	self.Watcher.Close()
+	wf.Watcher.Close()
 }
 
-func (self *WatchedFile) AddHook() {
+func (wf *WatchedFile) AddHook() {
 	needHook := true
 	for needHook {
-		log.Debug("Adding file watcher to %s", self.Path)
-		err := self.Watcher.Add(self.Path)
+		log.Debug("Adding file watcher to %s", wf.Path)
+		err := wf.Watcher.Add(wf.Path)
 		if err == nil {
-			log.Debug("Reading file: %s", self.Path)
-			go self.OnFileChange(self)
+			log.Debug("Reading file: %s", wf.Path)
+			go wf.OnFileChange(wf)
 			needHook = false
 		} else {
-			log.Debug("Failed to add watcher on %s", self.Path)
+			log.Debug("Failed to add watcher on %s", wf.Path)
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
 
-func (self *WatchedFile) StartListener() {
-	self.AddHook()
+func (wf *WatchedFile) StartListener() {
+	wf.AddHook()
 
 	// Listen for changes
 	go func() {
 		keepListening := true
 		for keepListening {
 			select {
-			case event, ok := <-self.Watcher.Events:
+			case event, ok := <-wf.Watcher.Events:
 				if ok {
 
 					log.Debug("Watcher got event %s", event.String())
 					//If the file is renamed or removed we have to create a new watch after a delay
 					if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
 						//File is deleted so we have to add the watcher again
-						go self.AddHook()
+						go wf.AddHook()
 					} else if isOp(event.Op, fsnotify.Write) {
-						log.Debug("Rereading file: %s", self.Path)
-						go self.OnFileChange(self)
+						log.Debug("Rereading file: %s", wf.Path)
+						go wf.OnFileChange(wf)
 					}
 					// else: the op was chmod, do nothing
 
@@ -96,7 +96,7 @@ func (self *WatchedFile) StartListener() {
 					keepListening = false
 				}
 
-			case err, ok := <-self.Watcher.Errors:
+			case err, ok := <-wf.Watcher.Errors:
 				if ok {
 					log.Debug("Watcher error: %s", err)
 				} else {

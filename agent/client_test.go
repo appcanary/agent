@@ -28,107 +28,107 @@ func TestClient(t *testing.T) {
 	suite.Run(t, new(ClientTestSuite))
 }
 
-func (self *ClientTestSuite) SetupTest() {
+func (t *ClientTestSuite) SetupTest() {
 	umwelten.Init("test")
-	self.api_key = "my api key"
-	self.server_uuid = "server uuid"
+	t.api_key = "my api key"
+	t.server_uuid = "server uuid"
 
 	// it needs an ARBITRARY file to watch
 	// and the content of the conf file are
 	// absolute paths; as a workaround:
 	filePath := env.ConfFile
 	file := models.NewWatchedFileWithHook(filePath, testCallbackNOP)
-	self.files = models.WatchedFiles{file}
+	t.files = models.WatchedFiles{file}
 
-	self.client = NewClient(self.api_key, &models.Server{UUID: self.server_uuid})
+	t.client = NewClient(t.api_key, &models.Server{UUID: t.server_uuid})
 
 }
 
-func (self *ClientTestSuite) TestHeartbeat() {
+func (t *ClientTestSuite) TestHeartbeat() {
 
 	serverInvoked := false
-	ts := testServer(self, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
+	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		self.Equal(r.Header.Get("Authorization"), "Token "+self.api_key, "heartbeat api key")
+		t.Equal(r.Header.Get("Authorization"), "Token "+t.api_key, "heartbeat api key")
 
 		json_files := rBody["files"].([]interface{})
 
 		// does the json we send look roughly like
 		// it's supposed to?
-		self.NotNil(json_files)
+		t.NotNil(json_files)
 		monitored_file := json_files[0].(map[string]interface{})
 
-		self.Equal(monitored_file["kind"], "gemfile")
-		self.NotNil(monitored_file["path"])
-		self.NotEqual(monitored_file["path"], "")
-		self.NotNil(monitored_file["updated-at"])
-		self.NotEqual(monitored_file["updated-at"], "")
+		t.Equal(monitored_file["kind"], "gemfile")
+		t.NotNil(monitored_file["path"])
+		t.NotEqual(monitored_file["path"], "")
+		t.NotNil(monitored_file["updated-at"])
+		t.NotEqual(monitored_file["updated-at"], "")
 	})
 
 	// the client uses BaseUrl to set up queries.
 	env.BaseUrl = ts.URL
 
 	// actual test execution
-	self.client.Heartbeat(self.server_uuid, self.files)
+	t.client.Heartbeat(t.server_uuid, t.files)
 
 	ts.Close()
-	self.files[0].RemoveHook()
-	self.True(serverInvoked)
+	t.files[0].RemoveHook()
+	t.True(serverInvoked)
 }
 
-func (self *ClientTestSuite) TestSendFile() {
+func (t *ClientTestSuite) TestSendFile() {
 	test_file_path := "/var/foo/whatever"
 
 	serverInvoked := false
-	ts := testServer(self, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
+	ts := testServer(t, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		self.Equal(r.Header.Get("Authorization"), "Token "+self.api_key, "heartbeat api key")
+		t.Equal(r.Header.Get("Authorization"), "Token "+t.api_key, "heartbeat api key")
 
 		json := rBody
 
-		self.Equal(json["name"], "")
-		self.Equal(json["path"], test_file_path)
-		self.Equal(json["kind"], "gemfile")
-		self.NotEqual(json["contents"], "")
+		t.Equal(json["name"], "")
+		t.Equal(json["path"], test_file_path)
+		t.Equal(json["kind"], "gemfile")
+		t.NotEqual(json["contents"], "")
 
 	})
 
 	env.BaseUrl = ts.URL
 
-	contents, _ := self.files[0].Contents()
-	self.client.SendFile(test_file_path, contents)
+	contents, _ := t.files[0].Contents()
+	t.client.SendFile(test_file_path, contents)
 
 	ts.Close()
-	self.True(serverInvoked)
+	t.True(serverInvoked)
 }
 
-func (self *ClientTestSuite) TestCreateServer() {
+func (t *ClientTestSuite) TestCreateServer() {
 	server := models.ThisServer("")
 
 	test_uuid := "12345"
 	json_response := "{\"uuid\":\"" + test_uuid + "\"}"
 	serverInvoked := false
 
-	ts := testServer(self, "POST", json_response, func(r *http.Request, rBody TestJsonRequest) {
+	ts := testServer(t, "POST", json_response, func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		self.Equal(r.Header.Get("Authorization"), "Token "+self.api_key, "heartbeat api key")
+		t.Equal(r.Header.Get("Authorization"), "Token "+t.api_key, "heartbeat api key")
 
 		json := rBody
 
-		self.Equal(json["hostname"], server.Hostname)
-		self.Equal(json["uname"], server.Uname)
-		self.Equal(json["ip"], server.Ip)
-		self.Nil(json["uuid"])
+		t.Equal(json["hostname"], server.Hostname)
+		t.Equal(json["uname"], server.Uname)
+		t.Equal(json["ip"], server.Ip)
+		t.Nil(json["uuid"])
 	})
 
 	env.BaseUrl = ts.URL
-	response_uuid, _ := self.client.CreateServer(server)
+	response_uuid, _ := t.client.CreateServer(server)
 	ts.Close()
-	self.True(serverInvoked)
-	self.Equal(test_uuid, response_uuid)
+	t.True(serverInvoked)
+	t.Equal(test_uuid, response_uuid)
 }
 
 func testCallbackNOP(foo *models.WatchedFile) {

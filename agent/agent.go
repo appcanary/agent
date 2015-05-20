@@ -33,13 +33,13 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 }
 
 // instantiate structs, fs hook
-func (self *Agent) StartWatching() {
-	for _, f := range self.conf.Files {
-		self.files = append(self.files, NewWatchedFileWithHook(f.Path, self.OnFileChange))
+func (agent *Agent) StartWatching() {
+	for _, f := range agent.conf.Files {
+		agent.files = append(agent.files, NewWatchedFileWithHook(f.Path, agent.OnFileChange))
 	}
 }
 
-func (self *Agent) OnFileChange(file *WatchedFile) {
+func (agent *Agent) OnFileChange(file *WatchedFile) {
 	log.Info("File change: %s", file.Path)
 
 	// should probably be in the actual hook code
@@ -57,7 +57,7 @@ func (self *Agent) OnFileChange(file *WatchedFile) {
 	b64enc.Write(contents)
 	b64enc.Close()
 
-	err = self.client.SendFile(file.Path, buffer.Bytes())
+	err = agent.client.SendFile(file.Path, buffer.Bytes())
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
@@ -66,37 +66,37 @@ func (self *Agent) OnFileChange(file *WatchedFile) {
 	}
 }
 
-func (self *Agent) Heartbeat() error {
-	return self.client.Heartbeat(self.server.UUID, self.files)
+func (agent *Agent) Heartbeat() error {
+	return agent.client.Heartbeat(agent.server.UUID, agent.files)
 }
 
-func (self *Agent) FirstRun() bool {
+func (agent *Agent) FirstRun() bool {
 	// the configuration didn't find a server uuid
-	return self.server.IsNew()
+	return agent.server.IsNew()
 }
 
-func (self *Agent) RegisterServer() error {
-	uuid, err := self.client.CreateServer(self.server)
+func (agent *Agent) RegisterServer() error {
+	uuid, err := agent.client.CreateServer(agent.server)
 
 	if err != nil {
 		return err
 	}
-	self.server.UUID = uuid
-	log.Debug("Registered server, got: %s", self.server.UUID)
+	agent.server.UUID = uuid
+	log.Debug("Registered server, got: %s", agent.server.UUID)
 
-	self.UpdateConf()
+	agent.UpdateConf()
 	return nil
 }
 
-func (self *Agent) UpdateConf() {
-	self.conf.Server.UUID = self.server.UUID
+func (agent *Agent) UpdateConf() {
+	agent.conf.Server.UUID = agent.server.UUID
 
-	self.conf.PersistServerConf(env)
+	agent.conf.PersistServerConf(env)
 }
 
 // This has to be called before exiting
-func (a *Agent) CloseWatches() {
-	for _, file := range a.files {
+func (agent *Agent) CloseWatches() {
+	for _, file := range agent.files {
 		file.RemoveHook()
 	}
 }

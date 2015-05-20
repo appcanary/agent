@@ -37,7 +37,7 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 	return client
 }
 
-func (self *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
+func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 
 	body, err := json.Marshal(map[string]WatchedFiles{"files": files})
 
@@ -46,7 +46,7 @@ func (self *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 	}
 
 	// TODO SANITIZE UUID input cos this feels abusable
-	respBody, err := self.post(umwelten.ApiHeartbeatPath(uuid), body)
+	respBody, err := client.post(umwelten.ApiHeartbeatPath(uuid), body)
 
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (self *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 	return nil
 }
 
-func (self *CanaryClient) SendFile(path string, contents []byte) error {
+func (client *CanaryClient) SendFile(path string, contents []byte) error {
 	file_json, err := json.Marshal(map[string]string{
 		"name":     "",
 		"path":     path,
@@ -80,7 +80,7 @@ func (self *CanaryClient) SendFile(path string, contents []byte) error {
 		return err
 	}
 
-	_, err = self.put(umwelten.ApiServerPath(self.server.UUID), file_json)
+	_, err = client.put(umwelten.ApiServerPath(client.server.UUID), file_json)
 
 	return err
 
@@ -106,12 +106,12 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 	return respServer.UUID, nil
 }
 
-func (self *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
-	return self.send("POST", rPath, body)
+func (client *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
+	return client.send("POST", rPath, body)
 }
 
-func (self *CanaryClient) put(rPath string, body []byte) ([]byte, error) {
-	return self.send("PUT", rPath, body)
+func (client *CanaryClient) put(rPath string, body []byte) ([]byte, error) {
+	return client.send("PUT", rPath, body)
 }
 
 func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, error) {

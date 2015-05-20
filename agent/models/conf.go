@@ -21,13 +21,13 @@ type ServerConf struct {
 	UUID string `toml:"uuid"`
 }
 
-func (self *Conf) PersistServerConf(env *umwelten.Umwelten) {
+func (conf *Conf) PersistServerConf(env *umwelten.Umwelten) {
 	file, err := os.Create(env.VarFile)
 	if err != nil {
 		umwelten.Log.Fatal(err)
 	}
 
-	if err := toml.NewEncoder(file).Encode(self.Server); err != nil {
+	if err := toml.NewEncoder(file).Encode(conf.Server); err != nil {
 		umwelten.Log.Fatal(err)
 	}
 
