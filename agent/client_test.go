@@ -33,7 +33,10 @@ func (self *ClientTestSuite) SetupTest() {
 	self.api_key = "my api key"
 	self.server_uuid = "server uuid"
 
-	filePath := NewConfFromEnv().Files[0].Path
+	// it needs an ARBITRARY file to watch
+	// and the content of the conf file are
+	// absolute paths; as a workaround:
+	filePath := env.ConfFile
 	file := models.NewWatchedFileWithHook(filePath, testCallbackNOP)
 	self.files = models.WatchedFiles{file}
 
