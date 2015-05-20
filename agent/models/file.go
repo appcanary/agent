@@ -2,7 +2,6 @@ package models
 
 import (
 	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/stateio/canary-agent/agent/umwelten"
@@ -58,16 +57,10 @@ func (self *WatchedFile) RemoveHook() {
 }
 
 func (self *WatchedFile) AddHook() {
-	f, _ := os.OpenFile("/tmp/wtf", os.O_APPEND|os.O_WRONLY, 0600)
-	defer f.Close()
-	f.WriteString("Addhook1\n")
 	self.resetListener <- true
 	go self.ChangeListener()
 
 	go func() {
-		f, _ := os.OpenFile("/tmp/wtf", os.O_APPEND|os.O_WRONLY, 0600)
-		defer f.Close()
-		f.WriteString("begin hook loop\n")
 		for {
 			select {
 			case <-self.done:
@@ -75,23 +68,19 @@ func (self *WatchedFile) AddHook() {
 			case <-self.resetListener:
 				// keep trying to listen to this, in perpetuity.
 				log.Debug("Adding file watcher to %s", self.Path)
-				f.WriteString("adding file watcher\n")
 				err := self.Watcher.Add(self.Path)
 
 				if err == nil {
 					log.Debug("Reading file: %s", self.Path)
-					f.WriteString("read file\n")
 					go self.OnFileChange(self)
 
 				} else {
 					log.Debug("Failed to add watcher on %s", self.Path)
 
-					f.WriteString("failed to add\n")
-
 					// try again in a bit, arbitrary time limit
 					go func() {
-						// sleep := time.After(100 * time.Millisecond)
-						// <-sleep
+						sleep := time.After(100 * time.Millisecond)
+						<-sleep
 						self.resetListener <- true
 					}()
 				}
@@ -102,8 +91,6 @@ func (self *WatchedFile) AddHook() {
 }
 
 func (self *WatchedFile) ChangeListener() {
-	f, _ := os.OpenFile("/tmp/wtf", os.O_APPEND|os.O_WRONLY, 0600)
-	defer f.Close()
 	keepListening := true
 	for keepListening {
 		select {
@@ -114,12 +101,10 @@ func (self *WatchedFile) ChangeListener() {
 
 				//If the file is renamed or removed we have to create a new watch after a delay
 				if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
-					f.WriteString("resetlistener\n")
 					self.resetListener <- true
 
 				} else if isOp(event.Op, fsnotify.Write) {
 					log.Debug("Rereading file: %s", self.Path)
-					f.WriteString("rereading file\n")
 					go self.OnFileChange(self)
 				}
 				// else: the op was chmod, do nothing
@@ -132,7 +117,6 @@ func (self *WatchedFile) ChangeListener() {
 		case err, ok := <-self.Watcher.Errors:
 			if ok {
 				log.Debug("Watcher error: %s", err)
-				f.WriteString("watch errar\n")
 			} else {
 				break
 			}

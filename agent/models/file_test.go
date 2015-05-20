@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -90,10 +91,6 @@ func TestWatchFileFailure(t *testing.T) {
 }
 
 func TestWatchFileHookLoop(t *testing.T) {
-	println("Holla")
-	f, _ := os.OpenFile("/tmp/wtf", os.O_APPEND|os.O_WRONLY, 0600)
-	f.WriteString("wtf?!?!?!?!?!?!\n")
-	defer f.Close()
 
 	assert := assert.New(t)
 
@@ -103,146 +100,72 @@ func TestWatchFileHookLoop(t *testing.T) {
 	tf.Close()
 	file_name := tf.Name()
 
-	cbInvoked := make(chan bool)
-	invokedCount := make(chan int)
-	nextWrite := make(chan bool)
-	testcb := func(nop *WatchedFile) {
+	cbInvoked := make(chan bool, 10)
+
+	mutex := &sync.Mutex{}
+	counter := 0
+	testcb := func(wfile *WatchedFile) {
+		mutex.Lock()
+		counter++
+		mutex.Unlock()
 		cbInvoked <- true
 	}
 
 	wfile := NewWatchedFile(file_name, testcb)
 
-	go func() {
-		f, _ := os.OpenFile("/tmp/wtf", os.O_APPEND|os.O_WRONLY, 0600)
-		defer f.Close()
-
-		timer := time.Tick(3000 * time.Millisecond)
-		timer2 := time.Tick(50 * time.Millisecond)
-		counter := 0
-		for {
-			f.WriteString("loop\n")
-			select {
-			case <-cbInvoked:
-				counter++
-				nextWrite <- true
-
-			case <-timer2:
-				f.WriteString("microloop\n")
-			case <-timer:
-				f.WriteString("LOOP DED YO\n")
-				invokedCount <- counter
-				return
-			default:
-				f.WriteString("default\n")
-			}
-
-		}
-
-	}()
-
-	f.WriteString("write1\n")
 	// file gets read on hook add
 	wfile.AddHook()
-	<-nextWrite
+	<-cbInvoked
 
-	f.WriteString("write2\n")
 	// file gets read on rewrite
 	fmt.Println("--> write 2")
-	file_content = []byte("hello\ntest2\n")
+	file_content = []byte("hello test2\n")
 	err := ioutil.WriteFile(file_name, file_content, 0644)
-	<-nextWrite
+	<-cbInvoked
 
 	// we remove and recreate the file,
 	// triggering a rehook and re-read
-	f.WriteString("delete1\n")
 	fmt.Println("--> removal 1")
 	os.Remove(file_name)
 
-	f.WriteString("write3\n")
 	fmt.Println("--> write 3")
-	file_content = []byte("hello\nMOAR\n")
+	file_content = []byte("hello test3\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
-	<-nextWrite
+	<-cbInvoked
 
 	// we write to the file, triggering
 	// another re-read
-	f.WriteString("write4\n")
 	fmt.Println("--> write 4")
-	file_content = []byte("hello\ntest3\n")
+	file_content = []byte("hello test4\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
-	<-nextWrite
-
-	f.WriteString("delete2\n")
+	<-cbInvoked
 
 	// we remove and recreate the file,
 	// triggering a rehook yet another re-read
 	fmt.Println("--> removal 2")
 	os.Remove(file_name)
 
-	f.WriteString("write5\n")
 	fmt.Println("--> write 5")
-	file_content = []byte("hello\ntest lol\n")
+	file_content = []byte("hello test5\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
-	<-nextWrite
+	<-cbInvoked
 
-	f.WriteString("write6\n")
 	fmt.Println("--> write 6")
-	file_content = []byte("hello\ntest lol3\n")
+	file_content = []byte("hello test6\n")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
-	<-nextWrite
-	f.WriteString("write 6 done\n")
+	<-cbInvoked
 
 	fmt.Println("cleaning up\n")
 	// we wrote the file five times, plus the init read
-	assert.Equal(6, <-invokedCount)
+	mutex.Lock()
+	assert.True(counter >= 6)
+	mutex.Unlock()
 
-	f.WriteString("you gotta be kidding me\n")
 	// cleanup
 	wfile.RemoveHook()
 	os.Remove(file_name)
 }
-
-/*
-
-func TestWatchFile(t *testing.T) {
-	tf, _ := ioutil.TempFile("", "gemfile")
-	filename := tf.Name()
-	tf.Write([]byte("tst1"))
-	tf.Close()
-
-	client := &mocks.Client{}
-	agent := &Agent{client: client}
-	app := &App{Name: "test", Path: filename, callback: agent.Submit}
-	f := new(mocks.File)
-	f.On("GetPath").Return(filename)
-
-	//We expect Parse to be called three, on first load, and after we modify the file, and after we overwrite it
-	f.On("Parse").Return("a").Times(3)
-	//We also expect to submit results to the server 3 times
-	client.On("Submit", "test", "a").Return(nil).Times(3)
-	app.WatchFile(f)
-	defer app.CloseWatches()
-
-	//Modify the file to cause a refresh
-	tf, _ = os.OpenFile(filename, os.O_RDWR|os.O_APPEND, 0777)
-	tf.Write([]byte("tst2"))
-	tf.Close()
-	time.Sleep(100 * time.Millisecond)
-
-	//Move and overwrite the file to cause a refresh
-	os.Rename(filename, filename+".bak")
-	tf, _ = os.Create(filename)
-	tf.Write([]byte("tst3"))
-	tf.Close()
-	time.Sleep(200 * time.Millisecond)
-
-	f.Mock.AssertExpectations(t)
-	client.Mock.AssertExpectations(t)
-}
-*/
-
-//TODO: test some pathological cases here
