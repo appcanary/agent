@@ -82,7 +82,7 @@ func TestWatchFileFailure(t *testing.T) {
 	wfile := NewWatchedFile(tf.Name(), testcb)
 
 	assert.NotPanics(func() {
-		wfile.AddHook()
+		wfile.StartListener()
 		os.Remove(tf.Name())
 		time.Sleep(200 * time.Millisecond)
 	})
