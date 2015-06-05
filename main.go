@@ -26,12 +26,14 @@ func main() {
 	// we prob can't reliably fingerprint servers.
 	// so instead, we assign a uuid by registering
 	if a.FirstRun() {
-
 		log.Debug("Found no server config. Let's register!")
-		err := a.RegisterServer()
 
-		if err != nil {
-			log.Fatal(err)
+		for err := a.RegisterServer(); err != nil; {
+			// we don't need to wait here because of the backoff
+			// exponential decay library; by the time we hit this
+			// point we've been trying for about, what, an hour?
+			log.Info("Register server error: %s", err)
+			err = a.RegisterServer()
 		}
 
 	}
@@ -47,7 +49,7 @@ func main() {
 		for {
 			err := a.Heartbeat()
 			if err != nil {
-				log.Fatal("<3 ", err)
+				log.Info("<3 error: %s", err)
 			}
 			<-tick
 		}

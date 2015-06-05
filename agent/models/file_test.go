@@ -1,7 +1,9 @@
 package models
 
 import (
+	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,7 +30,7 @@ func TestWatchFile(t *testing.T) {
 
 	wfile := NewWatchedFile(tf.Name(), testcb)
 
-	wfile.AddHook()
+	wfile.StartListener()
 
 	// let's make sure the file got written to
 	read_contents, _ := wfile.Contents()
@@ -79,50 +81,91 @@ func TestWatchFileFailure(t *testing.T) {
 
 	wfile := NewWatchedFile(tf.Name(), testcb)
 
-	wfile.AddHook()
-	os.Remove(tf.Name())
-	time.Sleep(200 * time.Millisecond)
+	assert.NotPanics(func() {
+		wfile.StartListener()
+		os.Remove(tf.Name())
+		time.Sleep(200 * time.Millisecond)
+	})
 	assert.True(true)
 	wfile.RemoveHook()
 }
 
-/*
+func TestWatchFileHookLoop(t *testing.T) {
 
-func TestWatchFile(t *testing.T) {
-	tf, _ := ioutil.TempFile("", "gemfile")
-	filename := tf.Name()
-	tf.Write([]byte("tst1"))
+	assert := assert.New(t)
+
+	file_content := []byte("tst1")
+	tf, _ := ioutil.TempFile("", "gems.lock")
+	tf.Write([]byte(file_content))
 	tf.Close()
+	file_name := tf.Name()
 
-	client := &mocks.Client{}
-	agent := &Agent{client: client}
-	app := &App{Name: "test", Path: filename, callback: agent.Submit}
-	f := new(mocks.File)
-	f.On("GetPath").Return(filename)
+	cbInvoked := make(chan bool, 10)
 
-	//We expect Parse to be called three, on first load, and after we modify the file, and after we overwrite it
-	f.On("Parse").Return("a").Times(3)
-	//We also expect to submit results to the server 3 times
-	client.On("Submit", "test", "a").Return(nil).Times(3)
-	app.WatchFile(f)
-	defer app.CloseWatches()
+	mutex := &sync.Mutex{}
+	counter := 0
+	testcb := func(wfile *WatchedFile) {
+		mutex.Lock()
+		counter++
+		mutex.Unlock()
+		cbInvoked <- true
+	}
 
-	//Modify the file to cause a refresh
-	tf, _ = os.OpenFile(filename, os.O_RDWR|os.O_APPEND, 0777)
-	tf.Write([]byte("tst2"))
-	tf.Close()
-	time.Sleep(100 * time.Millisecond)
+	wfile := NewWatchedFile(file_name, testcb)
 
-	//Move and overwrite the file to cause a refresh
-	os.Rename(filename, filename+".bak")
-	tf, _ = os.Create(filename)
-	tf.Write([]byte("tst3"))
-	tf.Close()
-	time.Sleep(200 * time.Millisecond)
+	// file gets read on hook add
+	wfile.StartListener()
+	<-cbInvoked
 
-	f.Mock.AssertExpectations(t)
-	client.Mock.AssertExpectations(t)
+	// // file gets read on rewrite
+	fmt.Println("--> write 2")
+	file_content = []byte("hello test2\n")
+	err := ioutil.WriteFile(file_name, file_content, 0644)
+	<-cbInvoked
+
+	// we remove and recreate the file,
+	// triggering a rehook and re-read
+	fmt.Println("--> removal 1")
+	os.Remove(file_name)
+
+	fmt.Println("--> write 3")
+	file_content = []byte("hello test3\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	<-cbInvoked
+
+	// we write to the file, triggering
+	// another re-read
+	fmt.Println("--> write 4")
+	file_content = []byte("hello test4\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	<-cbInvoked
+
+	// we remove and recreate the file,
+	// triggering a rehook yet another re-read
+	fmt.Println("--> removal 2")
+	os.Remove(file_name)
+
+	fmt.Println("--> write 5")
+	file_content = []byte("hello test5\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	<-cbInvoked
+
+	fmt.Println("--> write 6")
+	file_content = []byte("hello test6\n")
+	err = ioutil.WriteFile(file_name, file_content, 0644)
+	assert.Nil(err)
+	<-cbInvoked
+
+	fmt.Println("cleaning up\n")
+	// we wrote the file five times, plus the init read
+	mutex.Lock()
+	assert.True(counter >= 6)
+	mutex.Unlock()
+
+	// cleanup
+	wfile.RemoveHook()
+	os.Remove(file_name)
 }
-*/
-
-//TODO: test some pathological cases here

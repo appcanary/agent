@@ -15,7 +15,7 @@ func TestConf(t *testing.T) {
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal(1, len(conf.Files), "len of files")
 	file := conf.Files[0]
-	assert.Equal("/foo/bar/baz", file.Path, "file path")
+	assert.Equal("/Users/phillmv/code/state/canary-agent/test/data/Gemfile.lock", file.Path, "file path")
 
 	assert.Equal("123456", conf.Server.UUID)
 }

@@ -54,7 +54,7 @@ func Init(env_str string) {
 		if _, err := os.Stat(DEV_CONF_PATH); err != nil {
 			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
 		}
-		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test2.conf")
+		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test.conf")
 
 		DEV_VAR_PATH, _ = filepath.Abs("test/var")
 		if _, err := os.Stat(DEV_VAR_PATH); err != nil {

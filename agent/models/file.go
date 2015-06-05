@@ -2,7 +2,6 @@ package models
 
 import (
 	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/stateio/canary-agent/agent/umwelten"
@@ -31,7 +30,7 @@ type WatchedFiles []*WatchedFile
 // TODO: time.Now() needs to be called whenever it updates
 func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFile {
 	file := NewWatchedFile(path, callback)
-	file.AddHook()
+	file.StartListener()
 	return file
 }
 
@@ -45,85 +44,67 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	return file
 }
 
-func (self *WatchedFile) Contents() ([]byte, error) {
-	return ioutil.ReadFile(self.Path)
+func (wf *WatchedFile) Contents() ([]byte, error) {
+	return ioutil.ReadFile(wf.Path)
 }
 
-func (self *WatchedFile) RemoveHook() {
+func (wf *WatchedFile) RemoveHook() {
 	log.Debug("closing watcher")
-	self.Watcher.Close()
+	wf.Watcher.Close()
 }
 
-func (self *WatchedFile) AddHook() {
-	log.Info("Reading file: %s", self.Path)
-	go self.OnFileChange(self)
-
-	log.Info("Starting watcher on %s", self.Path)
-	err := self.Watcher.Add(self.Path)
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	go self.ChangeListener()
-
-}
-
-func (self *WatchedFile) ChangeListener() {
-	keepListening := true
-	for keepListening {
-		// shouldBreak := false
-		select {
-		case event, ok := <-self.Watcher.Events:
-			if ok {
-
-				log.Info("Got event %s", event.String())
-
-				//If the file is renamed or removed we have to create a new watch after a delay
-				if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
-					go self.HandleRemoved()
-
-				} else if isOp(event.Op, fsnotify.Write) {
-					log.Info("Rereading file: %s", self.Path)
-					go self.OnFileChange(self)
-				}
-				// else: the op was chmod, do nothing
-
-			} else {
-				keepListening = false
-			}
-
-		case err, ok := <-self.Watcher.Errors:
-			if ok {
-				log.Info("error:", err)
-			} else {
-				break
-			}
+func (wf *WatchedFile) AddHook() {
+	needHook := true
+	for needHook {
+		log.Debug("Adding file watcher to %s", wf.Path)
+		err := wf.Watcher.Add(wf.Path)
+		if err == nil {
+			log.Debug("Reading file: %s", wf.Path)
+			go wf.OnFileChange(wf)
+			needHook = false
+		} else {
+			log.Debug("Failed to add watcher on %s", wf.Path)
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
 
-func (self *WatchedFile) HandleRemoved() {
-	log.Info("File moved: %s", self.Path)
+func (wf *WatchedFile) StartListener() {
+	wf.AddHook()
 
-	//TODO: be smarter about this delay
-	time.Sleep(100 * time.Millisecond)
+	// Listen for changes
+	go func() {
+		keepListening := true
+		for keepListening {
+			select {
+			case event, ok := <-wf.Watcher.Events:
+				if ok {
 
-	// File doesn't exist
-	if _, err := os.Stat(self.Path); err != nil {
-		// TODO: this is something we should handle gracefully with a expanding timeout, and an error sent to our server
-		log.Fatal(err)
-	}
+					log.Debug("Watcher got event %s", event.String())
+					//If the file is renamed or removed we have to create a new watch after a delay
+					if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
+						//File is deleted so we have to add the watcher again
+						go wf.AddHook()
+					} else if isOp(event.Op, fsnotify.Write) {
+						log.Debug("Rereading file: %s", wf.Path)
+						go wf.OnFileChange(wf)
+					}
+					// else: the op was chmod, do nothing
 
-	err := self.Watcher.Add(self.Path)
+				} else {
+					log.Debug("Closing listener")
+					keepListening = false
+				}
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Info("Rereading file after move: %s", self.Path)
-	go self.OnFileChange(self)
-
+			case err, ok := <-wf.Watcher.Errors:
+				if ok {
+					log.Debug("Watcher error: %s", err)
+				} else {
+					break
+				}
+			}
+		}
+	}()
 }
 
 // Checks whether an fsnotify Op from an event matches a target Op

@@ -3,10 +3,10 @@
 all: build
 
 test: build-all
-	go test -v ./... -race
+	go test -v ./... -race -timeout 1m
 
 testr: build-all
-	go test -v ./... -race -run $(t)
+	go test -v ./... -race -timeout 1m -run $(t)
 
 setup:
 	@mkdir -p ./bin
