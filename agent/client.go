@@ -132,6 +132,7 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 	// if the request fails for whatever reason, keep
 	// trying to reach the server
 	err = backoff.Retry(func() error {
+		log.Debug("Requesting %s", uri)
 		res, err = client.Do(req)
 		return err
 	},
