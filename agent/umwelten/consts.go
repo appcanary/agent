@@ -25,7 +25,7 @@ const (
 
 // api endpoints
 const (
-	API_VERSION   = "/v1/agent/"
+	API_VERSION   = "/api/v1/agent/"
 	API_HEARTBEAT = API_VERSION + "heartbeat"
 	API_SERVERS   = API_VERSION + "servers"
 )
