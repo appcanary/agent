@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -9,13 +10,31 @@ import (
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
+const CanaryVersion = "0.1 Alpha"
+
 var env = umwelten.Fetch()
 var log = umwelten.Log
 
-func main() {
-	done := make(chan os.Signal, 1)
+func usage() {
+	fmt.Fprintf(os.Stderr, "canary-agent: agent for https://www.appcanry.com.\nUsage:\n")
+	flag.PrintDefaults()
+}
 
+func main() {
 	umwelten.Init(os.Getenv("CANARY_ENV"))
+
+	flag.Usage = usage
+
+	flag.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
+	flag.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
+	version := flag.Bool("version", false, "Display version information")
+	flag.Parse()
+
+	if *version {
+		fmt.Println(CanaryVersion)
+		os.Exit(0)
+	}
+	done := make(chan os.Signal, 1)
 
 	fmt.Println(env.Logo)
 
