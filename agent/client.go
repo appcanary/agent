@@ -134,6 +134,10 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 	err = backoff.Retry(func() error {
 		log.Debug("Requesting %s", uri)
 		res, err = client.Do(req)
+		if err != nil {
+			log.Error("Error in request %s", err)
+		}
+
 		return err
 	},
 		backoff.NewExponentialBackOff())
