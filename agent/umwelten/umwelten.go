@@ -15,9 +15,7 @@ type Umwelten struct {
 	Env               string
 	Prod              bool
 	BaseUrl           string
-	ConfPath          string
 	ConfFile          string
-	VarPath           string
 	VarFile           string
 	HeartbeatDuration time.Duration
 }
@@ -37,10 +35,8 @@ func Init(env_str string) {
 
 		env.Logo = PROD_LOGO
 
-		env.ConfPath = DEFAULT_CONF_PATH
 		env.ConfFile = DEFAULT_CONF_FILE
 
-		env.VarPath = DEFAULT_VAR_PATH
 		env.VarFile = DEFAULT_VAR_FILE
 
 		env.HeartbeatDuration = DEFAULT_HEARTBEAT_DURATION
@@ -68,10 +64,8 @@ func Init(env_str string) {
 
 		env.Logo = DEV_LOGO
 
-		env.ConfPath = DEV_CONF_PATH
 		env.ConfFile = DEV_CONF_FILE
 
-		env.VarPath = DEV_VAR_PATH
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
