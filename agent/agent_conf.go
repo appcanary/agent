@@ -27,7 +27,7 @@ func NewConfFromEnv() *Conf {
 	if _, err := os.Stat(env.VarFile); err == nil {
 		_, err := toml.DecodeFile(env.VarFile, &conf.Server)
 		if err != nil {
-			umwelten.Log.Errorf("%s", err)
+			umwelten.Log.Error("%s", err)
 		}
 		umwelten.Log.Debug("Found, read server conf.")
 	}
