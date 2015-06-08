@@ -11,8 +11,8 @@ var DEV_VAR_FILE string
 
 // env vars
 const (
-	PROD_URL = "https://lolprod.example.com"
-	DEV_URL  = "http://localhost:9999"
+	PROD_URL = "https://www.appcanary.com"
+	DEV_URL  = "http://localhost:3000"
 
 	DEFAULT_CONF_PATH = "/etc/canary/"
 	DEFAULT_CONF_FILE = DEFAULT_CONF_PATH + "canary.conf"
