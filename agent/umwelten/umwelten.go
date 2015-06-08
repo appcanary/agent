@@ -1,6 +1,7 @@
 package umwelten
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -28,9 +29,12 @@ func Init(env_str string) {
 		env.Prod = true
 	}
 
+	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), logging.GlogFormatter)
+
 	// to be overriden by cli options
 	if env.Prod {
-		logging.SetLevel(logging.NOTICE, "canary-agent")
+		//TODO this should be notice but we'll log debug in prod for now because of testing
+		logging.SetLevel(logging.DEBUG, "canary-agent")
 		env.BaseUrl = PROD_URL
 
 		env.Logo = PROD_LOGO
@@ -40,9 +44,21 @@ func Init(env_str string) {
 		env.VarFile = DEFAULT_VAR_FILE
 
 		env.HeartbeatDuration = DEFAULT_HEARTBEAT_DURATION
-	} else {
-		logging.SetLevel(logging.DEBUG, "canary-agent")
 
+		//TODO: This needs to happen outside of the init, because the init is called before we parse command line flags and we eventually want the log file location to be user secified.
+		//I think the best thing to do is to refactor this bit of code and how we handle dev/prod mode to work better with the flags package
+		var err error
+		env.LogFile, err = os.OpenFile(DEFAULT_LOG_FILE, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		if err != nil {
+			Log.Error("Can't open log file", err) //INCEPTION
+			os.Exit(1)
+		} else {
+			fileBackend := logging.NewBackendFormatter(logging.NewLogBackend(env.LogFile, "", 0), logging.GlogFormatter)
+			fmt.Println(*env.LogFile)
+			logging.SetBackend(fileBackend, stdoutBackend)
+		}
+
+	} else {
 		// ###### resolve path
 		// filepath.Abs was resolving to a different folder
 		// depending on whether it was run from main or a test
@@ -69,6 +85,9 @@ func Init(env_str string) {
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
+
+		logging.SetLevel(logging.DEBUG, "canary-agent")
+		logging.SetBackend(stdoutBackend)
 
 	}
 }
