@@ -34,8 +34,7 @@ func Init(env_str string) {
 
 	// to be overriden by cli options
 	if env.Prod {
-		//TODO this should be notice but we'll log debug in prod for now because of testing
-		logging.SetLevel(logging.DEBUG, "canary-agent")
+		logging.SetLevel(logging.INFO, "canary-agent")
 		env.BaseUrl = PROD_URL
 
 		env.Logo = PROD_LOGO
