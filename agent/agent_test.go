@@ -26,7 +26,7 @@ func TestAgent(t *testing.T) {
 	// let's ensure our server is unregistered
 	agent.server.UUID = ""
 
-	assert.Equal(agent.FirstRun(), true)
+	assert.Equal(true, agent.FirstRun())
 	server_uuid := "123456"
 
 	client.On("CreateServer").Return(server_uuid)

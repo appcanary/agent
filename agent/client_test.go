@@ -50,7 +50,7 @@ func (t *ClientTestSuite) TestHeartbeat() {
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal(r.Header.Get("Authorization"), "Token "+t.api_key, "heartbeat api key")
+		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
 
 		json_files := rBody["files"].([]interface{})
 
@@ -59,12 +59,12 @@ func (t *ClientTestSuite) TestHeartbeat() {
 		t.NotNil(json_files)
 		monitored_file := json_files[0].(map[string]interface{})
 
-		t.Equal(monitored_file["kind"], "gemfile")
+		t.Equal("gemfile", monitored_file["kind"])
 		t.NotNil(monitored_file["path"])
-		t.NotEqual(monitored_file["path"], "")
+		t.NotEqual("", monitored_file["path"])
 		t.NotNil(monitored_file["updated-at"])
-		t.NotEqual(monitored_file["updated-at"], "")
-		t.Equal(monitored_file["being-watched"], true)
+		t.NotEqual("", monitored_file["updated-at"])
+		t.Equal(true, monitored_file["being-watched"])
 	})
 
 	// the client uses BaseUrl to set up queries.
@@ -85,14 +85,14 @@ func (t *ClientTestSuite) TestSendFile() {
 	ts := testServer(t, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal(r.Header.Get("Authorization"), "Token "+t.api_key, "heartbeat api key")
+		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
 
 		json := rBody
 
-		t.Equal(json["name"], "")
-		t.Equal(json["path"], test_file_path)
-		t.Equal(json["kind"], "gemfile")
-		t.NotEqual(json["contents"], "")
+		t.Equal("", json["name"])
+		t.Equal(test_file_path, json["path"])
+		t.Equal("gemfile", json["kind"])
+		t.NotEqual("", json["contents"])
 
 	})
 
@@ -115,13 +115,13 @@ func (t *ClientTestSuite) TestCreateServer() {
 	ts := testServer(t, "POST", json_response, func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal(r.Header.Get("Authorization"), "Token "+t.api_key, "heartbeat api key")
+		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
 
 		json := rBody
 
-		t.Equal(json["hostname"], server.Hostname)
-		t.Equal(json["uname"], server.Uname)
-		t.Equal(json["ip"], server.Ip)
+		t.Equal(server.Hostname, json["hostname"])
+		t.Equal(server.Uname, json["uname"])
+		t.Equal(server.Ip, json["ip"])
 		t.Nil(json["uuid"])
 	})
 
@@ -145,8 +145,8 @@ func tsrespond(w http.ResponseWriter, status int, v string) {
 
 func testServer(assert *ClientTestSuite, method string, respondWithBody string, callback func(*http.Request, TestJsonRequest)) *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(r.Method, method, "method")
-		assert.Equal(r.Header.Get("Content-Type"), "application/json", "content type")
+		assert.Equal(method, r.Method, "method")
+		assert.Equal("application/json", r.Header.Get("Content-Type"), "content type")
 
 		body, _ := ioutil.ReadAll(r.Body)
 		r.Body.Close()
