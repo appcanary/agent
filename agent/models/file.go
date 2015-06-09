@@ -10,11 +10,6 @@ import (
 
 var log = umwelten.Log
 
-type File interface {
-	GetPath() string
-	Parse() interface{}
-}
-
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
