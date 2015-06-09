@@ -1,7 +1,9 @@
 package models
 
 import (
+	"encoding/json"
 	"io/ioutil"
+	"sync"
 	"time"
 
 	"github.com/stateio/canary-agent/agent/umwelten"
@@ -13,6 +15,7 @@ var log = umwelten.Log
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
+	lock         sync.RWMutex
 	Kind         string            `json:"kind"`
 	Path         string            `json:"path"`
 	UpdatedAt    time.Time         `json:"updated-at"`
@@ -50,19 +53,37 @@ func (wf *WatchedFile) RemoveHook() {
 }
 
 func (wf *WatchedFile) AddHook() {
-	wf.BeingWatched = false
-	for !wf.BeingWatched {
+	wf.SetBeingWatched(false)
+	for !wf.GetBeingWatched() {
 		log.Debug("Adding file watcher to %s", wf.Path)
 		err := wf.Watcher.Add(wf.Path)
 		if err == nil {
 			log.Debug("Reading file: %s", wf.Path)
 			go wf.OnFileChange(wf)
-			wf.BeingWatched = true
+			wf.SetBeingWatched(true)
 		} else {
 			log.Error("Failed to add watcher on %s", wf.Path)
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
+}
+
+func (wf *WatchedFile) GetBeingWatched() bool {
+	wf.lock.RLock()
+	defer wf.lock.RUnlock()
+	return wf.BeingWatched
+}
+
+func (wf *WatchedFile) SetBeingWatched(bw bool) {
+	wf.lock.Lock()
+	wf.BeingWatched = bw
+	wf.lock.Unlock()
+}
+
+func (wf *WatchedFile) MarshalJson() ([]byte, error) {
+	wf.lock.RLock()
+	defer wf.lock.RUnlock()
+	return json.Marshal(interface{}(wf))
 }
 
 func (wf *WatchedFile) StartListener() {
