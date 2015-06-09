@@ -21,6 +21,7 @@ type WatchedFile struct {
 	Kind         string            `json:"kind"`
 	Path         string            `json:"path"`
 	UpdatedAt    time.Time         `json:"updated-at"`
+	BeingWatched bool              `json:"being-watched"`
 	Watcher      *fsnotify.Watcher `json:"-"`
 	OnFileChange FileChangeHandler `json:"-"`
 }
@@ -54,16 +55,16 @@ func (wf *WatchedFile) RemoveHook() {
 }
 
 func (wf *WatchedFile) AddHook() {
-	needHook := true
-	for needHook {
+	wf.BeingWatched = false
+	for !wf.BeingWatched {
 		log.Debug("Adding file watcher to %s", wf.Path)
 		err := wf.Watcher.Add(wf.Path)
 		if err == nil {
 			log.Debug("Reading file: %s", wf.Path)
 			go wf.OnFileChange(wf)
-			needHook = false
+			wf.BeingWatched = true
 		} else {
-			log.Debug("Failed to add watcher on %s", wf.Path)
+			log.Error("Failed to add watcher on %s", wf.Path)
 			time.Sleep(100 * time.Millisecond)
 		}
 	}

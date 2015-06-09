@@ -64,6 +64,7 @@ func (t *ClientTestSuite) TestHeartbeat() {
 		t.NotEqual(monitored_file["path"], "")
 		t.NotNil(monitored_file["updated-at"])
 		t.NotEqual(monitored_file["updated-at"], "")
+		t.Equal(monitored_file["being-watched"], true)
 	})
 
 	// the client uses BaseUrl to set up queries.
