@@ -76,6 +76,11 @@ func main() {
 
 	defer a.CloseWatches()
 
+	// Close the logfile when we exit
+	if env.LogFile != nil {
+		defer env.LogFile.Close()
+	}
+
 	// wait for the right signal
 	// signal.Notify(done, os.Interrupt, os.Kill)
 	<-done

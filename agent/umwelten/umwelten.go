@@ -19,6 +19,7 @@ type Umwelten struct {
 	ConfFile          string
 	VarFile           string
 	HeartbeatDuration time.Duration
+	LogFile           *os.File
 }
 
 var env = &Umwelten{}
