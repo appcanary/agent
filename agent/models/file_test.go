@@ -80,13 +80,13 @@ func TestWatchFileFailure(t *testing.T) {
 	}
 
 	wfile := NewWatchedFile(tf.Name(), testcb)
-
-	assert.NotPanics(func() {
-		wfile.StartListener()
-		os.Remove(tf.Name())
-		time.Sleep(200 * time.Millisecond)
-	})
-	assert.True(true)
+	wfile.StartListener()
+	// File is being wartched
+	assert.True(wfile.GetBeingWatched())
+	os.Remove(tf.Name())
+	time.Sleep(200 * time.Millisecond)
+	//Since the file is gone, we stopped watching it
+	assert.False(wfile.GetBeingWatched())
 	wfile.RemoveHook()
 }
 

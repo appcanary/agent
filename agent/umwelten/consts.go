@@ -11,8 +11,8 @@ var DEV_VAR_FILE string
 
 // env vars
 const (
-	PROD_URL = "https://lolprod.example.com"
-	DEV_URL  = "http://localhost:9999"
+	PROD_URL = "https://www.appcanary.com"
+	DEV_URL  = "http://localhost:3000"
 
 	DEFAULT_CONF_PATH = "/etc/canary/"
 	DEFAULT_CONF_FILE = DEFAULT_CONF_PATH + "canary.conf"
@@ -21,11 +21,13 @@ const (
 
 	DEFAULT_HEARTBEAT_DURATION = 1 * time.Hour
 	DEV_HEARTBEAT_DURATION     = 10 * time.Second
+
+	DEFAULT_LOG_FILE = "./canary.log" // later "/var/log/canary/canary.log"
 )
 
 // api endpoints
 const (
-	API_VERSION   = "/v1/agent/"
+	API_VERSION   = "/api/v1/agent/"
 	API_HEARTBEAT = API_VERSION + "heartbeat"
 	API_SERVERS   = API_VERSION + "servers"
 )
