@@ -17,9 +17,6 @@ build-all: setup build
 build:
 	go build -o ./bin/canary-agent 
 
-peg-parser:
-	peg parsers/gemfile/gemfile.peg
-
 clean:
 	@rm -rf ./bin
 
