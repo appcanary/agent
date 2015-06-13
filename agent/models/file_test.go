@@ -90,6 +90,57 @@ func TestWatchFileFailure(t *testing.T) {
 	wfile.RemoveHook()
 }
 
+// does the callback get fired when the directory
+// the file is in gets renamed?
+func TestWatchFileRenameDirectory(t *testing.T) {
+	assert := assert.New(t)
+
+	folder := "/tmp/CANARYTEST"
+	file_name := folder + "/test1.gems"
+
+	os.Mkdir(folder, 0777)
+	ioutil.WriteFile(file_name, []byte("tst"), 0644)
+
+	cbInvoked := make(chan bool, 10)
+
+	mutex := &sync.Mutex{}
+	counter := 0
+	testcb := func(wfile *WatchedFile) {
+		mutex.Lock()
+		counter++
+		mutex.Unlock()
+		cbInvoked <- true
+	}
+
+	wfile := NewWatchedFile(file_name, testcb)
+	defer wfile.RemoveHook()
+
+	// file gets read on hook add
+	wfile.StartListener()
+	<-cbInvoked
+
+	// aight. let's rename the folder it's in.
+	// let's create a tmp path we can rename to.
+	folder2 := "/tmp/CANARYTEST2"
+	os.Rename(folder, folder2)
+
+	time.Sleep(500 * time.Millisecond)
+
+	assert.False(wfile.GetBeingWatched())
+	os.Mkdir(folder, 0777)
+
+	ioutil.WriteFile(file_name, []byte("tst"), 0644)
+
+	time.Sleep(500 * time.Millisecond)
+
+	mutex.Lock()
+	assert.Equal(2, counter)
+	mutex.Unlock()
+
+	os.RemoveAll(folder)
+	os.RemoveAll(folder2)
+}
+
 func TestWatchFileHookLoop(t *testing.T) {
 
 	assert := assert.New(t)
