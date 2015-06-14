@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
@@ -47,6 +48,7 @@ func (t *ClientTestSuite) SetupTest() {
 func (t *ClientTestSuite) TestHeartbeat() {
 
 	serverInvoked := false
+	time.Sleep(500 * time.Millisecond)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
