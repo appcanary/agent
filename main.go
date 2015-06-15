@@ -16,7 +16,7 @@ var env = umwelten.Fetch()
 var log = umwelten.Log
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "canary-agent: agent for https://www.appcanry.com.\nUsage:\n")
+	fmt.Fprintf(os.Stderr, "Usage: canary-agent [OPTION]\n")
 	flag.PrintDefaults()
 }
 
@@ -27,6 +27,12 @@ func main() {
 
 	flag.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
 	flag.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
+
+	if !env.Prod {
+		flag.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
+
+	}
+
 	version := flag.Bool("version", false, "Display version information")
 	flag.Parse()
 

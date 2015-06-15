@@ -1,7 +1,6 @@
 package umwelten
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -54,7 +53,6 @@ func Init(env_str string) {
 			os.Exit(1)
 		} else {
 			fileBackend := logging.NewBackendFormatter(logging.NewLogBackend(env.LogFile, "", 0), logging.GlogFormatter)
-			fmt.Println(*env.LogFile)
 			logging.SetBackend(fileBackend, stdoutBackend)
 		}
 
