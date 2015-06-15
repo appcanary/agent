@@ -3,7 +3,7 @@ package models
 import (
 	"os"
 
-	"github.com/BurntSushi/toml"
+	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/BurntSushi/toml"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 

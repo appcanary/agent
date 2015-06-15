@@ -1,4 +1,5 @@
 require 'rake/clean'
+require 'json'
 
 def shell(str)
 	puts str
@@ -24,8 +25,8 @@ end
 
 task :release_prep do
 	if `git diff --shortstat` != ""
-		puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
-		exit 1
+   puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
+   exit 1
 	end
 
 	date = `date -u +"%Y.%m.%d-%H%M%S-%Z"`

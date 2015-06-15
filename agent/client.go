@@ -11,7 +11,7 @@ import (
 
 	_ "crypto/sha512"
 	//http://bridge.grumpy-troll.org/2014/05/golang-tls-comodo/
-	"github.com/cenkalti/backoff"
+	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/cenkalti/backoff"
 	. "github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
 )

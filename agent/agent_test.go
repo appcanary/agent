@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stateio/testify/assert"
 	"github.com/stateio/canary-agent/agent/umwelten"
 	"github.com/stateio/canary-agent/mocks"
-	"github.com/stateio/testify/assert"
 )
 
 func TestAgent(t *testing.T) {

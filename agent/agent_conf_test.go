@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/stateio/testify/assert"
+	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stateio/testify/assert"
 )
 
 func TestConf(t *testing.T) {

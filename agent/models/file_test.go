@@ -9,7 +9,7 @@ import (
 
 	"io/ioutil"
 
-	"github.com/stateio/testify/assert"
+	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stateio/testify/assert"
 )
 
 const TEST_POLL_SLEEP = (POLL_SLEEP + (50 * time.Millisecond)) * 2
