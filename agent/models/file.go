@@ -90,18 +90,21 @@ func (wf *WatchedFile) listen() {
 	for wf.KeepPolling() {
 
 		wf.scan()
-		// TODO: replace magic number here, and in tests.
 		time.Sleep(POLL_SLEEP)
 
 	}
 }
 
 func (wf *WatchedFile) scan() {
+	// log.Debug("WF: Check.")
 	currentCheck := wf.currentChecksum()
 
 	if currentCheck == 0 {
+		// log.Debug("WF: checksum fail.")
+		// there was some error reading the file.
+		// try again later?
 		wf.SetBeingWatched(false)
-		return // try again later?
+		return
 	}
 
 	wf.SetBeingWatched(true)

@@ -13,7 +13,7 @@ import (
 	"github.com/stateio/testify/suite"
 )
 
-const TEST_POLL_SLEEP = models.POLL_SLEEP + (1 * time.Millisecond)
+const TEST_POLL_SLEEP = (models.POLL_SLEEP + (1 * time.Millisecond)) * 2
 
 type TestJsonRequest map[string]interface{}
 
