@@ -46,6 +46,11 @@ func main() {
 
 	// slurp env, instantiate agent
 	conf := agent.NewConfFromEnv()
+
+	if conf.ApiKey == "" {
+		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/canary-agent/canary.conf")
+	}
+
 	a := agent.NewAgent(conf)
 
 	// we prob can't reliably fingerprint servers.
