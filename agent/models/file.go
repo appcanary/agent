@@ -17,7 +17,7 @@ var log = umwelten.Log
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
-	lock         sync.Mutex
+	sync.Mutex
 	keepPolling  bool
 	Kind         string            `json:"kind"`
 	Path         string            `json:"path"`
@@ -43,20 +43,21 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 }
 
 // func (wf *WatchedFile) MarshalJson() ([]byte, error) {
-// 	wf.lock.RLock()
-// 	defer wf.lock.RUnlock()
-// 	return json.Marshal(interface{}(wf))
+// 	wf.Lock()
+// 	defer wf.Unlock()
+// 	ret, err := json.Marshal(interface{}(wf))
+// 	return ret, err
 // }
 
 func (wf *WatchedFile) KeepPolling() bool {
-	wf.lock.Lock()
-	defer wf.lock.Unlock()
+	wf.Lock()
+	defer wf.Unlock()
 	return wf.keepPolling
 }
 
 func (wf *WatchedFile) StartListener() {
-	wf.lock.Lock()
-	defer wf.lock.Unlock()
+	wf.Lock()
+	defer wf.Unlock()
 	wf.keepPolling = true
 	go wf.listen()
 }
@@ -64,21 +65,21 @@ func (wf *WatchedFile) StartListener() {
 // TODO: solve data race issue
 func (wf *WatchedFile) StopListening() {
 	log.Debug("No longer listening to: %s", wf.Path)
-	wf.lock.Lock()
-	defer wf.lock.Unlock()
+	wf.Lock()
+	defer wf.Unlock()
 	wf.keepPolling = false
 }
 
 func (wf *WatchedFile) GetBeingWatched() bool {
-	wf.lock.Lock()
-	defer wf.lock.Unlock()
+	wf.Lock()
+	defer wf.Unlock()
 	return wf.BeingWatched
 }
 
 func (wf *WatchedFile) SetBeingWatched(bw bool) {
-	wf.lock.Lock()
+	wf.Lock()
 	wf.BeingWatched = bw
-	wf.lock.Unlock()
+	wf.Unlock()
 }
 
 func (wf *WatchedFile) Contents() ([]byte, error) {
