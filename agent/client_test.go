@@ -13,6 +13,8 @@ import (
 	"github.com/stateio/testify/suite"
 )
 
+const TEST_POLL_SLEEP = models.POLL_SLEEP + (1 * time.Millisecond)
+
 type TestJsonRequest map[string]interface{}
 
 //[]map[string]string
@@ -48,7 +50,7 @@ func (t *ClientTestSuite) SetupTest() {
 func (t *ClientTestSuite) TestHeartbeat() {
 
 	serverInvoked := false
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(TEST_POLL_SLEEP * 2)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 

@@ -10,6 +10,8 @@ import (
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
+const POLL_SLEEP = 250 * time.Millisecond
+
 var log = umwelten.Log
 
 type FileChangeHandler func(*WatchedFile)
@@ -46,7 +48,7 @@ func (wf *WatchedFile) Contents() ([]byte, error) {
 
 // TODO: solve data race issue
 func (wf *WatchedFile) StopListening() {
-	log.Debug("No longer listening to: ", wf.Path)
+	log.Debug("No longer listening to: %s", wf.Path)
 	wf.keepPolling = false
 }
 
@@ -74,7 +76,7 @@ func (wf *WatchedFile) listen() {
 
 		wf.scan()
 		// TODO: replace magic number here, and in tests.
-		time.Sleep(250 * time.Millisecond)
+		time.Sleep(POLL_SLEEP)
 
 	}
 }

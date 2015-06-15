@@ -12,6 +12,8 @@ import (
 	"github.com/stateio/testify/assert"
 )
 
+const TEST_POLL_SLEEP = POLL_SLEEP + (1 * time.Millisecond)
+
 // create a tempfile, add a hook, see if hook gets called
 // when file changes. TODO: test all other fs events.
 func TestWatchFile(t *testing.T) {
@@ -81,10 +83,10 @@ func TestWatchFileFailure(t *testing.T) {
 	wfile := NewWatchedFile(tf.Name(), testcb)
 	wfile.StartListener()
 	// File is being wartched
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(TEST_POLL_SLEEP)
 	assert.True(wfile.GetBeingWatched())
 	os.Remove(tf.Name())
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(TEST_POLL_SLEEP)
 	//Since the file is gone, we stopped watching it
 	assert.False(wfile.GetBeingWatched())
 	wfile.StopListening()
@@ -126,7 +128,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 	os.Rename(folder, folder2)
 
 	// file should now be missing.
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(TEST_POLL_SLEEP * 2)
 
 	assert.False(wfile.GetBeingWatched())
 
@@ -136,7 +138,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 	// write new file
 	ioutil.WriteFile(file_name, []byte("tst2"), 0644)
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(TEST_POLL_SLEEP * 2)
 	// this file should be different, thus triggering
 	// another callback
 
