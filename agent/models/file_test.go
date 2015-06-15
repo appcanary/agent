@@ -62,7 +62,7 @@ func TestWatchFile(t *testing.T) {
 		assert.True(false)
 	}
 
-	wfile.RemoveHook()
+	wfile.StopListening()
 }
 
 func TestWatchFileFailure(t *testing.T) {
@@ -87,7 +87,7 @@ func TestWatchFileFailure(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	//Since the file is gone, we stopped watching it
 	assert.False(wfile.GetBeingWatched())
-	wfile.RemoveHook()
+	wfile.StopListening()
 }
 
 // does the callback get fired when the directory
@@ -117,7 +117,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 
 	// file gets read on hook add
 	wfile.StartListener()
-	defer wfile.RemoveHook()
+	defer wfile.StopListening()
 	<-cbInvoked
 
 	// aight. let's rename the folder it's in.
@@ -224,7 +224,7 @@ func TestWatchFileHookLoop(t *testing.T) {
 	mutex.Unlock()
 
 	// cleanup
-	wfile.RemoveHook()
+	wfile.StopListening()
 	os.Remove(file_name)
 }
 

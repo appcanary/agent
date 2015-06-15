@@ -76,7 +76,7 @@ func (t *ClientTestSuite) TestHeartbeat() {
 	t.client.Heartbeat(t.server_uuid, t.files)
 
 	ts.Close()
-	t.files[0].RemoveHook()
+	t.files[0].StopListening()
 	t.True(serverInvoked)
 }
 

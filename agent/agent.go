@@ -97,6 +97,6 @@ func (agent *Agent) UpdateConf() {
 // This has to be called before exiting
 func (agent *Agent) CloseWatches() {
 	for _, file := range agent.files {
-		file.RemoveHook()
+		file.StopListening()
 	}
 }

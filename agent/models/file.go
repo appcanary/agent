@@ -44,10 +44,9 @@ func (wf *WatchedFile) Contents() ([]byte, error) {
 	return ioutil.ReadFile(wf.Path)
 }
 
-// Rename to StopListener
 // TODO: solve data race issue
-func (wf *WatchedFile) RemoveHook() {
-	log.Debug("closing watcher")
+func (wf *WatchedFile) StopListening() {
+	log.Debug("No longer listening to: ", wf.Path)
 	wf.keepPolling = false
 }
 
