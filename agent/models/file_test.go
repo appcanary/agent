@@ -92,6 +92,7 @@ func TestWatchFileFailure(t *testing.T) {
 
 // does the callback get fired when the directory
 // the file is in gets renamed?
+// TODO: replace with tempfiles.
 func TestWatchFileRenameDirectory(t *testing.T) {
 	assert := assert.New(t)
 
@@ -176,7 +177,7 @@ func TestWatchFileHookLoop(t *testing.T) {
 
 	// // file gets read on rewrite
 	fmt.Println("--> write 2")
-	file_content = []byte("hello test - A\n")
+	file_content = []byte("hello test1")
 	err := ioutil.WriteFile(file_name, file_content, 0644)
 	<-cbInvoked
 
@@ -186,7 +187,7 @@ func TestWatchFileHookLoop(t *testing.T) {
 	os.Remove(file_name)
 
 	fmt.Println("--> write 3")
-	file_content = []byte("hello test - AA\n")
+	file_content = []byte("hello test2")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
 	<-cbInvoked
@@ -194,7 +195,7 @@ func TestWatchFileHookLoop(t *testing.T) {
 	// we write to the file, triggering
 	// another re-read
 	fmt.Println("--> write 4")
-	file_content = []byte("hello test - AAA\n")
+	file_content = []byte("hello test3")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
 	<-cbInvoked
@@ -205,13 +206,13 @@ func TestWatchFileHookLoop(t *testing.T) {
 	os.Remove(file_name)
 
 	fmt.Println("--> write 5")
-	file_content = []byte("hello test - AAAA\n")
+	file_content = []byte("hello test4")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
 	<-cbInvoked
 
 	fmt.Println("--> write 6")
-	file_content = []byte("hello test - AAAAA\n")
+	file_content = []byte("hello test5")
 	err = ioutil.WriteFile(file_name, file_content, 0644)
 	assert.Nil(err)
 	<-cbInvoked

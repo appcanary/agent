@@ -2,9 +2,10 @@ package models
 
 import (
 	"io/ioutil"
-	"os"
 	"sync"
 	"time"
+
+	"hash/crc32"
 
 	"github.com/stateio/canary-agent/agent/umwelten"
 	"gopkg.in/fsnotify.v1"
@@ -21,9 +22,8 @@ type WatchedFile struct {
 	Path         string            `json:"path"`
 	UpdatedAt    time.Time         `json:"updated-at"`
 	BeingWatched bool              `json:"being-watched"`
-	Watcher      *fsnotify.Watcher `json:"-"`
 	OnFileChange FileChangeHandler `json:"-"`
-	state        *os.FileInfo      `json:"-"`
+	checksum     uint32
 }
 
 type WatchedFileJson struct {
@@ -58,6 +58,7 @@ func (wf *WatchedFile) RemoveHook() {
 	wf.keepPolling = false
 }
 
+// TODO: rename
 func (wf *WatchedFile) GetBeingWatched() bool {
 	wf.lock.RLock()
 	defer wf.lock.RUnlock()
@@ -78,22 +79,18 @@ func (wf *WatchedFile) SetBeingWatched(bw bool) {
 
 func (wf *WatchedFile) listen() {
 	for wf.keepPolling {
-		// TBD do we want to stop this EVER? prob no
-		// if !wf.GetBeingWatched() {
-		// 	return
-		// }
 
 		wf.scan()
+		// TODO: replace magic number here, and in tests.
 		time.Sleep(250 * time.Millisecond)
+
 	}
 }
 
 func (wf *WatchedFile) scan() {
-	// log.Debug("SCANNING...")
-	info, err := os.Stat(wf.Path)
+	currentCheck := wf.currentChecksum()
 
-	// log.Debug("inf", info)
-	if err != nil {
+	if currentCheck == 0 {
 		wf.SetBeingWatched(false)
 		log.Debug("File Stat error")
 		return // try again later?
@@ -101,29 +98,20 @@ func (wf *WatchedFile) scan() {
 
 	wf.SetBeingWatched(true)
 
-	if wf.fileChanged(wf.state, &info) {
-		// log.Debug("FILE CHANGE")
+	if wf.checksum != currentCheck {
 		go wf.OnFileChange(wf)
-		wf.state = &info
+		wf.checksum = currentCheck
 	}
 }
 
-func (wf *WatchedFile) fileChanged(fptr1 *os.FileInfo, fptr2 *os.FileInfo) bool {
-	if fptr1 == nil {
-		return true
+func (wf *WatchedFile) currentChecksum() uint32 {
+
+	file, err := ioutil.ReadFile(wf.Path)
+	if err != nil {
+		return 0
 	}
 
-	if fptr2 == nil {
-		return true // TBD
-	}
-
-	file1 := *fptr1
-	file2 := *fptr2
-
-	// fmt.Printf("f1 %+v\n", file1)
-	// fmt.Printf("f2 %+v\n\n", file2)
-
-	return file1.Size() != file2.Size() || file1.ModTime() != file2.ModTime() || file1.Mode() != file2.Mode()
+	return crc32.ChecksumIEEE(file)
 }
 
 func (wf *WatchedFile) StartListener() {
