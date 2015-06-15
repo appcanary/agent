@@ -15,11 +15,22 @@ setup:
 build-all: setup build
 
 build:
-	go build -o ./bin/canary-agent 
-
-peg-parser:
-	peg parsers/gemfile/gemfile.peg
+	go build -o ./bin/canary-agent
 
 clean:
 	@rm -rf ./bin
 
+
+date := $(shell date -u +"%Y.%m.%d-%H%M%S-%Z")
+tag_name = deploy-${date}
+sha = $(shell git rev-parse --short HEAD)
+user = $(shell whoami)
+commit_message = $(user) deployed $(sha)
+
+release:
+ifneq ($(shell git diff --shortstat), )
+	@echo "Whoa there, partner. Dirty trees can't deploy. Git yourself clean."
+else
+	git tag -a $(tag_name) -m "$(commit_message)"
+	git push origin $(tag_name)
+endif
