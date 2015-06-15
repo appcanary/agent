@@ -10,7 +10,7 @@ import (
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
-const CanaryVersion = "0.1 Alpha"
+var CanaryVersion string
 
 var env = umwelten.Fetch()
 var log = umwelten.Log
