@@ -1,27 +1,30 @@
 package models
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"sync"
 	"time"
 
+	"hash/crc32"
+
 	"github.com/stateio/canary-agent/agent/umwelten"
-	"gopkg.in/fsnotify.v1"
 )
+
+const POLL_SLEEP = 1000 * time.Millisecond
 
 var log = umwelten.Log
 
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
-	lock         sync.RWMutex
+	sync.Mutex
+	keepPolling  bool
 	Kind         string            `json:"kind"`
 	Path         string            `json:"path"`
 	UpdatedAt    time.Time         `json:"updated-at"`
 	BeingWatched bool              `json:"being-watched"`
-	Watcher      *fsnotify.Watcher `json:"-"`
 	OnFileChange FileChangeHandler `json:"-"`
+	checksum     uint32
 }
 
 type WatchedFiles []*WatchedFile
@@ -33,98 +36,91 @@ func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFil
 	return file
 }
 
+// only used for tests
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now(), Watcher: watcher}
+	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
 	return file
+}
+
+// func (wf *WatchedFile) MarshalJson() ([]byte, error) {
+// 	wf.Lock()
+// 	defer wf.Unlock()
+// 	ret, err := json.Marshal(interface{}(wf))
+// 	return ret, err
+// }
+
+func (wf *WatchedFile) KeepPolling() bool {
+	wf.Lock()
+	defer wf.Unlock()
+	return wf.keepPolling
+}
+
+func (wf *WatchedFile) StartListener() {
+	wf.Lock()
+	defer wf.Unlock()
+	wf.keepPolling = true
+	go wf.listen()
+}
+
+// TODO: solve data race issue
+func (wf *WatchedFile) StopListening() {
+	log.Debug("No longer listening to: %s", wf.Path)
+	wf.Lock()
+	defer wf.Unlock()
+	wf.keepPolling = false
+}
+
+func (wf *WatchedFile) GetBeingWatched() bool {
+	wf.Lock()
+	defer wf.Unlock()
+	return wf.BeingWatched
+}
+
+func (wf *WatchedFile) SetBeingWatched(bw bool) {
+	wf.Lock()
+	wf.BeingWatched = bw
+	wf.Unlock()
 }
 
 func (wf *WatchedFile) Contents() ([]byte, error) {
 	return ioutil.ReadFile(wf.Path)
 }
 
-func (wf *WatchedFile) RemoveHook() {
-	log.Debug("closing watcher")
-	wf.Watcher.Close()
-}
+func (wf *WatchedFile) listen() {
+	for wf.KeepPolling() {
 
-func (wf *WatchedFile) AddHook() {
-	wf.SetBeingWatched(false)
-	for !wf.GetBeingWatched() {
-		log.Debug("Adding file watcher to %s", wf.Path)
-		err := wf.Watcher.Add(wf.Path)
-		if err == nil {
-			log.Debug("Reading file: %s", wf.Path)
-			go wf.OnFileChange(wf)
-			wf.SetBeingWatched(true)
-		} else {
-			log.Error("Failed to add watcher on %s", wf.Path)
-			time.Sleep(100 * time.Millisecond)
-		}
+		wf.scan()
+		time.Sleep(POLL_SLEEP)
+
 	}
 }
 
-func (wf *WatchedFile) GetBeingWatched() bool {
-	wf.lock.RLock()
-	defer wf.lock.RUnlock()
-	return wf.BeingWatched
+func (wf *WatchedFile) scan() {
+	// log.Debug("WF: Check.")
+	currentCheck := wf.currentChecksum()
+
+	if currentCheck == 0 {
+		// log.Debug("WF: checksum fail.")
+		// there was some error reading the file.
+		// try again later?
+		wf.SetBeingWatched(false)
+		return
+	}
+
+	wf.SetBeingWatched(true)
+
+	if wf.checksum != currentCheck {
+		go wf.OnFileChange(wf)
+		wf.checksum = currentCheck
+	}
 }
 
-func (wf *WatchedFile) SetBeingWatched(bw bool) {
-	wf.lock.Lock()
-	wf.BeingWatched = bw
-	wf.lock.Unlock()
-}
+func (wf *WatchedFile) currentChecksum() uint32 {
 
-func (wf *WatchedFile) MarshalJson() ([]byte, error) {
-	wf.lock.RLock()
-	defer wf.lock.RUnlock()
-	return json.Marshal(interface{}(wf))
-}
+	file, err := ioutil.ReadFile(wf.Path)
+	if err != nil {
+		return 0
+	}
 
-func (wf *WatchedFile) StartListener() {
-	wf.AddHook()
-
-	// Listen for changes
-	go func() {
-		keepListening := true
-		for keepListening {
-			select {
-			case event, ok := <-wf.Watcher.Events:
-				if ok {
-
-					log.Debug("Watcher got event %s", event.String())
-					//If the file is renamed or removed we have to create a new watch after a delay
-					if isOp(event.Op, fsnotify.Remove) || isOp(event.Op, fsnotify.Rename) {
-						//File is deleted so we have to add the watcher again
-						go wf.AddHook()
-					} else if isOp(event.Op, fsnotify.Write) {
-						log.Debug("Rereading file: %s", wf.Path)
-						go wf.OnFileChange(wf)
-					}
-					// else: the op was chmod, do nothing
-
-				} else {
-					log.Debug("Closing listener")
-					keepListening = false
-				}
-
-			case err, ok := <-wf.Watcher.Errors:
-				if ok {
-					log.Debug("Watcher error: %s", err)
-				} else {
-					break
-				}
-			}
-		}
-	}()
-}
-
-// Checks whether an fsnotify Op from an event matches a target Op
-func isOp(o fsnotify.Op, target fsnotify.Op) bool {
-	return (o&target == target)
+	return crc32.ChecksumIEEE(file)
 }

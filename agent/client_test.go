@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stateio/canary-agent/agent/models"
 	"github.com/stateio/canary-agent/agent/umwelten"
 	"github.com/stateio/testify/suite"
 )
+
+const TEST_POLL_SLEEP = (models.POLL_SLEEP + (50 * time.Millisecond)) * 2
 
 type TestJsonRequest map[string]interface{}
 
@@ -47,6 +50,7 @@ func (t *ClientTestSuite) SetupTest() {
 func (t *ClientTestSuite) TestHeartbeat() {
 
 	serverInvoked := false
+	time.Sleep(TEST_POLL_SLEEP * 2)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
@@ -74,7 +78,7 @@ func (t *ClientTestSuite) TestHeartbeat() {
 	t.client.Heartbeat(t.server_uuid, t.files)
 
 	ts.Close()
-	t.files[0].RemoveHook()
+	t.files[0].StopListening()
 	t.True(serverInvoked)
 }
 
