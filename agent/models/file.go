@@ -17,7 +17,7 @@ var log = umwelten.Log
 type FileChangeHandler func(*WatchedFile)
 
 type WatchedFile struct {
-	lock         sync.RWMutex
+	lock         sync.Mutex
 	keepPolling  bool
 	Kind         string            `json:"kind"`
 	Path         string            `json:"path"`
@@ -42,20 +42,36 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	return file
 }
 
-func (wf *WatchedFile) Contents() ([]byte, error) {
-	return ioutil.ReadFile(wf.Path)
+// func (wf *WatchedFile) MarshalJson() ([]byte, error) {
+// 	wf.lock.RLock()
+// 	defer wf.lock.RUnlock()
+// 	return json.Marshal(interface{}(wf))
+// }
+
+func (wf *WatchedFile) KeepPolling() bool {
+	wf.lock.Lock()
+	defer wf.lock.Unlock()
+	return wf.keepPolling
+}
+
+func (wf *WatchedFile) StartListener() {
+	wf.lock.Lock()
+	defer wf.lock.Unlock()
+	wf.keepPolling = true
+	go wf.listen()
 }
 
 // TODO: solve data race issue
 func (wf *WatchedFile) StopListening() {
 	log.Debug("No longer listening to: %s", wf.Path)
+	wf.lock.Lock()
+	defer wf.lock.Unlock()
 	wf.keepPolling = false
 }
 
-// TODO: rename
 func (wf *WatchedFile) GetBeingWatched() bool {
-	wf.lock.RLock()
-	defer wf.lock.RUnlock()
+	wf.lock.Lock()
+	defer wf.lock.Unlock()
 	return wf.BeingWatched
 }
 
@@ -65,14 +81,12 @@ func (wf *WatchedFile) SetBeingWatched(bw bool) {
 	wf.lock.Unlock()
 }
 
-// func (wf *WatchedFile) MarshalJson() ([]byte, error) {
-// 	wf.lock.RLock()
-// 	defer wf.lock.RUnlock()
-// 	return json.Marshal(interface{}(wf))
-// }
+func (wf *WatchedFile) Contents() ([]byte, error) {
+	return ioutil.ReadFile(wf.Path)
+}
 
 func (wf *WatchedFile) listen() {
-	for wf.keepPolling {
+	for wf.KeepPolling() {
 
 		wf.scan()
 		// TODO: replace magic number here, and in tests.
@@ -86,7 +100,6 @@ func (wf *WatchedFile) scan() {
 
 	if currentCheck == 0 {
 		wf.SetBeingWatched(false)
-		log.Debug("File Stat error")
 		return // try again later?
 	}
 
@@ -106,9 +119,4 @@ func (wf *WatchedFile) currentChecksum() uint32 {
 	}
 
 	return crc32.ChecksumIEEE(file)
-}
-
-func (wf *WatchedFile) StartListener() {
-	wf.keepPolling = true
-	go wf.listen()
 }
