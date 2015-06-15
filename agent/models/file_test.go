@@ -12,7 +12,7 @@ import (
 	"github.com/stateio/testify/assert"
 )
 
-const TEST_POLL_SLEEP = (POLL_SLEEP + (1 * time.Millisecond)) * 2
+const TEST_POLL_SLEEP = (POLL_SLEEP + (50 * time.Millisecond)) * 2
 
 // create a tempfile, add a hook, see if hook gets called
 // when file changes. TODO: test all other fs events.

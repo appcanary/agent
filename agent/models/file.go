@@ -10,7 +10,7 @@ import (
 	"github.com/stateio/canary-agent/agent/umwelten"
 )
 
-const POLL_SLEEP = 250 * time.Millisecond
+const POLL_SLEEP = 1000 * time.Millisecond
 
 var log = umwelten.Log
 
