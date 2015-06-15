@@ -8,7 +8,6 @@ import (
 	"hash/crc32"
 
 	"github.com/stateio/canary-agent/agent/umwelten"
-	"gopkg.in/fsnotify.v1"
 )
 
 var log = umwelten.Log
@@ -26,13 +25,6 @@ type WatchedFile struct {
 	checksum     uint32
 }
 
-type WatchedFileJson struct {
-	Kind         string    `json:"kind"`
-	Path         string    `json:"path"`
-	UpdatedAt    time.Time `json:"updated-at"`
-	BeingWatched bool      `json:"being-watched"`
-}
-
 type WatchedFiles []*WatchedFile
 
 // TODO: time.Now() needs to be called whenever it updates
@@ -42,6 +34,7 @@ func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFil
 	return file
 }
 
+// only used for tests
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
 	return file
@@ -117,9 +110,4 @@ func (wf *WatchedFile) currentChecksum() uint32 {
 func (wf *WatchedFile) StartListener() {
 	wf.keepPolling = true
 	go wf.listen()
-}
-
-// Checks whether an fsnotify Op from an event matches a target Op
-func isOp(o fsnotify.Op, target fsnotify.Op) bool {
-	return (o&target == target)
 }
