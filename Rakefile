@@ -35,10 +35,10 @@ task :testr => :build_all do
 end
 
 task :release_prep do
-	#if `git diff --shortstat` != ""
-  # puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
-  # exit 1
-	#end
+	if `git diff --shortstat` != ""
+   puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
+   exit 1
+	end
 
 	@date = `date -u +"%Y.%m.%d-%H%M%S-%Z"`.strip
 	tag_name = "#{CURRENT_VERSION}-#{@date}"
@@ -67,7 +67,7 @@ task :package => :cross_compile do
     })
   directory = connection.directories.get("appcanary")
   
-  ["amd64", "386"].each do |arch|
+  ["amd64", "i386"].each do |arch|
     ["deb", "rpm"].each do |package|
       exec %{fpm -s dir -t #{package} -n canary-agent -p "releases/canary-agent_#{@release_version}_#{arch}.#{package}" -v #{@release_version} -a #{arch} -C ./package/  --config-files /etc/canary-agent/canary.conf --config-files /var/db/canary-agent/server.conf --directories /etc/canary-agent/ --directories /var/db/canary-agent/ --license GPLv3 --vendor canary ./ ../dist/#{CURRENT_VERSION}+b#{@date}/linux_#{arch}/canary-agent=/usr/sbin/canary-agent}
       puts "Uploading to s3: https://appcanary.s3.amazonaws.com/dist/canary-agent_#{@release_version}_#{arch}.#{package}"
