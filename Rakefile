@@ -77,8 +77,8 @@ task :package => :cross_compile do
         :body   => File.open("releases/canary-agent_#{@release_version}_#{arch}.#{package}"),
         :public => true
       )
-      puts "Uploading to s3: https://appcanary.s3.amazonaws.com/dist/canary-agent_latest.#{package}"
-      file.copy("appcanary", "dist/canary-agent_latest_#{arch}.#{package}")
+      puts "Uploading to s3: https://appcanary.s3.amazonaws.com/dist/canary-agent_latest_#{arch}.#{package}"
+      file.copy("appcanary", "dist/canary-agent_latest_#{arch}.#{package}, :public => true")
     end
   end
 end
