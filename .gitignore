@@ -39,3 +39,4 @@ bin/
 test/var/
 
 .goxc.local.json
+.aws.yml
