@@ -1,0 +1,3 @@
+before:
+  - rm -rf Godeps
+  - echo "canary-agent" > .godir
