@@ -1,6 +1,6 @@
-build:
+dependencies:
   override:
-    - rake build
+    - go get -t -d -v ./...
 test:
   override: 
     - rake test 
