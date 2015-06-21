@@ -1,6 +1,5 @@
 require 'rake/clean'
 require 'json'
-require 'fog'
 require 'yaml'
 
 CURRENT_VERSION = "0.0.1"
@@ -58,6 +57,7 @@ task :cross_compile => :release_prep do
 end
 
 task :package => :cross_compile do
+  require 'fog'
   aws = YAML.load_file(".aws.yml")
   connection = Fog::Storage.new(
     {:provider                 => 'AWS',
