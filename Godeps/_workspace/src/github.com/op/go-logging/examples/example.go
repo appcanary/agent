@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/op/go-logging"
+	"github.com/op/go-logging"
 )
 
 var log = logging.MustGetLogger("example")

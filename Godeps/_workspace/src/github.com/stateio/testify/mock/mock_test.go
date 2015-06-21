@@ -2,9 +2,10 @@ package mock
 
 import (
 	"errors"
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 /*

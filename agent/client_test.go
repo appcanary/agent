@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stateio/testify/suite"
-	"github.com/stateio/canary-agent/agent/models"
-	"github.com/stateio/canary-agent/agent/umwelten"
+	"github.com/appcanary/agent/Godeps/_workspace/src/github.com/appcanary/testify/suite"
+	"github.com/appcanary/agent/agent/models"
+	"github.com/appcanary/agent/agent/umwelten"
 )
 
 const TEST_POLL_SLEEP = (models.POLL_SLEEP + (50 * time.Millisecond)) * 2

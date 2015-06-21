@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 
-	. "github.com/stateio/canary-agent/agent/models"
-	"github.com/stateio/canary-agent/agent/umwelten"
+	. "github.com/appcanary/agent/agent/models"
+	"github.com/appcanary/agent/agent/umwelten"
 )
 
 var log = umwelten.Log

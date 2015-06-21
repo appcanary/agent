@@ -7,7 +7,7 @@ import (
 
 	"hash/crc32"
 
-	"github.com/stateio/canary-agent/agent/umwelten"
+	"github.com/appcanary/agent/agent/umwelten"
 )
 
 const POLL_SLEEP = 1000 * time.Millisecond

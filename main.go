@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/stateio/canary-agent/agent"
-	"github.com/stateio/canary-agent/agent/umwelten"
+	"github.com/appcanary/agent/agent"
+	"github.com/appcanary/agent/agent/umwelten"
 )
 
 var CanaryVersion string

@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stretchr/testify/assert"
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var matchMethod = flag.String("m", "", "regular expression to select tests of the suite to run")

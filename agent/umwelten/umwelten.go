@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/op/go-logging"
+	"github.com/appcanary/agent/Godeps/_workspace/src/github.com/op/go-logging"
 )
 
 var Log = logging.MustGetLogger("canary-agent")

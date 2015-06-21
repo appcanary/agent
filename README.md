@@ -1,1 +1,1 @@
-![hullo](https://github.com/stateio/canary-agent/raw/master/readme.gif)
+![hullo](https://github.com/appcanary/agent/raw/master/readme.gif)

@@ -3,9 +3,9 @@ package agent
 import (
 	"os"
 
-	"github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/BurntSushi/toml"
-	. "github.com/stateio/canary-agent/agent/models"
-	"github.com/stateio/canary-agent/agent/umwelten"
+	"github.com/appcanary/agent/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	. "github.com/appcanary/agent/agent/models"
+	"github.com/appcanary/agent/agent/umwelten"
 )
 
 func NewConf() *Conf {

@@ -1,8 +1,8 @@
 package mocks
 
-import "github.com/stateio/canary-agent/Godeps/_workspace/src/github.com/stateio/testify/mock"
+import "github.com/appcanary/agent/Godeps/_workspace/src/github.com/appcanary/testify/mock"
 
-import models "github.com/stateio/canary-agent/agent/models"
+import models "github.com/appcanary/agent/agent/models"
 
 type Client struct {
 	mock.Mock
