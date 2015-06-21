@@ -3,7 +3,7 @@ package agent
 import (
 	"os"
 
-	"github.com/appcanary/agent/Godeps/_workspace/src/github.com/BurntSushi/toml"
+	"github.com/BurntSushi/toml"
 	. "github.com/appcanary/agent/agent/models"
 	"github.com/appcanary/agent/agent/umwelten"
 )

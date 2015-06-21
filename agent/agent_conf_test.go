@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/appcanary/agent/Godeps/_workspace/src/github.com/appcanary/testify/assert"
+	"github.com/appcanary/testify/assert"
 )
 
 func TestConf(t *testing.T) {

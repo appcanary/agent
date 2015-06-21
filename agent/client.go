@@ -11,9 +11,9 @@ import (
 
 	_ "crypto/sha512"
 	//http://bridge.grumpy-troll.org/2014/05/golang-tls-comodo/
-	"github.com/appcanary/agent/Godeps/_workspace/src/github.com/cenkalti/backoff"
 	. "github.com/appcanary/agent/agent/models"
 	"github.com/appcanary/agent/agent/umwelten"
+	"github.com/cenkalti/backoff"
 )
 
 var env = umwelten.Fetch()

@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/appcanary/agent/Godeps/_workspace/src/github.com/appcanary/testify/mock"
+import "github.com/appcanary/testify/mock"
 
 import models "github.com/appcanary/agent/agent/models"
 
