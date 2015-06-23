@@ -57,30 +57,15 @@ task :cross_compile => :release_prep do
 end
 
 task :package => :cross_compile do
-  require 'fog'
-  aws = YAML.load_file(".aws.yml")
-  connection = Fog::Storage.new(
-    {:provider                 => 'AWS',
-     :aws_access_key_id        => aws['access_key'],
-     :aws_secret_access_key    => aws['secret_key'],
-     :region                   => 'us-west-1'
-    })
-  directory = connection.directories.get("appcanary")
-  
-  ["amd64", "i386"].each do |arch|
+ ["amd64", "i386"].each do |arch|
     arch_dir =(arch == "i386") ? "386" :  arch #goxc uses 386 not i386
-    ["deb", "rpm"].each do |package|
-      exec %{fpm -s dir -t #{package} -n canary-agent -p "releases/canary-agent_#{@release_version}_#{arch}.#{package}" -v #{@release_version} -a #{arch} -C ./package/  --config-files /etc/canary-agent/canary.conf --config-files /var/db/canary-agent/server.conf --directories /etc/canary-agent/ --directories /var/db/canary-agent/ --license GPLv3 --vendor canary ./ ../dist/#{CURRENT_VERSION}+b#{@date}/linux_#{arch_dir}/canary-agent=/usr/sbin/canary-agent}
-      puts "Uploading to s3: https://appcanary.s3.amazonaws.com/dist/canary-agent_#{@release_version}_#{arch}.#{package}"
-      file = directory.files.create(
-        :key    => "dist/canary-agent_#{@release_version}_#{arch}.#{package}",
-        :body   => File.open("releases/canary-agent_#{@release_version}_#{arch}.#{package}"),
-        :public => true
-      )
-      puts "Uploading to s3: https://appcanary.s3.amazonaws.com/dist/canary-agent_latest_#{arch}.#{package}"
-      file.copy("appcanary", "dist/canary-agent_latest_#{arch}.#{package}, :public => true")
+    ["deb"].each do |package| # TODO: add "rpm" here when we support it
+      exec %{fpm -s dir -t #{package} -n appcanary -p "releases/appcanary_#{@release_version}_#{arch}.#{package}" -v #{@release_version} -a #{arch} -C ./package/  --config-files /etc/appcanary/agent.conf --config-files /var/db/appcanary/server.conf --directories /etc/appcanary/ --directories /var/db/appcanary/ --license GPLv3 --vendor canary ./ ../dist/#{CURRENT_VERSION}+b#{@date}/linux_#{arch_dir}/appcanary=/usr/sbin/appcanary}
     end
-  end
+ end
+ ["ubuntu/vivid", "ubuntu/utopic", "ubuntu/trusty", "ubuntu/precise"].each do |version|
+   exec %{package_cloud push appcanary/agent/#{version} releases/appcanary_#{@release_version}*.deb}
+ end
 end
 
 task :release => [:release_prep, :default, :package]
@@ -88,8 +73,4 @@ task :release => [:release_prep, :default, :package]
 task :setup do
 	`mkdir -p ./bin`
 	`rm -f ./bin/*`
-end
-
-task :test2 do
-  system %{fpm -s dir -t rpm -n canary-agent -p "releases/canary-agent_0.0.1-2015.06.16-180218-UTC_386.deb" -v 0.0.1-2015.06.16-180218-UTC -a 386 -C ./package/  --config-files /etc/canary-agent/canary.conf --config-files /var/db/canary-agent/server.conf --directories /etc/canary-agent/ --directories /var/db/canary-agent/ --license GPLv3 --vendor canary ./ ../dist/0.0.1+b2015.06.16-180218-UTC/linux_386/canary-agent=/usr/sbin/canary-agent}
 end
