@@ -1,29 +1,30 @@
 {
-	"PackageVersion": "0.0.1",
-	"TaskSettings": {
-		"bintray": {
-			"downloadspage": "bintray.md",
-			"package": "canary-agent",
-			"repository": "Deb",
-			"subject": "canary"
-		},
-		"deb": {
-			  "armarch": "",
-			"bin-dir": "/usr/bin",
-			"go-sources-dir": ".",
-			"metadata": {
-				"maintainer": "unknown",
-				"maintainerEmail": "unknown@example.com"
-			},
-			"metadata-deb": {
-				"Build-Depends": "debhelper (\u003e=4.0.0), golang-go, gcc",
-				"Depends": ""
-			},
-			"other-mappped-files": {
-				"/": "deb-contents/"
-			},
-			"rmtemp": true
-		}
-	},
-	"ConfigVersion": "0.9"
+    "AppName": "appcanary",
+	  "PackageVersion": "0.0.1",
+	  "TaskSettings": {
+		    "bintray": {
+			      "downloadspage": "bintray.md",
+			      "package": "canary-agent",
+			      "repository": "Deb",
+			      "subject": "canary"
+		    },
+		    "deb": {
+			      "armarch": "",
+			      "bin-dir": "/usr/bin",
+			      "go-sources-dir": ".",
+			      "metadata": {
+				        "maintainer": "unknown",
+				        "maintainerEmail": "unknown@example.com"
+			      },
+			      "metadata-deb": {
+				        "Build-Depends": "debhelper (\u003e=4.0.0), golang-go, gcc",
+				        "Depends": ""
+			      },
+			      "other-mappped-files": {
+				        "/": "deb-contents/"
+			      },
+			      "rmtemp": true
+		    }
+	  },
+	  "ConfigVersion": "0.9"
 }

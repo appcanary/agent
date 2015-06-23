@@ -14,9 +14,9 @@ const (
 	PROD_URL = "https://www.appcanary.com"
 	DEV_URL  = "http://localhost:3000"
 
-	DEFAULT_CONF_PATH = "/etc/canary-agent/"
-	DEFAULT_CONF_FILE = DEFAULT_CONF_PATH + "canary.conf"
-	DEFAULT_VAR_PATH  = "/var/db/canary-agent/"
+	DEFAULT_CONF_PATH = "/etc/appcanary/"
+	DEFAULT_CONF_FILE = DEFAULT_CONF_PATH + "agent.conf"
+	DEFAULT_VAR_PATH  = "/var/db/appcanary/"
 	DEFAULT_VAR_FILE  = DEFAULT_VAR_PATH + "server.conf"
 
 	DEFAULT_HEARTBEAT_DURATION = 1 * time.Hour
