@@ -2,9 +2,11 @@ package agent
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -72,11 +74,20 @@ func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 }
 
 func (client *CanaryClient) SendFile(path string, contents []byte) error {
-	file_json, err := json.Marshal(map[string]string{
+	// Compute checksum of the file (not base64 encoding)
+	crc := crc32.ChecksumIEEE(contents)
+	// File needs to be sent base64 encoded
+	b64buffer := new(bytes.Buffer)
+	b64enc := base64.NewEncoder(base64.StdEncoding, b64buffer)
+	b64enc.Write(contents)
+	b64enc.Close()
+
+	file_json, err := json.Marshal(map[string]interface{}{
 		"name":     "",
 		"path":     path,
 		"kind":     "gemfile",
-		"contents": string(contents),
+		"contents": string(b64buffer.Bytes()),
+		"crc":      crc,
 	})
 
 	if err != nil {

@@ -1,9 +1,6 @@
 package agent
 
 import (
-	"bytes"
-	"encoding/base64"
-
 	. "github.com/appcanary/agent/agent/models"
 	"github.com/appcanary/agent/agent/umwelten"
 )
@@ -54,12 +51,7 @@ func (agent *Agent) OnFileChange(file *WatchedFile) {
 		log.Info("File contents error: %s", err)
 		return
 	}
-	buffer := new(bytes.Buffer)
-	b64enc := base64.NewEncoder(base64.StdEncoding, buffer)
-	b64enc.Write(contents)
-	b64enc.Close()
-
-	err = agent.client.SendFile(file.Path, buffer.Bytes())
+	err = agent.client.SendFile(file.Path, contents)
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
