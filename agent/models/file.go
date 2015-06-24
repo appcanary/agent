@@ -24,7 +24,7 @@ type WatchedFile struct {
 	UpdatedAt    time.Time         `json:"updated-at"`
 	BeingWatched bool              `json:"being-watched"`
 	OnFileChange FileChangeHandler `json:"-"`
-	checksum     uint32
+	Checksum     uint32            `json:"crc"`
 }
 
 type WatchedFiles []*WatchedFile
@@ -109,9 +109,9 @@ func (wf *WatchedFile) scan() {
 
 	wf.SetBeingWatched(true)
 
-	if wf.checksum != currentCheck {
+	if wf.Checksum != currentCheck {
 		go wf.OnFileChange(wf)
-		wf.checksum = currentCheck
+		wf.Checksum = currentCheck
 	}
 }
 

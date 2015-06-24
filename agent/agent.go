@@ -8,6 +8,8 @@ import (
 	"github.com/appcanary/agent/agent/umwelten"
 )
 
+var CanaryVersion string
+
 var log = umwelten.Log
 
 type Agent struct {

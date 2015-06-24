@@ -11,6 +11,7 @@ import (
 
 	_ "crypto/sha512"
 	//http://bridge.grumpy-troll.org/2014/05/golang-tls-comodo/
+
 	. "github.com/appcanary/agent/agent/models"
 	"github.com/appcanary/agent/agent/umwelten"
 	"github.com/cenkalti/backoff"
@@ -41,7 +42,7 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 
 func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 
-	body, err := json.Marshal(map[string]WatchedFiles{"files": files})
+	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-verson": CanaryVersion})
 
 	if err != nil {
 		return err

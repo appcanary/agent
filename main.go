@@ -10,8 +10,6 @@ import (
 	"github.com/appcanary/agent/agent/umwelten"
 )
 
-var CanaryVersion string
-
 var env = umwelten.Fetch()
 var log = umwelten.Log
 
@@ -37,7 +35,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Println(CanaryVersion)
+		fmt.Println(agent.CanaryVersion)
 		os.Exit(0)
 	}
 	done := make(chan os.Signal, 1)
