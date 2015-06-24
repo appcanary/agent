@@ -5,7 +5,7 @@ import (
 	"github.com/appcanary/agent/agent/umwelten"
 )
 
-var CanaryVersion string
+var CanaryVersion = "unreleased"
 
 var log = umwelten.Log
 
