@@ -28,7 +28,7 @@ var (
 
 type Client interface {
 	Heartbeat(string, WatchedFiles) error
-	SendFile(string, []byte) error
+	SendFile(string, string, []byte) error
 	CreateServer(*Server) (string, error)
 }
 
@@ -44,7 +44,7 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 
 func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 
-	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion})
+	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion, "distro": client.server.Distro, "release": client.server.Release})
 
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 	return nil
 }
 
-func (client *CanaryClient) SendFile(path string, contents []byte) error {
+func (client *CanaryClient) SendFile(path string, kind string, contents []byte) error {
 	// Compute checksum of the file (not base64 encoding)
 	crc := crc32.ChecksumIEEE(contents)
 	// File needs to be sent base64 encoded
@@ -85,7 +85,7 @@ func (client *CanaryClient) SendFile(path string, contents []byte) error {
 	file_json, err := json.Marshal(map[string]interface{}{
 		"name":     "",
 		"path":     path,
-		"kind":     "gemfile",
+		"kind":     kind,
 		"contents": string(b64buffer.Bytes()),
 		"crc":      crc,
 	})

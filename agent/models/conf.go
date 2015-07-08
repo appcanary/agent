@@ -8,9 +8,11 @@ import (
 )
 
 type Conf struct {
-	ApiKey string      `toml:"api_key"`
-	Files  []*FileConf `toml:"files"`
-	Server *ServerConf `toml:"server"`
+	ApiKey  string      `toml:"api_key"`
+	Distro  string      `toml:"distro"`
+	Release string      `toml:"release"`
+	Files   []*FileConf `toml:"files"`
+	Server  *ServerConf `toml:"server"`
 }
 
 type FileConf struct {
@@ -18,7 +20,9 @@ type FileConf struct {
 }
 
 type ServerConf struct {
-	UUID string `toml:"uuid"`
+	UUID    string `toml:"uuid"`
+	Distro  string `toml:"distro"`
+	Release string `toml:"release"`
 }
 
 func (conf *Conf) PersistServerConf(env *umwelten.Umwelten) {

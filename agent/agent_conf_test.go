@@ -13,9 +13,12 @@ func TestConf(t *testing.T) {
 	env.VarFile = "../test/data/test_server.conf"
 	conf := NewConfFromEnv()
 	assert.Equal("APIKEY", conf.ApiKey)
-	assert.Equal(1, len(conf.Files), "len of files")
-	file := conf.Files[0]
-	assert.Equal("/Users/phillmv/code/state/canary-agent/test/data/Gemfile.lock", file.Path, "file path")
+	assert.Equal(2, len(conf.Files), "len of files")
+	dpkg := conf.Files[0]
+	assert.Equal("/var/lib/dpkg/available", dpkg.Path, "file path")
+
+	gemfile := conf.Files[1]
+	assert.Equal("/path/to/Gemfile.lock", gemfile.Path, "file path")
 
 	assert.Equal("123456", conf.Server.UUID)
 }

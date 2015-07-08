@@ -1,10 +1,49 @@
 package models
 
 import (
+	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 )
+
+var UBUNTU_RELEASES = map[string]string{
+	"4.10":    "warty",
+	"5.04":    "hoary",
+	"5.10":    "breezy",
+	"6.04":    "drake",
+	"6.04.1":  "drake",
+	"6.04.2":  "drake",
+	"6.10":    "edgy",
+	"7.04":    "feisty",
+	"7.10":    "gusty",
+	"8.04":    "hardy",
+	"8.04.1":  "hardy",
+	"8.04.2":  "hardy",
+	"8.04.3":  "hardy",
+	"8.04.4":  "hardy",
+	"8.10":    "intrepid",
+	"9.04":    "jaunty",
+	"9.10":    "karmic",
+	"10.04":   "lucid",
+	"10.04.1": "lucid",
+	"10.04.2": "lucid",
+	"10.04.3": "lucid",
+	"10.04.4": "lucid",
+	"10.04.5": "lucid",
+	"12.04":   "precise",
+	"12.04.1": "precise",
+	"12.04.2": "precise",
+	"12.04.3": "precise",
+	"12.04.4": "precise",
+	"12.04.5": "precise",
+	"14.04":   "trusty",
+	"14.04.1": "trusty",
+	"14.04.2": "trusty",
+	"14.10":   "utopic",
+	"15.04":   "utopic",
+}
 
 type Server struct {
 	Hostname string `json:"hostname"`
@@ -12,6 +51,8 @@ type Server struct {
 	Ip       string `json:"ip"`
 	Name     string `json:"name"`
 	UUID     string `json:"uuid,omitempty"`
+	Distro   string `json:"distro,omitempty"`
+	Release  string `json:"release,omitempty"`
 }
 
 func ThisServer(uuid string) *Server {
@@ -47,7 +88,31 @@ func ThisServer(uuid string) *Server {
 		}
 	}
 
-	return &Server{Hostname: hostname, Uname: uname, Ip: ip, UUID: uuid, Name: "why is this here?"}
+	var distro string
+	var release string
+	// We can find out distro and release on debian systems
+	etcRelease, err := ioutil.ReadFile("/etc/release")
+	// if we fail reading, distro/os is unknown
+	if err != nil {
+		distro = "unknown"
+		release = "unknown"
+		log.Error(err.Error())
+	} else {
+		// /etc/release looks like Ubuntu 14.04.2 LTS \n \l
+		s := strings.Split(string(etcRelease), " ")
+		distro = strings.ToLower(s[0])
+		// TODO: support debian
+		if distro == "ubuntu" {
+			release = UBUNTU_RELEASES[s[1]]
+			//what if we don't know about the release?
+			if release == "" {
+				release = "unknown " + s[1]
+
+			}
+		}
+	}
+
+	return &Server{Hostname: hostname, Uname: uname, Ip: ip, UUID: uuid, Distro: distro, Release: release, Name: "why is this here?"}
 }
 
 func (server *Server) IsNew() bool {

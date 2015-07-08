@@ -16,9 +16,7 @@ func TestAgent(t *testing.T) {
 	umwelten.Init("test")
 	conf := NewConfFromEnv()
 
-	// conf paths are absolute, which will
-	// fail across diff testing envs.
-	conf.Files[0].Path = env.ConfFile
+	conf.Files[0].Path = umwelten.DEV_CONF_PATH + "/dpkg/available"
 
 	client := &mocks.Client{}
 	agent := NewAgent(conf, client)

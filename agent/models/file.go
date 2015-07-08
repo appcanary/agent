@@ -2,6 +2,7 @@ package models
 
 import (
 	"io/ioutil"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -38,7 +39,16 @@ func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFil
 
 // only used for tests
 func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
-	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: "gemfile", UpdatedAt: time.Now()}
+	var kind string
+	filename := filepath.Base(path)
+	switch filename {
+	case "Gemfile.lock":
+		kind = "gemfile"
+	case "available":
+		//todo support debian
+		kind = "ubuntu"
+	}
+	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: kind, UpdatedAt: time.Now()}
 	return file
 }
 

@@ -28,13 +28,21 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 		agent.client = NewClient(conf.ApiKey, agent.server)
 	}
 
+	// Legacy users haven't set their distro or relase yet, so we should update the conf to include it.
+	if agent.conf.Server.Distro == "" || agent.conf.Server.Release == "" {
+		agent.UpdateConf()
+	}
+
 	return agent
 }
 
 // instantiate structs, fs hook
 func (agent *Agent) StartWatching() {
 	for _, f := range agent.conf.Files {
-		agent.files = append(agent.files, NewWatchedFileWithHook(f.Path, agent.OnFileChange))
+		q := NewWatchedFileWithHook(f.Path, agent.OnFileChange)
+		log.Info("BLAH", q)
+		agent.files = append(agent.files, q)
+
 	}
 }
 
@@ -51,7 +59,7 @@ func (agent *Agent) OnFileChange(file *WatchedFile) {
 		log.Info("File contents error: %s", err)
 		return
 	}
-	err = agent.client.SendFile(file.Path, contents)
+	err = agent.client.SendFile(file.Path, file.Kind, contents)
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
@@ -84,7 +92,8 @@ func (agent *Agent) RegisterServer() error {
 
 func (agent *Agent) UpdateConf() {
 	agent.conf.Server.UUID = agent.server.UUID
-
+	agent.conf.Server.Distro = agent.server.Distro
+	agent.conf.Server.Release = agent.server.Release
 	agent.conf.PersistServerConf(env)
 }
 

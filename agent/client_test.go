@@ -36,12 +36,13 @@ func (t *ClientTestSuite) SetupTest() {
 	t.api_key = "my api key"
 	t.server_uuid = "server uuid"
 
-	// it needs an ARBITRARY file to watch
-	// and the content of the conf file are
-	// absolute paths; as a workaround:
-	filePath := env.ConfFile
-	file := models.NewWatchedFileWithHook(filePath, testCallbackNOP)
-	t.files = models.WatchedFiles{file}
+	dpkgPath := umwelten.DEV_CONF_PATH + "/dpkg/available"
+	dpkgFile := models.NewWatchedFileWithHook(dpkgPath, testCallbackNOP)
+
+	gemfilePath := umwelten.DEV_CONF_PATH + "/Gemfile.lock"
+	gemfile := models.NewWatchedFileWithHook(gemfilePath, testCallbackNOP)
+
+	t.files = models.WatchedFiles{dpkgFile, gemfile}
 
 	t.client = NewClient(t.api_key, &models.Server{UUID: t.server_uuid})
 
@@ -61,14 +62,24 @@ func (t *ClientTestSuite) TestHeartbeat() {
 		// does the json we send look roughly like
 		// it's supposed to?
 		t.NotNil(json_files)
+		t.Equal(2, len(json_files))
 		monitored_file := json_files[0].(map[string]interface{})
 
-		t.Equal("gemfile", monitored_file["kind"])
+		t.Equal("ubuntu", monitored_file["kind"])
 		t.NotNil(monitored_file["path"])
 		t.NotEqual("", monitored_file["path"])
 		t.NotNil(monitored_file["updated-at"])
 		t.NotEqual("", monitored_file["updated-at"])
 		t.Equal(true, monitored_file["being-watched"])
+
+		monitored_file2 := json_files[1].(map[string]interface{})
+
+		t.Equal("gemfile", monitored_file2["kind"])
+		t.NotNil(monitored_file2["path"])
+		t.NotEqual("", monitored_file2["path"])
+		t.NotNil(monitored_file2["updated-at"])
+		t.NotEqual("", monitored_file2["updated-at"])
+		t.Equal(true, monitored_file2["being-watched"])
 	})
 
 	// the client uses BaseUrl to set up queries.
@@ -103,7 +114,7 @@ func (t *ClientTestSuite) TestSendFile() {
 	env.BaseUrl = ts.URL
 
 	contents, _ := t.files[0].Contents()
-	t.client.SendFile(test_file_path, contents)
+	t.client.SendFile(test_file_path, "gemfile", contents)
 
 	ts.Close()
 	t.True(serverInvoked)

@@ -15,7 +15,7 @@ func (m *Client) Heartbeat(_a0 string, _a1 models.WatchedFiles) error {
 
 	return r0
 }
-func (m *Client) SendFile(_a0 string, _a1 []byte) error {
+func (m *Client) SendFile(_a0 string, _a1 string, _a2 []byte) error {
 	ret := m.Called()
 
 	r0 := ret.Error(0)
