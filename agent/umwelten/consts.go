@@ -22,7 +22,7 @@ const (
 	DEFAULT_HEARTBEAT_DURATION = 1 * time.Hour
 	DEV_HEARTBEAT_DURATION     = 10 * time.Second
 
-	DEFAULT_LOG_FILE = "./canary.log" // later "/var/log/canary/canary.log"
+	DEFAULT_LOG_FILE = "/var/log/canary/canary.log"
 )
 
 // api endpoints
