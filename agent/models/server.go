@@ -47,7 +47,7 @@ func ThisServer(uuid string) *Server {
 		}
 	}
 
-	return &Server{Hostname: hostname, Uname: uname, Ip: ip, UUID: uuid, Name: "why is this here?"}
+	return &Server{Hostname: hostname, Uname: uname, Ip: ip, UUID: uuid, Name: ""}
 }
 
 func (server *Server) IsNew() bool {
