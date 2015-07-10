@@ -10,8 +10,8 @@
 # Required-Stop: $local_fs
 # Default-Start:  2 3 4 5
 # Default-Stop: 0 1 6
-# Short-Description: The appcanary
-# Description: The appcanary
+# Short-Description: appcanary
+# Description: appcanary agent
 ### END INIT INFO
 
 # Source function library.
