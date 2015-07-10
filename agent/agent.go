@@ -13,7 +13,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: WatchedFiles{}}
 
 	// what do we know about this machine?
-	agent.server = ThisServer(conf.Server)
+	agent.server = NewServer(conf.ServerConf)
 
 	if len(clients) > 0 {
 		agent.client = clients[0]

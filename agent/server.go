@@ -18,7 +18,8 @@ type Server struct {
 	Release  string `json:"release,omitempty"`
 }
 
-func ThisServer(conf *ServerConf) *Server {
+// Creates a new server and syncs conf if needed
+func NewServer(conf *ServerConf) *Server {
 	var err error
 	if conf.Hostname == "" {
 		conf.Hostname, err = os.Hostname()
