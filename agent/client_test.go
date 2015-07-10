@@ -8,12 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appcanary/agent/agent/models"
-	"github.com/appcanary/agent/agent/umwelten"
 	"github.com/appcanary/testify/suite"
 )
-
-const TEST_POLL_SLEEP = (models.POLL_SLEEP + (50 * time.Millisecond)) * 2
 
 type TestJsonRequest map[string]interface{}
 
@@ -23,7 +19,7 @@ type ClientTestSuite struct {
 	suite.Suite
 	api_key     string
 	server_uuid string
-	files       models.WatchedFiles
+	files       WatchedFiles
 	client      Client
 }
 
@@ -32,26 +28,26 @@ func TestClient(t *testing.T) {
 }
 
 func (t *ClientTestSuite) SetupTest() {
-	umwelten.Init("test")
+	InitEnv("test")
 	t.api_key = "my api key"
 	t.server_uuid = "server uuid"
 
-	dpkgPath := umwelten.DEV_CONF_PATH + "/dpkg/available"
-	dpkgFile := models.NewWatchedFileWithHook(dpkgPath, testCallbackNOP)
+	dpkgPath := DEV_CONF_PATH + "/dpkg/available"
+	dpkgFile := NewWatchedFileWithHook(dpkgPath, testCallbackNOP)
 
-	gemfilePath := umwelten.DEV_CONF_PATH + "/Gemfile.lock"
-	gemfile := models.NewWatchedFileWithHook(gemfilePath, testCallbackNOP)
+	gemfilePath := DEV_CONF_PATH + "/Gemfile.lock"
+	gemfile := NewWatchedFileWithHook(gemfilePath, testCallbackNOP)
 
-	t.files = models.WatchedFiles{dpkgFile, gemfile}
+	t.files = WatchedFiles{dpkgFile, gemfile}
 
-	t.client = NewClient(t.api_key, &models.Server{UUID: t.server_uuid})
+	t.client = NewClient(t.api_key, &Server{UUID: t.server_uuid})
 
 }
 
 func (t *ClientTestSuite) TestHeartbeat() {
 
 	serverInvoked := false
-	time.Sleep(TEST_POLL_SLEEP * 2)
+	time.Sleep(TEST_POLL_SLEEP)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
@@ -121,7 +117,7 @@ func (t *ClientTestSuite) TestSendFile() {
 }
 
 func (t *ClientTestSuite) TestCreateServer() {
-	server := models.ThisServer("")
+	server := ThisServer(&ServerConf{})
 
 	test_uuid := "12345"
 	json_response := "{\"uuid\":\"" + test_uuid + "\"}"
@@ -147,7 +143,7 @@ func (t *ClientTestSuite) TestCreateServer() {
 	t.Equal(test_uuid, response_uuid)
 }
 
-func testCallbackNOP(foo *models.WatchedFile) {
+func testCallbackNOP(foo *WatchedFile) {
 	// NOP
 }
 

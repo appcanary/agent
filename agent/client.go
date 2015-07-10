@@ -14,12 +14,8 @@ import (
 	_ "crypto/sha512"
 	//http://bridge.grumpy-troll.org/2014/05/golang-tls-comodo/
 
-	. "github.com/appcanary/agent/agent/models"
-	"github.com/appcanary/agent/agent/umwelten"
 	"github.com/cenkalti/backoff"
 )
-
-var env = umwelten.Fetch()
 
 var (
 	ErrApi        = errors.New("api error")
@@ -51,7 +47,7 @@ func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 	}
 
 	// TODO SANITIZE UUID input cos this feels abusable
-	respBody, err := client.post(umwelten.ApiHeartbeatPath(uuid), body)
+	respBody, err := client.post(ApiHeartbeatPath(uuid), body)
 
 	if err != nil {
 		return err
@@ -94,7 +90,7 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 		return err
 	}
 
-	_, err = client.put(umwelten.ApiServerPath(client.server.UUID), file_json)
+	_, err = client.put(ApiServerPath(client.server.UUID), file_json)
 
 	return err
 
@@ -107,7 +103,7 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 		return "", err
 	}
 
-	respBody, err := c.post(umwelten.ApiServersPath(), body)
+	respBody, err := c.post(ApiServersPath(), body)
 	if err != nil {
 		return "", err
 	}

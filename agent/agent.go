@@ -1,13 +1,6 @@
 package agent
 
-import (
-	. "github.com/appcanary/agent/agent/models"
-	"github.com/appcanary/agent/agent/umwelten"
-)
-
 var CanaryVersion = "unreleased"
-
-var log = umwelten.Log
 
 type Agent struct {
 	conf   *Conf

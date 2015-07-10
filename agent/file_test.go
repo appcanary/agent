@@ -1,4 +1,4 @@
-package models
+package agent
 
 import (
 	"fmt"
@@ -11,8 +11,6 @@ import (
 
 	"github.com/appcanary/testify/assert"
 )
-
-const TEST_POLL_SLEEP = (POLL_SLEEP + (50 * time.Millisecond)) * 2
 
 // create a tempfile, add a hook, see if hook gets called
 // when file changes. TODO: test all other fs events.
@@ -128,7 +126,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 	os.Rename(folder, folder2)
 
 	// file should now be missing.
-	time.Sleep(TEST_POLL_SLEEP * 2)
+	time.Sleep(TEST_POLL_SLEEP)
 
 	assert.False(wfile.GetBeingWatched())
 
@@ -138,7 +136,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 	// write new file
 	ioutil.WriteFile(file_name, []byte("tst2"), 0644)
 
-	time.Sleep(TEST_POLL_SLEEP * 2)
+	time.Sleep(TEST_POLL_SLEEP)
 	// this file should be different, thus triggering
 	// another callback
 

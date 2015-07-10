@@ -1,4 +1,4 @@
-package umwelten
+package agent
 
 import (
 	"os"
@@ -8,9 +8,9 @@ import (
 	"github.com/op/go-logging"
 )
 
-var Log = logging.MustGetLogger("canary-agent")
+var log = logging.MustGetLogger("canary-agent")
 
-type Umwelten struct {
+type Env struct {
 	Logo              string
 	Env               string
 	Prod              bool
@@ -21,9 +21,17 @@ type Umwelten struct {
 	LogFile           *os.File
 }
 
-var env = &Umwelten{}
+var env = &Env{}
 
-func Init(env_str string) {
+func FetchEnv() *Env {
+	return env
+}
+
+func FetchLog() *logging.Logger {
+	return log
+}
+
+func InitEnv(env_str string) {
 	env.Env = env_str
 	if env_str != "test" && env_str != "debug" {
 		env.Prod = true
@@ -49,7 +57,7 @@ func Init(env_str string) {
 		var err error
 		env.LogFile, err = os.OpenFile(DEFAULT_LOG_FILE, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
-			Log.Error("Can't open log file", err) //INCEPTION
+			log.Error("Can't open log file", err) //INCEPTION
 			os.Exit(1)
 		} else {
 			fileBackend := logging.NewBackendFormatter(logging.NewLogBackend(env.LogFile, "", 0), logging.GlogFormatter)
@@ -88,10 +96,6 @@ func Init(env_str string) {
 		logging.SetBackend(stdoutBackend)
 
 	}
-}
-
-func Fetch() *Umwelten {
-	return env
 }
 
 func ApiHeartbeatPath(ident string) string {

@@ -1,4 +1,4 @@
-package umwelten
+package agent
 
 import "time"
 
@@ -30,6 +30,12 @@ const (
 	API_VERSION   = "/api/v1/agent/"
 	API_HEARTBEAT = API_VERSION + "heartbeat"
 	API_SERVERS   = API_VERSION + "servers"
+)
+
+// file polling
+const (
+	POLL_SLEEP      = 1000 * time.Millisecond
+	TEST_POLL_SLEEP = (POLL_SLEEP + (50 * time.Millisecond)) * 2
 )
 
 // trolol

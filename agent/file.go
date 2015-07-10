@@ -1,4 +1,4 @@
-package models
+package agent
 
 import (
 	"io/ioutil"
@@ -7,13 +7,7 @@ import (
 	"time"
 
 	"hash/crc32"
-
-	"github.com/appcanary/agent/agent/umwelten"
 )
-
-const POLL_SLEEP = 1000 * time.Millisecond
-
-var log = umwelten.Log
 
 type FileChangeHandler func(*WatchedFile)
 
