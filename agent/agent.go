@@ -20,7 +20,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: WatchedFiles{}}
 
 	// what do we know about this machine?
-	agent.server = ThisServer(conf.Server.UUID)
+	agent.server = ThisServer(conf.Server)
 
 	if len(clients) > 0 {
 		agent.client = clients[0]
@@ -29,9 +29,7 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	}
 
 	// Legacy users haven't set their distro or relase yet, so we should update the conf to include it.
-	if agent.conf.Server.Distro == "" || agent.conf.Server.Release == "" {
-		agent.UpdateConf()
-	}
+	agent.UpdateConf()
 
 	return agent
 }

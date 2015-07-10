@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
-	"github.com/appcanary/agent/agent/umwelten"
+	"github.com/appcanary/agent/umwelten"
 )
 
 type Conf struct {
@@ -20,9 +20,12 @@ type FileConf struct {
 }
 
 type ServerConf struct {
-	UUID    string `toml:"uuid"`
-	Distro  string `toml:"distro"`
-	Release string `toml:"release"`
+	UUID     string `toml:"uuid"`
+	Hostname string `toml:"hostname"`
+	Uname    string `toml:"uname"`
+	Ip       string `toml:"ip"`
+	Distro   string `toml:"distro"`
+	Release  string `toml:"release"`
 }
 
 func (conf *Conf) PersistServerConf(env *umwelten.Umwelten) {
