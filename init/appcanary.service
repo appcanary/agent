@@ -1,5 +1,5 @@
 [Unit]
-Description=The appcanary
+Description=appcanary agent
 After=network.target
 
 [Service]
