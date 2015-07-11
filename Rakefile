@@ -65,7 +65,7 @@ end
 def distro_files(distro)
   case distro
   when /ubuntu/
-    "../init/appcanary.upstart=/etc/init/appcanary"
+    "../init/appcanary.upstart=/etc/init/appcanary.conf"
   when "debian/wheezy"
     "../init/default.wheezy=/etc/defaults/appcanary ../init/init.wheezy=/etc/init.d/appcanary"
   when /jessie|stretch/
