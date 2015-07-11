@@ -75,7 +75,7 @@ end
 
 def post_install(distro)
   if distro =~ /wheezy/
-    "--after-install ../init/wheezy-postinstall.sh"
+    "--after-install ./init/wheezy-postinstall.sh"
   else
     ""
   end
