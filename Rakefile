@@ -92,7 +92,7 @@ task :package => :cross_compile do
   config_files = ["/etc/appcanary/agent.conf", "/var/db/appcanary/server.conf"]
   config_args = config_files.map {|f| "--config-files #{f}"}.join(" ")
 
-  directories = ["/etc/appcanary/", "/var/db/appcanary/", "/var/log/appcanary"]
+  directories = ["/etc/appcanary/", "/var/db/appcanary/"]
   dir_args = directories.map { |f| "--directories #{f}"}.join(" ")
   license = "GPLv3"
   vendor = "appCanary"
