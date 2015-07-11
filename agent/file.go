@@ -43,6 +43,9 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 		kind = "ubuntu"
 	}
 	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: kind, UpdatedAt: time.Now()}
+
+	// Do a scan off the bat so we get a checksum, and PUT the file
+	file.scan()
 	return file
 }
 
