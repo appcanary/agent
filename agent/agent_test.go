@@ -4,8 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appcanary/agent/agent/umwelten"
-	"github.com/appcanary/agent/mocks"
 	"github.com/appcanary/testify/assert"
 )
 
@@ -13,14 +11,12 @@ func TestAgent(t *testing.T) {
 	assert := assert.New(t)
 
 	// setup
-	umwelten.Init("test")
+	InitEnv("test")
 	conf := NewConfFromEnv()
 
-	// conf paths are absolute, which will
-	// fail across diff testing envs.
-	conf.Files[0].Path = env.ConfFile
+	conf.Files[0].Path = DEV_CONF_PATH + "/dpkg/available"
 
-	client := &mocks.Client{}
+	client := &MockClient{}
 	agent := NewAgent(conf, client)
 
 	// let's ensure our server is unregistered

@@ -4,3 +4,8 @@ dependencies:
 test:
   override: 
     - rake test 
+checkout:
+  post:
+    - rm -rf ~/.go_workspace/src/github.com/appcanary/agent
+    - mkdir -p ~/.go_workspace/src/github.com/appcanary/agent
+    - cp -R ~/agent ~/.go_workspace/src/github.com/appcanary/

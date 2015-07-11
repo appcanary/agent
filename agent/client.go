@@ -14,12 +14,8 @@ import (
 	_ "crypto/sha512"
 	//http://bridge.grumpy-troll.org/2014/05/golang-tls-comodo/
 
-	. "github.com/appcanary/agent/agent/models"
-	"github.com/appcanary/agent/agent/umwelten"
 	"github.com/cenkalti/backoff"
 )
-
-var env = umwelten.Fetch()
 
 var (
 	ErrApi        = errors.New("api error")
@@ -28,7 +24,7 @@ var (
 
 type Client interface {
 	Heartbeat(string, WatchedFiles) error
-	SendFile(string, []byte) error
+	SendFile(string, string, []byte) error
 	CreateServer(*Server) (string, error)
 }
 
@@ -44,14 +40,14 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 
 func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 
-	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion})
+	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion, "distro": client.server.Distro, "release": client.server.Release})
 
 	if err != nil {
 		return err
 	}
 
 	// TODO SANITIZE UUID input cos this feels abusable
-	respBody, err := client.post(umwelten.ApiHeartbeatPath(uuid), body)
+	respBody, err := client.post(ApiHeartbeatPath(uuid), body)
 
 	if err != nil {
 		return err
@@ -73,7 +69,7 @@ func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
 	return nil
 }
 
-func (client *CanaryClient) SendFile(path string, contents []byte) error {
+func (client *CanaryClient) SendFile(path string, kind string, contents []byte) error {
 	// Compute checksum of the file (not base64 encoding)
 	crc := crc32.ChecksumIEEE(contents)
 	// File needs to be sent base64 encoded
@@ -85,7 +81,7 @@ func (client *CanaryClient) SendFile(path string, contents []byte) error {
 	file_json, err := json.Marshal(map[string]interface{}{
 		"name":     "",
 		"path":     path,
-		"kind":     "gemfile",
+		"kind":     kind,
 		"contents": string(b64buffer.Bytes()),
 		"crc":      crc,
 	})
@@ -94,7 +90,7 @@ func (client *CanaryClient) SendFile(path string, contents []byte) error {
 		return err
 	}
 
-	_, err = client.put(umwelten.ApiServerPath(client.server.UUID), file_json)
+	_, err = client.put(ApiServerPath(client.server.UUID), file_json)
 
 	return err
 
@@ -107,7 +103,7 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 		return "", err
 	}
 
-	respBody, err := c.post(umwelten.ApiServersPath(), body)
+	respBody, err := c.post(ApiServersPath(), body)
 	if err != nil {
 		return "", err
 	}

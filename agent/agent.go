@@ -1,13 +1,6 @@
 package agent
 
-import (
-	. "github.com/appcanary/agent/agent/models"
-	"github.com/appcanary/agent/agent/umwelten"
-)
-
 var CanaryVersion = "unreleased"
-
-var log = umwelten.Log
 
 type Agent struct {
 	conf   *Conf
@@ -19,15 +12,16 @@ type Agent struct {
 func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: WatchedFiles{}}
 
-	// what do we know about this machine?
-	agent.server = ThisServer(conf.Server.UUID)
+	// Find out what we need about machine
+	// Fills out server conf if some values are missing
+	agent.server = NewServer(conf.ServerConf)
+	agent.conf.Save()
 
 	if len(clients) > 0 {
 		agent.client = clients[0]
 	} else {
 		agent.client = NewClient(conf.ApiKey, agent.server)
 	}
-
 	return agent
 }
 
@@ -51,7 +45,7 @@ func (agent *Agent) OnFileChange(file *WatchedFile) {
 		log.Info("File contents error: %s", err)
 		return
 	}
-	err = agent.client.SendFile(file.Path, contents)
+	err = agent.client.SendFile(file.Path, file.Kind, contents)
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
@@ -76,16 +70,9 @@ func (agent *Agent) RegisterServer() error {
 		return err
 	}
 	agent.server.UUID = uuid
-	log.Debug("Registered server, got: %s", agent.server.UUID)
-
-	agent.UpdateConf()
+	agent.conf.ServerConf.UUID = uuid
+	agent.conf.Save()
 	return nil
-}
-
-func (agent *Agent) UpdateConf() {
-	agent.conf.Server.UUID = agent.server.UUID
-
-	agent.conf.PersistServerConf(env)
 }
 
 // This has to be called before exiting

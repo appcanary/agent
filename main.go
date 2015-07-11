@@ -7,11 +7,10 @@ import (
 	"time"
 
 	"github.com/appcanary/agent/agent"
-	"github.com/appcanary/agent/agent/umwelten"
 )
 
-var env = umwelten.Fetch()
-var log = umwelten.Log
+var env = agent.FetchEnv()
+var log = agent.FetchLog()
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: canary-agent [OPTION]\n")
@@ -19,7 +18,7 @@ func usage() {
 }
 
 func main() {
-	umwelten.Init(os.Getenv("CANARY_ENV"))
+	agent.InitEnv(os.Getenv("CANARY_ENV"))
 
 	flag.Usage = usage
 
