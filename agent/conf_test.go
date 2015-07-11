@@ -20,5 +20,5 @@ func TestConf(t *testing.T) {
 	gemfile := conf.Files[1]
 	assert.Equal("/path/to/Gemfile.lock", gemfile.Path, "file path")
 
-	assert.Equal("123456", conf.Server.UUID)
+	assert.Equal("123456", conf.ServerConf.UUID)
 }

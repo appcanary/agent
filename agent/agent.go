@@ -12,18 +12,16 @@ type Agent struct {
 func NewAgent(conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: WatchedFiles{}}
 
-	// what do we know about this machine?
+	// Find out what we need about machine
+	// Fills out server conf if some values are missing
 	agent.server = NewServer(conf.ServerConf)
+	agent.conf.Save()
 
 	if len(clients) > 0 {
 		agent.client = clients[0]
 	} else {
 		agent.client = NewClient(conf.ApiKey, agent.server)
 	}
-
-	// Legacy users haven't set their distro or relase yet, so we should update the conf to include it.
-	agent.UpdateConf()
-
 	return agent
 }
 
@@ -72,17 +70,9 @@ func (agent *Agent) RegisterServer() error {
 		return err
 	}
 	agent.server.UUID = uuid
-	log.Debug("Registered server, got: %s", agent.server.UUID)
-
-	agent.UpdateConf()
+	agent.conf.ServerConf.UUID = uuid
+	agent.conf.Save()
 	return nil
-}
-
-func (agent *Agent) UpdateConf() {
-	agent.conf.Server.UUID = agent.server.UUID
-	agent.conf.Server.Distro = agent.server.Distro
-	agent.conf.Server.Release = agent.server.Release
-	agent.conf.PersistServerConf(env)
 }
 
 // This has to be called before exiting

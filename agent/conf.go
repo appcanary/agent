@@ -7,11 +7,9 @@ import (
 )
 
 type Conf struct {
-	ApiKey  string      `toml:"api_key"`
-	Distro  string      `toml:"distro"`
-	Release string      `toml:"release"`
-	Files   []*FileConf `toml:"files"`
-	Server  *ServerConf `toml:"server"`
+	ApiKey     string      `toml:"api_key"`
+	Files      []*FileConf `toml:"files"`
+	ServerConf *ServerConf `toml:"-"`
 }
 
 type FileConf struct {
@@ -28,7 +26,7 @@ type ServerConf struct {
 }
 
 func NewConf() *Conf {
-	return &Conf{Server: &ServerConf{}}
+	return &Conf{ServerConf: &ServerConf{}}
 }
 
 func NewConfFromEnv() *Conf {
@@ -44,7 +42,7 @@ func NewConfFromEnv() *Conf {
 	}
 
 	if _, err := os.Stat(env.VarFile); err == nil {
-		_, err := toml.DecodeFile(env.VarFile, &conf.Server)
+		_, err := toml.DecodeFile(env.VarFile, &conf.ServerConf)
 		if err != nil {
 			log.Error("%s", err)
 		}
@@ -54,13 +52,15 @@ func NewConfFromEnv() *Conf {
 	return conf
 }
 
-func (conf *Conf) PersistServerConf(env *Env) {
+func (c *Conf) Save() {
+	//We actually only save the server conf
+	sc := c.ServerConf
 	file, err := os.Create(env.VarFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := toml.NewEncoder(file).Encode(conf.Server); err != nil {
+	if err := toml.NewEncoder(file).Encode(sc); err != nil {
 		log.Fatal(err)
 	}
 
