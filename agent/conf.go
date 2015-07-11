@@ -8,6 +8,7 @@ import (
 
 type Conf struct {
 	ApiKey     string      `toml:"api_key"`
+	LogPath    string      `toml:"log_path"`
 	Files      []*FileConf `toml:"files"`
 	ServerConf *ServerConf `toml:"-"`
 }
