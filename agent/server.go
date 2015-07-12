@@ -71,7 +71,7 @@ func NewServer(conf *ServerConf) *Server {
 		}
 
 	}
-	return &Server{Hostname: conf.Hostname, Uname: conf.Uname, Ip: conf.Ip, UUID: conf.UUID, Distro: conf.Distro, Release: conf.Release, Name: "why is this here?"}
+	return &Server{Hostname: conf.Hostname, Uname: conf.Uname, Ip: conf.Ip, UUID: conf.UUID, Distro: conf.Distro, Release: conf.Release}
 }
 
 func (server *Server) IsNew() bool {
