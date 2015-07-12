@@ -30,6 +30,3 @@ DEPENDENCIES
   fpm
   rake
   rest_client
-
-BUNDLED WITH
-   1.10.1
