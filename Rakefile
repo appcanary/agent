@@ -64,18 +64,51 @@ end
 
 def distro_files(distro)
   case distro
-  when /ubuntu/
-    "../init/appcanary.upstart=/etc/init/appcanary.conf"
+  when "/amazon/2015.03/"
+    "../scripts/amazon/2015.03"
+  when "/centos/6/"
+    "../scripts/centos/6"
+  when "/centos/7/"
+    "../scripts/centos/7"
   when "debian/wheezy"
-    "../init/default.wheezy=/etc/defaults/appcanary ../init/init.wheezy=/etc/init.d/appcanary"
-  when /jessie|stretch/
-    "../init/appcanary.service=/etc/systemd/system/appcanary.service"
+    "../scripts/debian/wheezy"
+  when "debian/jessie"
+    "../scripts/debian/jessie"
+  when "/redhat/6/"
+    "../scripts/redhat/6"
+  when "/redhat/7/"
+    "../scripts/redhat/7"
+  when "/ubuntu/precise/"
+    "../scripts/ubuntu/precise"
+  when "/ubuntu/trusty/"
+    "../scripts/ubuntu/trusty"
+  when "/ubuntu/vivid/"
+    "../scripts/ubuntu/vivid"
   end
 end
 
 def post_install(distro)
-  if distro =~ /wheezy/
-    "--after-install ./init/wheezy-postinstall.sh"
+  case distro
+  when "/amazon/2015.03/"
+    "--after-install ./scripts/amazon/post-install/2015.03-postinstall.sh"
+  when "/centos/6/"
+    "--after-install ./scripts/centos/post-install/6-postinstall.sh"
+  when "/centos/7/"
+    "--after-install ./scripts/centos/post-install/7-postinstall.sh"
+  when "debian/wheezy"
+    "--after-install ./scripts/debian/post-install/wheezy-postinstall.sh"
+  when "debian/jessie"
+    "--after-install ./scripts/debian/post-install/jessie-postinstall.sh"
+  when "/redhat/6/"
+    "--after-install ./scripts/redhat/post-install/6-postinstall.sh"
+  when "/redhat/7/"
+    "--after-install ./scripts/redhat/post-install/7-postinstall.sh"
+  when "/ubuntu/precise/"
+    "--after-install ./scripts/ubuntu/post-install/precise-postinstall.sh"
+  when "/ubuntu/trusty/"
+    "--after-install ./scripts/ubuntu/post-install/trusty-postinstall.sh"
+  when "/ubuntu/vivid/"
+    "--after-install ./scripts/ubuntu/post-install/vivid-postinstall.sh"
   else
     ""
   end
