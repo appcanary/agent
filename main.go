@@ -9,9 +9,6 @@ import (
 	"github.com/appcanary/agent/agent"
 )
 
-var env = agent.FetchEnv()
-var log = agent.FetchLog()
-
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: canary-agent [OPTION]\n")
 	flag.PrintDefaults()
@@ -19,7 +16,7 @@ func usage() {
 
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
-
+	env := agent.FetchEnv()
 	flag.Usage = usage
 
 	flag.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
@@ -37,6 +34,11 @@ func main() {
 		fmt.Println(agent.CanaryVersion)
 		os.Exit(0)
 	}
+
+	//start the logger
+	agent.InitLogging()
+	log := agent.FetchLog()
+
 	done := make(chan os.Signal, 1)
 
 	fmt.Println(env.Logo)
