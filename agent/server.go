@@ -55,17 +55,17 @@ func NewServer(conf *ServerConf) *Server {
 		}
 	}
 
-	if conf.Distro == "" || conf.Release == "" {
+	if conf.Distro == "" || conf.Release == "" || conf.Distro == "unknown" || conf.Release == "unknown" {
 		// We can find out distro and release on debian systems
-		etcRelease, err := ioutil.ReadFile("/etc/release")
+		etcIssue, err := ioutil.ReadFile("/etc/issue")
 		// if we fail reading, distro/os is unknown
 		if err != nil {
 			conf.Distro = "unknown"
 			conf.Release = "unknown"
 			log.Error(err.Error())
 		} else {
-			// /etc/release looks like Ubuntu 14.04.2 LTS \n \l
-			s := strings.Split(string(etcRelease), " ")
+			// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
+			s := strings.Split(string(etcIssue), " ")
 			conf.Distro = strings.ToLower(s[0])
 			conf.Release = s[1]
 		}
