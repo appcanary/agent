@@ -120,7 +120,8 @@ task :package => :cross_compile do
   architectures = {"amd64" => "amd64",
                    "i386" => "386"}
 
-  distros = {"deb" => ["ubuntu/vivid", "ubuntu/utopic", "ubuntu/trusty", "ubuntu/precise", "debian/wheezy", "debian/jessie", "debian/stretch"]}
+  distros = {"deb" => [ "debian/wheezy", "debian/jessie", "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid" ],
+             "rpm" => [ "amazon/2015.03", "centos/6", "centos/7", "redhat/6", "redhat/7" ]}
 
   config_files = ["/etc/appcanary/agent.conf", "/var/db/appcanary/server.conf"]
   config_args = config_files.map {|f| "--config-files #{f}"}.join(" ")
@@ -135,7 +136,7 @@ task :package => :cross_compile do
       distro_names.each do |distro|
         release_path = "releases/appcanary_0.0.1_#{arch}_#{distro.tr('/','-')}.#{package_type}"  
         exec %{bundle exec fpm -f -s dir -t #{package_type} -n appcanary -p #{release_path} -v #{@release_version} -a #{arch} -C ./package/  #{config_args} #{dir_args} #{post_install(distro)} --license GPLv3 --vendor appCanary ./ #{bin_path}=/usr/sbin/appcanary #{distro_files(distro)}}
-        unless !@dont_publish
+        unless @dont_publish
           exec %{package_cloud push appcanary/agent/#{distro} #{release_path}}
         end
       end
