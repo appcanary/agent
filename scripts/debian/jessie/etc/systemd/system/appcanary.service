@@ -1,0 +1,10 @@
+[Unit]
+Description=appcanary agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/appcanary
+
+[Install]
+WantedBy=multi-user.target
