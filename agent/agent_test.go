@@ -17,7 +17,7 @@ func TestAgent(t *testing.T) {
 	conf.Files[0].Path = DEV_CONF_PATH + "/dpkg/available"
 
 	client := &MockClient{}
-	agent := NewAgent(conf, client)
+	agent := NewAgent("test", conf, client)
 
 	// let's ensure our server is unregistered
 	agent.server.UUID = ""

@@ -9,6 +9,8 @@ import (
 	"github.com/appcanary/agent/agent"
 )
 
+var CanaryVersion string
+
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: canary-agent [OPTION]\n")
 	flag.PrintDefaults()
@@ -31,7 +33,7 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Println(agent.CanaryVersion)
+		fmt.Println(CanaryVersion)
 		os.Exit(0)
 	}
 
@@ -50,7 +52,7 @@ func main() {
 		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/canary-agent/canary.conf")
 	}
 
-	a := agent.NewAgent(conf)
+	a := agent.NewAgent(CanaryVersion, conf)
 
 	// we prob can't reliably fingerprint servers.
 	// so instead, we assign a uuid by registering

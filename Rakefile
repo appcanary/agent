@@ -23,8 +23,8 @@ task :default => :build
 task :build_all => [:setup, :build]
 
 task :build do
-	@ldflags = %{"-X main.CanaryVersion #{@release_version || "unreleased"}"}
-	`go build -ldflags=#{@ldflags} -o ./bin/canary-agent`
+  @ldflags = %{"-X main.CanaryVersion #{@release_version || "unreleased"}"}
+  shell "go build -ldflags #{@ldflags} -o ./bin/canary-agent"
 end
 
 task :test => :build_all do 

@@ -1,6 +1,6 @@
 package agent
 
-var CanaryVersion = "unreleased"
+var CanaryVersion string
 
 type Agent struct {
 	conf   *Conf
@@ -9,7 +9,7 @@ type Agent struct {
 	files  WatchedFiles
 }
 
-func NewAgent(conf *Conf, clients ...Client) *Agent {
+func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: WatchedFiles{}}
 
 	// Find out what we need about machine
@@ -22,6 +22,8 @@ func NewAgent(conf *Conf, clients ...Client) *Agent {
 	} else {
 		agent.client = NewClient(conf.ApiKey, agent.server)
 	}
+
+	CanaryVersion = version
 	return agent
 }
 
