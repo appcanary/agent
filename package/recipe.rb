@@ -24,7 +24,7 @@ class Recipe
     end
 
   end
-  CONFIG_FILES = ["/etc/appcanary/agent.conf", "/var/db/appcanary/server.conf"]
+  CONFIG_FILES = {"config/etc/appcanary/agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf", "config/var/log/appcanary.log" => "/var/log/appcanary.log"}
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
   ARCHS = ["amd64", "i386"]
   LICENSE = "GPLv3"
@@ -41,8 +41,8 @@ class Recipe
     DIRECTORIES.map { |f| "--directories #{f}"}.join(" ")
   end
 
-  def config_args
-    CONFIG_FILES.map {|f| "--config-files #{f}"}.join(" ")
+  def config_files
+    CONFIG_FILES.map {|k, v| "../../../#{k}=#{v}" }.join(" ")
   end
 
   def release_path(arch, distro_version)
@@ -50,11 +50,11 @@ class Recipe
   end
 
   def bin_path(arch)
-    "../dist/0.0.1+b#{@date}/linux_#{arch_dir(arch)}/appcanary"
+    "../../../../dist/0.0.1+b#{@date}/linux_#{arch_dir(arch)}/appcanary"
   end
 
   def bin_file(arch)
-    "#{bin_path(arch)}/appcanary=/usr/sbin/appcanary"
+    "#{bin_path(arch)}=/usr/sbin/appcanary"
   end
 
   def arch_dir(arch)
@@ -66,6 +66,7 @@ class Recipe
   def post_install_files(distro_version)
     "--after-install ./#{package_dir(distro_version)}/post-install.sh"
   end
+
 
   def package_files(distro_version)
     "#{package_dir(distro_version)}/files"
@@ -82,7 +83,7 @@ class Recipe
   def build!
     distro_versions.each do |dv|
       ARCHS.each do |arch|
-        puts %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} -C #{package_files(dv)} #{config_args} #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)}}
+        puts %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} -C #{package_files(dv)}  #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)} #{config_files}}
       end
     end
   end
