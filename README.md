@@ -1,6 +1,6 @@
-# Hello.
-
 [![appcanary](https://github.com/appcanary/agent/raw/master/appcanary.png)](https://appcanary.com)
+
+# Hello.
 
 This repository holds the source for the [appcanary](https://appcanary.com) agent. 
 
@@ -19,11 +19,21 @@ If you're reading this because you want to audit the code, the magic starts in [
 3. `cd` into the brand new agent folder, and type: 
 
   `go get -t -d -v ./…`
-4. Finally, type: 
+4. Go ahead type: 
 
   ```bash
 gem install bundler # if you don't have it
 bundle install
+```
+
+This gets you the basic up on your machine.
+
+5. In order to package releases, you're going to need `goxc`, so visit [the goxc github page](https://github.com/laher/goxc) and install that.
+
+6. Finally, [fpm](https://github.com/jordansissel/fpm/) requires `rpmbuild` for rpm packages. On OSX at least, that util is a apart of the `rpm` homebrew package, so:
+
+```bash
+brew install rpm
 ```
 
 ## Compiling
