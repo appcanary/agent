@@ -1,5 +1,4 @@
 class Recipe
-  CURRENT_VERSION = "0.0.1"
   class << self
     def distro_name(name)
       @distro_name = name
@@ -13,14 +12,14 @@ class Recipe
       @package_type = pkg
     end
 
-    def build(date)
+    def build!(version, date)
       recipe = self.new
       recipe.distro_name = @distro_name
       recipe.distro_versions = @distro_versions
       recipe.package_type = @package_type
-      recipe.version = "#{CURRENT_VERSION}-#{date}"
+      recipe.version = "#{version}-#{date}".tr("-", "_")
       recipe.date = date
-      recipe
+      recipe.build!
     end
 
   end
@@ -31,7 +30,7 @@ class Recipe
   VENDOR = "appCanary"
   NAME = "appcanary"
 
-  attr_accessor :distro_name, :distro_versions, :package_type, :post_install, :post_remove, :post_upgrade, :version, :path, :date
+  attr_accessor :distro_name, :distro_versions, :package_type, :version, :path, :date
 
   def filename
     "appcanary_0.0.1_#{@arch}_#{@distro}.#{@package_type}"
@@ -45,8 +44,12 @@ class Recipe
     CONFIG_FILES.map {|k, v| "../../../#{k}=#{v}" }.join(" ")
   end
 
+  def full_distro_name(distro_version)
+    "#{distro_name}_#{distro_version}"
+  end
+
   def release_path(arch, distro_version)
-    "releases/appcanary_0.0.1_#{arch}_#{full_distro_name(distro_version)}.#{package_type}" 
+    "releases/appcanary_#{version}_#{arch}_#{full_distro_name(distro_version)}.#{package_type}" 
   end
 
   def bin_path(arch)
@@ -67,6 +70,13 @@ class Recipe
     "--after-install ./#{package_dir(distro_version)}/post-install.sh"
   end
 
+  def after_remove_files(dv)
+    "--after-remove ./#{package_dir(dv)}/post-remove.sh"
+  end
+
+  def after_upgrade_files(dv)
+    "--after-upgrade ./#{package_dir(dv)}/post-upgrade.sh"
+  end
 
   def package_files(distro_version)
     "#{package_dir(distro_version)}/files"
@@ -76,14 +86,11 @@ class Recipe
     "package/#{distro_name}/#{distro_version}"
   end
 
-  def full_distro_name(distro_version)
-    "#{distro_name}-#{distro_version}"
-  end
-
+  # the source of all magic
   def build!
     distro_versions.each do |dv|
       ARCHS.each do |arch|
-        puts %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} -C #{package_files(dv)}  #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)} #{config_files}}
+        exec %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} -C #{package_files(dv)}  #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)} #{config_files}}
       end
     end
   end
@@ -92,8 +99,31 @@ end
 
 class UbuntuRecipe < Recipe
   distro_name "ubuntu"
-  distro_versions "trusty"
+  distro_versions "trusty", "precise", "vivid"
   package_type "deb"
 end
 
-# UbuntuRecipe.build!(version, "i386")
+class AmazonRecipe < Recipe
+  distro_name "amazon"
+  distro_versions "2015.03"
+  package_type "rpm"
+end
+
+class CentosRecipe < Recipe
+  distro_name "centos"
+  distro_versions "6", "7"
+  package_type "rpm"
+end
+
+class RedhatRecipe < Recipe
+  distro_name "redhat"
+  distro_versions "6", "7"
+  package_type "rpm"
+end
+
+class DebianRecipe < Recipe
+  distro_name "debian"
+  distro_versions "jessie", "wheezy"
+  package_type "deb"
+end
+
