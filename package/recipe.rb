@@ -5,49 +5,33 @@ class Recipe
       @distro_name = name
     end
 
-    def distro_version(version)
-      @distro_version = version
+    def distro_versions(*versions)
+      @distro_versions = versions
     end
 
     def package_type(pkg)
       @package_type = pkg
     end
 
-    def post_install(files)
-      @post_install = files
-    end
-
-    def post_remove(files)
-      @post_remove = files
-    end
-
-    def post_upgrade(files)
-      @post_upgrade = files
-    end
-
-    def build(date, arch, path)
+    def build(date)
       recipe = self.new
       recipe.distro_name = @distro_name
-      recipe.distro_version = @distro_version
+      recipe.distro_versions = @distro_versions
       recipe.package_type = @package_type
-      recipe.post_install = @post_install
-      recipe.post_remove = @post_remove
-      recipe.post_upgrade = @post_upgrade
       recipe.version = "#{CURRENT_VERSION}-#{date}"
       recipe.date = date
-      recipe.arch = arch
-      recipe.path = path
       recipe
     end
 
   end
   CONFIG_FILES = ["/etc/appcanary/agent.conf", "/var/db/appcanary/server.conf"]
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
+  ARCHS = ["amd64", "i386"]
   LICENSE = "GPLv3"
   VENDOR = "appCanary"
   NAME = "appcanary"
 
-  attr_accessor :distro_name, :distro_version, :package_type, :post_install, :post_remove, :post_upgrade, :version, :path, :arch, :date
+  attr_accessor :distro_name, :distro_versions, :package_type, :post_install, :post_remove, :post_upgrade, :version, :path, :date
 
   def filename
     "appcanary_0.0.1_#{@arch}_#{@distro}.#{@package_type}"
@@ -61,41 +45,53 @@ class Recipe
     CONFIG_FILES.map {|f| "--config-files #{f}"}.join(" ")
   end
 
-  def release_path
-    "releases/appcanary_0.0.1_#{arch}_#{distro_name}.#{package_type}" 
+  def release_path(arch, distro_version)
+    "releases/appcanary_0.0.1_#{arch}_#{full_distro_name(distro_version)}.#{package_type}" 
   end
 
-  def bin_path
-    "../dist/0.0.1+b#{@date}/linux_#{arch_dir}/appcanary"
+  def bin_path(arch)
+    "../dist/0.0.1+b#{@date}/linux_#{arch_dir(arch)}/appcanary"
   end
 
-  def arch_dir
+  def bin_file(arch)
+    "#{bin_path(arch)}/appcanary=/usr/sbin/appcanary"
+  end
+
+  def arch_dir(arch)
     # GOXC uses '386' while fpm uses 'i386'. arch => directory it's in
     {"amd64" => "amd64",
      "i386" => "386"}[arch]
   end
 
-  def post_install_files
-    "--after-install ./#{package_dir}/post-install.sh"
+  def post_install_files(distro_version)
+    "--after-install ./#{package_dir(distro_version)}/post-install.sh"
   end
 
-  def package_files
-    "#{package_dir}/files"
+  def package_files(distro_version)
+    "#{package_dir(distro_version)}/files"
   end
 
-  def package_dir
+  def package_dir(distro_version)
     "package/#{distro_name}/#{distro_version}"
   end
 
+  def full_distro_name(distro_version)
+    "#{distro_name}-#{distro_version}"
+  end
 
   def build!
-    puts %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path} -v #{version} -a #{arch} -C #{package_files} #{config_args} #{dir_args} #{post_install_files} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_path}=/usr/sbin/appcanary}
+    distro_versions.each do |dv|
+      ARCHS.each do |arch|
+        puts %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} -C #{package_files(dv)} #{config_args} #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)}}
+      end
+    end
   end
 
 end
 
 class UbuntuRecipe < Recipe
   distro_name "ubuntu"
+  distro_versions "trusty"
   package_type "deb"
 end
 
