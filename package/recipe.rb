@@ -17,7 +17,7 @@ class Recipe
       recipe.distro_name = @distro_name
       recipe.distro_versions = @distro_versions
       recipe.package_type = @package_type
-      recipe.version = "#{version}-#{date}".tr("-", "_")
+      recipe.version = "#{version}-#{date}"
       recipe.date = date
       recipe.build!
     end
