@@ -40,3 +40,4 @@ test/var/
 
 .goxc.local.json
 .aws.yml
+.DS_Store
