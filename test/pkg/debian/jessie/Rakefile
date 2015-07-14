@@ -1,25 +1,21 @@
-def exec(str)
-  puts str
-  system str
-end
+DISTRO, RELEASE = `pwd`.strip.split("/")[-2..-1] 
 
 task :clean do
   `rm *.deb`
-  # `touch Dockerfile && rm Dockerfile`
 end
 
 task :build => :clean do
-  release = `ls ../../../../releases|grep jessie|grep amd64`.strip
+  release = `ls ../../../../releases|grep #{RELEASE}|grep amd64`.strip
   release_path = "../../../../releases/#{release}"
   puts "copying #{release}"
   `cp #{release_path} latest.deb`
-  # `ln -sf #{File.expand_path release_path} latest_release.deb`
-   "./build.sh"
+  `docker pull #{DISTRO}:#{RELEASE}`
+  `docker build -t appcanary:#{DISTRO}-#{RELEASE} .`
 end
 
 desc "test"
 task :test => :build do
-  docker = "docker run appcanary-debian-jessie /root/test.sh"
+  docker = "docker run appcanary:#{DISTRO}-#{RELEASE} /root/test.sh"
   cmd = "#{docker} &2>&1"
   output = `#{cmd}`
 

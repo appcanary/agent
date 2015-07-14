@@ -1,0 +1,27 @@
+DISTRO, RELEASE = `pwd`.strip.split("/")[-2..-1] 
+
+task :clean do
+  `rm *.deb`
+end
+
+task :build => :clean do
+  release = `ls ../../../../releases|grep #{RELEASE}|grep amd64`.strip
+  release_path = "../../../../releases/#{release}"
+  puts "copying #{release}"
+  `cp #{release_path} latest.deb`
+  `docker pull #{DISTRO}:#{RELEASE}`
+  `docker build -t appcanary:#{DISTRO}-#{RELEASE} .`
+end
+
+desc "test"
+task :test => :build do
+  docker = "docker run appcanary:#{DISTRO}-#{RELEASE} /root/test.sh"
+  cmd = "#{docker} &2>&1"
+  output = `#{cmd}`
+
+  if output.scan("OKAC").count == 4
+    puts "OK"
+  else
+    puts "FAIL"
+  end
+end
