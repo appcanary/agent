@@ -1,6 +1,10 @@
-<div style="text-align:center">[![appcanary](https://github.com/appcanary/agent/raw/master/appcanary.png)](https://appcanary.com)</div>
+<div style="text-align:center">
+  <a href="https://appcanary.com"><img src="https://github.com/appcanary/agent/raw/master/appcanary.png" /></a>
+</div>
 
 # Hello.
+
+![circle ci](https://circleci.com/gh/appcanary/agent.png?circle-token=e005a24f2a9e1202caede198cb41d3c09e3eccd6)
 
 This repository holds the source for the [appcanary](https://appcanary.com) agent. 
 
@@ -11,7 +15,6 @@ Oh, and it also pings us once an hour so we know it's still working.
 If you're reading this because you want to audit the code, the magic starts in [`main.go`](https://github.com/appcanary/agent/blob/master/main.go), [`agent/file.go`](https://github.com/appcanary/agent/blob/master/agent/file.go) and [`agent/agent.go`](https://github.com/appcanary/agent/blob/master/agent/agent.go). We think it's pretty straightforward!
 
 ## Installation
-![circle ci](https://circleci.com/gh/appcanary/agent.png?circle-token=e005a24f2a9e1202caede198cb41d3c09e3eccd6)
 
 1. This project depends on a working golang and ruby environment. 
 2. Go to your `$GOPATH`. Type: 
