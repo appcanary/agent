@@ -1,3 +1,6 @@
+PC_USER = "appcanary"
+PC_REPO = "appcanary-stg"
+
 class Recipe
   class << self
     def distro_name(name)
@@ -12,6 +15,10 @@ class Recipe
       @package_type = pkg
     end
 
+    def pc_distro_name(name)
+      @pc_distro_name = name
+    end
+
     def build!(version, date)
       recipe = self.new
       recipe.distro_name = @distro_name
@@ -19,7 +26,9 @@ class Recipe
       recipe.package_type = @package_type
       recipe.version = "#{version}-#{date}"
       recipe.date = date
+      recipe.pc_distro_name = @pc_distro_name
       recipe.build!
+      recipe
     end
 
   end
@@ -31,6 +40,7 @@ class Recipe
   NAME = "appcanary"
 
   attr_accessor :distro_name, :distro_versions, :package_type, :version, :path, :date
+  attr_accessor :releases
 
   def filename
     "appcanary_0.0.1_#{@arch}_#{@distro}.#{@package_type}"
@@ -41,7 +51,7 @@ class Recipe
   end
 
   def config_files
-    CONFIG_FILES.map {|k, v| "../../../#{k}=#{v}" }.join(" ")
+    self.class::CONFIG_FILES.map {|k, v| "../../../#{k}=#{v}" }.join(" ")
   end
 
   def full_distro_name(distro_version)
@@ -91,7 +101,30 @@ class Recipe
     distro_versions.each do |dv|
       ARCHS.each do |arch|
         exec %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} --rpm-os linux -C #{package_files(dv)}  #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)} #{config_files}}
+        add_release dv, release_path(arch, dv)
       end
+    end
+  end
+
+  def pc_distro_name
+    @pc_distro_name || distro_name 
+  end
+
+  def pc_distro_name=(name)
+    @pc_distro_name = name
+  end
+
+  def releases
+    @releases ||= []
+  end
+
+  def add_release(dv, path)
+    releases << [dv, path]
+  end
+
+  def publish!
+    releases.each do |dv, rls|
+      exec %{bundle exec package_cloud push #{PC_USER}/#{PC_REPO}/#{pc_distro_name}/#{dv} #{rls}}
     end
   end
 
@@ -101,18 +134,24 @@ class UbuntuRecipe < Recipe
   distro_name "ubuntu"
   distro_versions "trusty", "precise", "vivid"
   package_type "deb"
+  # TODO: make this easier to customize
+  CONFIG_FILES = {"config/etc/appcanary/ubuntu.agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf", "config/var/log/appcanary.log" => "/var/log/appcanary.log"}
 end
 
+# amazon/2015.03 == el/6 so perhaps
+# don't use for now.
 class AmazonRecipe < Recipe
   distro_name "amazon"
   distro_versions "2015.03"
   package_type "rpm"
+  pc_distro_name "el"
 end
 
 class CentosRecipe < Recipe
   distro_name "centos"
   distro_versions "6", "7"
   package_type "rpm"
+  pc_distro_name "el"
 end
 
 class RedhatRecipe < Recipe
