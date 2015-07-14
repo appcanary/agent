@@ -65,7 +65,7 @@ end
 
 task :package => :cross_compile do
   load 'package/recipe.rb'
-  [UbuntuRecipe, CentosRecipe, RedhatRecipe, DebianRecipe].each do |rcp|
+  [UbuntuRecipe, CentosRecipe, DebianRecipe].each do |rcp|
     
     build = rcp.build!(CURRENT_VERSION, @date)
     unless @dont_publish
