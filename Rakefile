@@ -58,7 +58,7 @@ task :release_prep do
 end
 
 task :cross_compile => :release_prep do
-  @ldflags = %{-X agent.CanaryVersion '#{@release_version}'}
+  @ldflags = %{-X main.CanaryVersion '#{@release_version}'}
   shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -bu="#{@date}"  -d="dist/" xc}
 end
 
