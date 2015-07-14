@@ -1,0 +1,31 @@
+def exec(str)
+  puts str
+  system str
+end
+
+task :clean do
+  `rm *.deb`
+  # `touch Dockerfile && rm Dockerfile`
+end
+
+task :build => :clean do
+  release = `ls ../../../../releases|grep jessie|grep amd64`.strip
+  release_path = "../../../../releases/#{release}"
+  puts "copying #{release}"
+  `cp #{release_path} latest.deb`
+  # `ln -sf #{File.expand_path release_path} latest_release.deb`
+   "./build.sh"
+end
+
+desc "test"
+task :test => :build do
+  docker = "docker run appcanary-debian-jessie /root/test.sh"
+  cmd = "#{docker} &2>&1"
+  output = `#{cmd}`
+
+  if output.scan("OKAC").count == 4
+    puts "OK"
+  else
+    puts "FAIL"
+  end
+end
