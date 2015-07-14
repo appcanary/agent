@@ -1,0 +1,82 @@
+# DISTRO, RELEASE = `pwd`.strip.split("/")[-2..-1] 
+
+def usage
+  puts "usage: integration:test V='debian/jessie'"
+  exit 1
+end
+
+if (@distro_version = ENV["V"]).nil?
+  puts "here"
+  usage
+elsif !(@distro_version =~ /\w+\/\w+/)
+  puts "there"
+  usage
+elsif !(File.exists?(@distro_version))
+  puts "fail"
+  usage
+else
+  DISTRO, RELEASE = @distro_version.strip.split("/")[-2..-1]
+  @distro_path = @distro_version
+  @docker_name = "#{DISTRO}:#{RELEASE}"
+  @ac_docker_name = "appcanary:#{DISTRO}_#{RELEASE}"
+end
+
+require 'erb'
+module Dockerfile
+  TEMPLATE = <<-docker
+FROM <%= container_name %>
+RUN apt-get update
+COPY ./test.sh /root/test.sh
+COPY latest.deb /root/latest.deb
+  docker
+
+  def self.render(dv)
+    container_name = dv
+    ERB.new(TEMPLATE).result(binding)
+  end
+end
+
+namespace :integration do
+  task :clean do
+    `rm -f #{@distro_path}/*.deb`
+    `rm -f #{@distro_path}/Dockerfile`
+  end
+
+  task :build => :clean do
+    release = `ls ../../releases|grep #{DISTRO}_#{RELEASE}|grep amd64`.strip
+    release_path = "../../releases/#{release}"
+
+    puts "copying #{release}"
+    `cp #{release_path} #{@distro_path}/latest.deb`
+
+    # generate dockerfile
+    File.write(File.join(@distro_path, "Dockerfile"), Dockerfile.render(@docker_name))
+
+    # build docker
+    `cd #{@distro_path} && docker pull #{@docker_name}`
+    `cd #{@distro_path} && docker build -t #{@ac_docker_name} .`
+  end
+
+  desc "test"
+  task :test => :build do
+    docker = "cd #{@distro_path} && docker run #{@ac_docker_name} /root/test.sh"
+    cmd = "#{docker} &2>&1"
+    output = `#{cmd}`
+
+    if output.scan("OKAC").count == 4
+      puts "OK"
+    else
+      puts "FAIL"
+    end
+
+    Rake::Task["integration:clean"].execute
+  end
+
+  task :foo do
+    require 'pry'
+    binding.pry
+  end
+end
+
+
+
