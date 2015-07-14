@@ -1,80 +1,140 @@
-# DISTRO, RELEASE = `pwd`.strip.split("/")[-2..-1] 
+# extremely flakey integration tests
+# that atm just smokescreen that the
+# packages install and do *something*
+
+# but you can feel that there's something here,
+# just lurking, waiting to be kind of formidable
+#
+# you will want a working docker before you run
+# any of this, by the by.
 
 def usage
   puts "usage: integration:test V='debian/jessie'"
   exit 1
 end
 
-if (@distro_version = ENV["V"]).nil?
-  puts "here"
-  usage
-elsif !(@distro_version =~ /\w+\/\w+/)
-  puts "there"
-  usage
-elsif !(File.exists?(@distro_version))
-  puts "fail"
-  usage
-else
-  DISTRO, RELEASE = @distro_version.strip.split("/")[-2..-1]
-  @distro_path = @distro_version
-  @docker_name = "#{DISTRO}:#{RELEASE}"
-  @ac_docker_name = "appcanary:#{DISTRO}_#{RELEASE}"
-end
 
 require 'erb'
 module Dockerfile
   TEMPLATE = <<-docker
 FROM <%= container_name %>
-RUN apt-get update
+RUN <%= update_cmd %>
 COPY ./test.sh /root/test.sh
-COPY latest.deb /root/latest.deb
+COPY latest.pkg /root/latest.pkg
   docker
 
   def self.render(dv)
     container_name = dv
+    update_cmd = 'exit 1'
+
+    if container_name =~ /centos/
+      update_cmd = "yum clean all"
+    else
+      update_cmd = "apt-get update"
+    end
+
+    ERB.new(TEMPLATE).result(binding)
+  end
+end
+
+
+module TestSh
+  TEMPLATE = <<-test
+#!/usr/bin/env bash
+cd /root
+<%= install_cmd %>
+appcanary -version && echo OKAC VERSION
+cat /var/log/appcanary.log && echo OKAC LOG
+cat /var/db/appcanary/server.conf && echo OKAC SERVERCONF
+cat /etc/appcanary/agent.conf && echo OKAC CONFCONF
+  test
+
+  def self.render(dv)
+    install_cmd = "exit 1"
+    if dv =~ /centos/
+      install_cmd = "rpm -i latest.pkg"
+    else
+      install_cmd = "dpkg -i latest.pkg"
+    end
+
     ERB.new(TEMPLATE).result(binding)
   end
 end
 
 namespace :integration do
-  task :clean do
-    `rm -f #{@distro_path}/*.deb`
+
+  task :init do
+    if (@distro_version = ENV["V"]).nil?
+      usage
+    elsif !(@distro_version =~ /\w+\/\w+/)
+      usage
+    else
+      @distro, @release = @distro_version.strip.split("/")[-2..-1]
+      @distro_path = @distro_version
+      @docker_name = "#{@distro}:#{@release}"
+      @ac_docker_name = "appcanary:#{@distro}_#{@release}"
+    end
+  end
+
+  task :clean => :init do
+    `mkdir -p  #{@distro_path}`
+
+    `rm -f #{@distro_path}/latest.pkg`
     `rm -f #{@distro_path}/Dockerfile`
+    `rm -f #{@distro_path}/test.sh`
   end
 
   task :build => :clean do
-    release = `ls ../../releases|grep #{DISTRO}_#{RELEASE}|grep amd64`.strip
+    puts "building #{@distro_version}..."
+    release = `ls ../../releases|grep #{@distro}_#{@release}|grep amd64`.strip
+    
+    if release.empty?
+      puts "Hey, we can't find a release. Did you build the packages?"
+      exit
+    end
+
     release_path = "../../releases/#{release}"
 
     puts "copying #{release}"
-    `cp #{release_path} #{@distro_path}/latest.deb`
+    `cp #{release_path} #{@distro_path}/latest.pkg`
 
-    # generate dockerfile
+    puts "generating test file"
+    File.write(File.join(@distro_path, "test.sh"), TestSh.render(@docker_name))
+    `chmod a+x #{File.join(@distro_path, "test.sh")}`
+
+    puts "generating dockerfile"
     File.write(File.join(@distro_path, "Dockerfile"), Dockerfile.render(@docker_name))
 
-    # build docker
+    puts "building docker..."
     `cd #{@distro_path} && docker pull #{@docker_name}`
     `cd #{@distro_path} && docker build -t #{@ac_docker_name} .`
   end
 
   desc "test"
-  task :test => :build do
+  task :test => [:init, :build] do
+    puts "running test.sh..."
     docker = "cd #{@distro_path} && docker run #{@ac_docker_name} /root/test.sh"
     cmd = "#{docker} &2>&1"
     output = `#{cmd}`
 
     if output.scan("OKAC").count == 4
       puts "OK"
+      Rake::Task["integration:clean"].execute
     else
       puts "FAIL"
     end
 
-    Rake::Task["integration:clean"].execute
   end
 
-  task :foo do
-    require 'pry'
-    binding.pry
+  task :everything do
+    ["debian/jessie", "debian/wheezy",
+     "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid",
+     "centos/6", "centos/7"].each do |distro_version|
+       puts "invoke #{distro_version}"
+       ENV["V"] = distro_version
+       Rake::Task["integration:test"].invoke
+       Rake::Task.tasks.map(&:reenable)
+     end
   end
 end
 
