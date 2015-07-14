@@ -5,3 +5,4 @@ gem "fpm"
 gem "rake"
 gem "rest_client"
 gem "package_cloud"
+gem 'pry'
