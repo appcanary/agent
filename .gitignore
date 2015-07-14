@@ -41,3 +41,7 @@ test/var/
 .goxc.local.json
 .aws.yml
 .DS_Store
+
+test/pkg/centos
+test/pkg/debian
+test/pkg/ubuntu
