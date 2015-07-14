@@ -4,7 +4,7 @@ require 'yaml'
 
 CURRENT_VERSION = "0.0.2"
 
-@dont_publish = true
+@dont_publish = (ENV["CANARY_ENV"] == "test")
 
 # gets result of shell command
 def shell(str)

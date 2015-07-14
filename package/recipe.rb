@@ -1,5 +1,6 @@
+# TODO: make this play nice with @dont_publish
 PC_USER = "appcanary"
-PC_REPO = "appcanary-stg"
+PC_REPO = "agent"
 
 class Recipe
   class << self
