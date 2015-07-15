@@ -64,7 +64,9 @@ echo What happens when we remove it?
     install_cmd = "exit 1"
     if dv =~ /centos/
       install_cmd = "rpm -i latest.pkg"
-      remove_cmd = "yum -y remove appcanary"
+      # only 80% sure this does what we need
+      # to test that upgrades don't clobber files
+      remove_cmd = "echo foo > /etc/appcanary/agent.conf && rpm -iv --replacepkgs latest.pkg && (if [ $(cat /etc/appcanary/agent.conf) = 'foo' ]; then exit 0; else exit 1; fi )"
     else
       install_cmd = "dpkg -i latest.pkg"
       remove_cmd = "apt-get -y remove appcanary"
