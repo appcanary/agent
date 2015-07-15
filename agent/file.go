@@ -41,6 +41,8 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	case "available":
 		//todo support debian
 		kind = "ubuntu"
+	case "status":
+		kind = "ubuntu"
 	}
 	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: kind, UpdatedAt: time.Now()}
 
