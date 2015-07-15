@@ -13,6 +13,7 @@ def usage
   exit 1
 end
 
+@verbose = (ENV["CANARY_ENV"] == "test")
 
 require 'erb'
 module Dockerfile
@@ -43,21 +44,42 @@ module TestSh
 #!/usr/bin/env bash
 cd /root
 <%= install_cmd %>
+echo '#########'
+echo Does the binary work?
 appcanary -version && echo OKAC VERSION
+
+echo '#########'
+echo Did we get the files in?
 cat /var/log/appcanary.log && echo OKAC LOG
 cat /var/db/appcanary/server.conf && echo OKAC SERVERCONF
 cat /etc/appcanary/agent.conf && echo OKAC CONFCONF
+
+echo '#########'
+echo What happens when we remove it?
+
+<%= remove_cmd %> && cat /etc/appcanary/agent.conf 2>&1 && echo OKAC kept
   test
 
   def self.render(dv)
     install_cmd = "exit 1"
     if dv =~ /centos/
       install_cmd = "rpm -i latest.pkg"
+      remove_cmd = "yum -y remove appcanary"
     else
       install_cmd = "dpkg -i latest.pkg"
+      remove_cmd = "apt-get -y remove appcanary"
     end
 
     ERB.new(TEMPLATE).result(binding)
+  end
+end
+
+def shell(cmd)
+  if @verbose
+    puts "-> #{cmd}"
+    system(cmd)
+  else 
+    `#{cmd}`
   end
 end
 
@@ -85,8 +107,8 @@ namespace :integration do
   end
 
   task :build => :clean do
-    puts "building #{@distro_version}..."
-    release = `ls ../../releases|grep #{@distro}_#{@release}|grep amd64`.strip
+    puts "# building #{@distro_version}..."
+    release = `ls ../../releases|grep #{@distro}_#{@release}|grep amd64`.lines.last.strip
     
     if release.empty?
       puts "Hey, we can't find a release. Did you build the packages?"
@@ -95,29 +117,34 @@ namespace :integration do
 
     release_path = "../../releases/#{release}"
 
-    puts "copying #{release}"
-    `cp #{release_path} #{@distro_path}/latest.pkg`
+    puts "# copying #{release}"
+    shell "cp #{release_path} #{@distro_path}/latest.pkg"
 
-    puts "generating test file"
+    puts "# generating test file"
     File.write(File.join(@distro_path, "test.sh"), TestSh.render(@docker_name))
-    `chmod a+x #{File.join(@distro_path, "test.sh")}`
+    shell "chmod a+x #{File.join(@distro_path, "test.sh")}"
 
-    puts "generating dockerfile"
+    puts "# generating dockerfile"
     File.write(File.join(@distro_path, "Dockerfile"), Dockerfile.render(@docker_name))
 
-    puts "building docker..."
-    `cd #{@distro_path} && docker pull #{@docker_name}`
-    `cd #{@distro_path} && docker build -t #{@ac_docker_name} .`
+    puts "# building docker..."
+    shell "cd #{@distro_path} && docker pull #{@docker_name}"
+    shell "cd #{@distro_path} && docker build -t #{@ac_docker_name} ."
   end
 
   desc "test"
   task :test => [:init, :build] do
-    puts "running test.sh..."
+    puts "# running test.sh..."
     docker = "cd #{@distro_path} && docker run #{@ac_docker_name} /root/test.sh"
     cmd = "#{docker} &2>&1"
     output = `#{cmd}`
 
-    if output.scan("OKAC").count == 4
+    if @verbose
+      puts "-> #{cmd}"
+      puts output
+    end
+
+    if output.scan("OKAC").count == 5
       puts "OK"
       Rake::Task["integration:clean"].execute
     else
