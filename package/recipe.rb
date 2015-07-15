@@ -55,6 +55,10 @@ class Recipe
     self.class::CONFIG_FILES.map {|k, v| "../../../#{k}=#{v}" }.join(" ")
   end
 
+  def list_config_files
+    self.class::CONFIG_FILES.map { |k, v| "--config-files #{v} "}.join(" ")
+  end
+
   def full_distro_name(distro_version)
     "#{distro_name}_#{distro_version}"
   end
@@ -63,6 +67,7 @@ class Recipe
     "releases/appcanary_#{version}_#{arch}_#{full_distro_name(distro_version)}.#{package_type}" 
   end
 
+  # huge smell right here, gotta fix this
   def bin_path(arch)
     "../../../../dist/0.0.1+b#{@date}/linux_#{arch_dir(arch)}/appcanary"
   end
@@ -101,7 +106,7 @@ class Recipe
   def build!
     distro_versions.each do |dv|
       ARCHS.each do |arch|
-        exec %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} --rpm-os linux -C #{package_files(dv)}  #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} ./ #{bin_file(arch)} #{config_files}}
+        exec %{bundle exec fpm -f -s dir -t #{package_type} -n #{NAME} -p #{release_path(arch, dv)} -v #{version} -a #{arch} --rpm-os linux -C #{package_files(dv)}  #{dir_args} #{post_install_files(dv)} --license #{LICENSE} --vendor #{VENDOR} #{list_config_files} ./ #{bin_file(arch)} #{config_files}}
         add_release dv, release_path(arch, dv)
       end
     end
