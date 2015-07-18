@@ -1,0 +1,11 @@
+/var/log/appcanary.log
+{
+        rotate 4
+        weekly
+        missingok
+        compress
+        notifempty
+        postrotate
+                systemctl restart appcanary >/dev/null 2>&1 || true
+        endscript
+}
