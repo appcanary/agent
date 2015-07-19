@@ -33,7 +33,7 @@ class Recipe
     end
 
   end
-  CONFIG_FILES = {"config/etc/appcanary/agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf", "config/var/log/appcanary.log" => "/var/log/appcanary.log"}
+  CONFIG_FILES = {"config/etc/appcanary/agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
   ARCHS = ["amd64", "i386"]
   LICENSE = "GPLv3"
