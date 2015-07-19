@@ -141,7 +141,7 @@ class UbuntuRecipe < Recipe
   distro_versions "trusty", "precise", "vivid"
   package_type "deb"
   # TODO: make this easier to customize
-  CONFIG_FILES = {"config/etc/appcanary/ubuntu.agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf", "config/var/log/appcanary.log" => "/var/log/appcanary.log"}
+  CONFIG_FILES = {"config/etc/appcanary/ubuntu.agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
 end
 
 # amazon/2015.03 == el/6 so perhaps
