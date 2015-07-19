@@ -53,6 +53,7 @@ echo Did we get the files in?
 cat /var/log/appcanary.log && echo OKAC LOG
 cat /var/db/appcanary/server.conf && echo OKAC SERVERCONF
 cat /etc/appcanary/agent.conf && echo OKAC CONFCONF
+cat /etc/logrotate.d/appcanary && echo OKAC LOGCONF
 stat -c %U /var/log/appcanary.log | grep appcanary && echo OKAC LOGFILE
 
 echo '#########'
@@ -147,7 +148,7 @@ namespace :integration do
       puts output
     end
 
-    if output.scan("OKAC").count == 6
+    if output.scan("OKAC").count == 7
       puts "OK"
       Rake::Task["integration:clean"].execute
     else
