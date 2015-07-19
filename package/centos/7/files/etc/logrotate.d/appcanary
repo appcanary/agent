@@ -5,6 +5,7 @@
         missingok
         compress
         notifempty
+        create 0644 appcanary appcanary
         postrotate
                 systemctl restart appcanary >/dev/null 2>&1 || true
         endscript
