@@ -53,7 +53,7 @@ echo Did we get the files in?
 cat /var/log/appcanary.log && echo OKAC LOG
 cat /var/db/appcanary/server.conf && echo OKAC SERVERCONF
 cat /etc/appcanary/agent.conf && echo OKAC CONFCONF
-ls -l /var/log/appcanary.log && echo OKAC LOGFILE
+stat -c %U /var/log/appcanary.log | grep appcanary && echo OKAC LOGFILE
 
 echo '#########'
 echo What happens when we remove it?
@@ -147,7 +147,7 @@ namespace :integration do
       puts output
     end
 
-    if output.scan("OKAC").count == 5
+    if output.scan("OKAC").count == 6
       puts "OK"
       Rake::Task["integration:clean"].execute
     else
