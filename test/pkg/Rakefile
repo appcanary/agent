@@ -158,7 +158,7 @@ namespace :integration do
 
   task :everything do
     ["debian/jessie", "debian/wheezy",
-     "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid",
+     "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid", "ubuntu/utopic",
      "centos/6", "centos/7"].each do |distro_version|
        puts "invoke #{distro_version}"
        ENV["V"] = distro_version

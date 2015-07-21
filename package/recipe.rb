@@ -138,7 +138,7 @@ end
 
 class UbuntuRecipe < Recipe
   distro_name "ubuntu"
-  distro_versions "trusty", "precise", "vivid"
+  distro_versions "trusty", "precise", "vivid", "utopic"
   package_type "deb"
   # TODO: make this easier to customize
   CONFIG_FILES = {"config/etc/appcanary/ubuntu.agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
