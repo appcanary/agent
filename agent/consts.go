@@ -12,7 +12,7 @@ var DEV_VAR_FILE string
 // env vars
 const (
 	PROD_URL = "https://www.appcanary.com"
-	DEV_URL  = "http://localhost:3000"
+	DEV_URL  = "http://localhost:4000"
 
 	DEFAULT_CONF_PATH = "/etc/appcanary/"
 	DEFAULT_CONF_FILE = DEFAULT_CONF_PATH + "agent.conf"
