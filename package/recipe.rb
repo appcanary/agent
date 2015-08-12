@@ -168,7 +168,7 @@ end
 
 class DebianRecipe < Recipe
   distro_name "debian"
-  distro_versions "jessie", "wheezy"
+  distro_versions "jessie", "wheezy", "squeeze"
   package_type "deb"
 end
 

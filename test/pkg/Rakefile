@@ -157,7 +157,7 @@ namespace :integration do
   end
 
   task :everything do
-    ["debian/jessie", "debian/wheezy",
+    ["debian/jessie", "debian/wheezy", "debian/squeeze",
      "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid", "ubuntu/utopic",
      "centos/6", "centos/7"].each do |distro_version|
        puts "invoke #{distro_version}"
