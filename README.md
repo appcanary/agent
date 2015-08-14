@@ -19,7 +19,7 @@ If you're reading this because you want to audit the code, the magic starts in [
 1. This project depends on a working golang and ruby environment. 
 2. Go to your `$GOPATH`. Type: 
 
-  `go get github.com/appcanary/agent`.
+  `go get github.com/appcanary/agent`
 3. `cd` into the brand new agent folder, and type: 
 
   `go get -t -d -v ./…`
