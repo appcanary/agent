@@ -19,6 +19,7 @@ type Env struct {
 	VarFile           string
 	HeartbeatDuration time.Duration
 	LogFile           *os.File
+	DistributionFile  string
 }
 
 var env = &Env{}
@@ -50,6 +51,8 @@ func InitEnv(env_str string) {
 
 		env.HeartbeatDuration = DEFAULT_HEARTBEAT_DURATION
 
+		env.DistributionFile = DEFAULT_DISTRIBUTION_FILE
+
 	} else {
 		// ###### resolve path
 		// filepath.Abs was resolving to a different folder
@@ -66,6 +69,8 @@ func InitEnv(env_str string) {
 		}
 		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")
 
+		DEV_DISTRIBUTION_FILE, _ := filepath.Abs("../test/data/issue")
+
 		// set dev vals
 
 		env.BaseUrl = DEV_URL
@@ -77,6 +82,8 @@ func InitEnv(env_str string) {
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
+
+		env.DistributionFile = DEV_DISTRIBUTION_FILE
 
 	}
 }

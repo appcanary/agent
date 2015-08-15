@@ -1,11 +1,9 @@
 package agent
 
 import (
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
-	"strings"
 )
 
 type Server struct {
@@ -55,22 +53,8 @@ func NewServer(conf *ServerConf) *Server {
 		}
 	}
 
-	if conf.Distro == "" || conf.Release == "" || conf.Distro == "unknown" || conf.Release == "unknown" {
-		// We can find out distro and release on debian systems
-		etcIssue, err := ioutil.ReadFile("/etc/issue")
-		// if we fail reading, distro/os is unknown
-		if err != nil {
-			conf.Distro = "unknown"
-			conf.Release = "unknown"
-			log.Error(err.Error())
-		} else {
-			// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
-			s := strings.Split(string(etcIssue), " ")
-			conf.Distro = strings.ToLower(s[0])
-			conf.Release = s[1]
-		}
+	conf.ParseDistro()
 
-	}
 	return &Server{Hostname: conf.Hostname, Uname: conf.Uname, Ip: conf.Ip, UUID: conf.UUID, Distro: conf.Distro, Release: conf.Release}
 }
 

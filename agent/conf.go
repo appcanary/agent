@@ -1,9 +1,10 @@
 package agent
 
 import (
-	"os"
-
 	"github.com/BurntSushi/toml"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
 type Conf struct {
@@ -51,6 +52,31 @@ func NewConfFromEnv() *Conf {
 	}
 
 	return conf
+}
+
+func (conf *ServerConf) ParseDistro() {
+	if conf.Distro == "" || conf.Release == "" || conf.Distro == "unknown" || conf.Release == "unknown" {
+		// We can find out distro and release on debian systems
+		etcIssue, err := ioutil.ReadFile(env.DistributionFile)
+		// if we fail reading, distro/os is unknown
+		if err != nil {
+			conf.Distro = "unknown"
+			conf.Release = "unknown"
+			log.Error(err.Error())
+		} else {
+			s := strings.Split(string(etcIssue), " ")
+			conf.Distro = strings.ToLower(s[0])
+
+			switch conf.Distro {
+			case "debian":
+				// /etc/issue looks like Debian GNU/Linux 8 \n \l
+				conf.Release = s[2]
+			case "ubuntu":
+				// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
+				conf.Release = s[1]
+			}
+		}
+	}
 }
 
 func (c *Conf) Save() {
