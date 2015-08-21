@@ -4,7 +4,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"io/ioutil"
 	"os"
-	"strings"
 )
 
 type Conf struct {
@@ -19,12 +18,13 @@ type FileConf struct {
 }
 
 type ServerConf struct {
-	UUID     string `toml:"uuid"`
-	Hostname string `toml:"hostname"`
-	Uname    string `toml:"uname"`
-	Ip       string `toml:"ip"`
-	Distro   string `toml:"distro"`
-	Release  string `toml:"release"`
+	UUID         string `toml:"uuid"`
+	Hostname     string `toml:"hostname"`
+	Uname        string `toml:"uname"`
+	Ip           string `toml:"ip"`
+	Distro       string `toml:"distro"`
+	Release      string `toml:"release"`
+	Distrostring string `toml:"distrostring"`
 }
 
 func NewConf() *Conf {
@@ -55,26 +55,15 @@ func NewConfFromEnv() *Conf {
 }
 
 func (conf *ServerConf) ParseDistro() {
-	if conf.Distro == "" || conf.Release == "" || conf.Distro == "unknown" || conf.Release == "unknown" {
+	if conf.Distrostring == "" || conf.Distrostring == "unknown" {
 		// We can find out distro and release on debian systems
 		etcIssue, err := ioutil.ReadFile(env.DistributionFile)
 		// if we fail reading, distro/os is unknown
 		if err != nil {
-			conf.Distro = "unknown"
-			conf.Release = "unknown"
+			conf.Distrostring = "unknown"
 			log.Error(err.Error())
 		} else {
-			s := strings.Split(string(etcIssue), " ")
-			conf.Distro = strings.ToLower(s[0])
-
-			switch conf.Distro {
-			case "debian":
-				// /etc/issue looks like Debian GNU/Linux 8 \n \l
-				conf.Release = s[2]
-			case "ubuntu":
-				// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
-				conf.Release = s[1]
-			}
+			conf.Distrostring = string(etcIssue)
 		}
 	}
 }

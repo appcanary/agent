@@ -133,6 +133,7 @@ func (t *ClientTestSuite) TestCreateServer() {
 		t.Equal(server.Hostname, json["hostname"])
 		t.Equal(server.Uname, json["uname"])
 		t.Equal(server.Ip, json["ip"])
+		t.Equal(server.Distrostring, json["distrostring"])
 		t.Nil(json["uuid"])
 	})
 
