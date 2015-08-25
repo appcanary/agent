@@ -55,7 +55,7 @@ func NewConfFromEnv() *Conf {
 func (conf *ServerConf) ParseDistro() {
 	if conf.DistroString == "" || conf.DistroString == "unknown" {
 		// We can find out distro and release on debian systems
-		etcIssue, err := ioutil.ReadFile(env.DistributionFile)
+		etcIssue, err := ioutil.ReadFile(env.DebianLikeDistributionFile)
 		// if we fail reading, distro/os is unknown
 		if err != nil {
 			conf.DistroString = "unknown"

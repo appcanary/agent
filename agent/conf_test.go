@@ -28,7 +28,7 @@ func TestServerConf(t *testing.T) {
 	assert := assert.New(t)
 	conf := &ServerConf{}
 	file, _ := filepath.Abs("../test/data/issue")
-	env.DistributionFile = file
+	env.DebianLikeDistributionFile = file
 	conf.ParseDistro()
 	assert.Equal("Debian GNU/Linux 8 \\n \\l\n\n", conf.DistroString, "parses distro")
 }
@@ -37,7 +37,7 @@ func TestServerConfUbuntu(t *testing.T) {
 	assert := assert.New(t)
 	conf := &ServerConf{}
 	file, _ := filepath.Abs("../test/data/ubuntu_issue")
-	env.DistributionFile = file
+	env.DebianLikeDistributionFile = file
 	conf.ParseDistro()
 	assert.Equal("Ubuntu 14.04.2 LTS \\n \\l\n", conf.DistroString, "parses distro")
 }
