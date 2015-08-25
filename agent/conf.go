@@ -22,9 +22,7 @@ type ServerConf struct {
 	Hostname     string `toml:"hostname"`
 	Uname        string `toml:"uname"`
 	Ip           string `toml:"ip"`
-	Distro       string `toml:"distro"`
-	Release      string `toml:"release"`
-	Distrostring string `toml:"distrostring"`
+	DistroString string `toml:"distro_string"`
 }
 
 func NewConf() *Conf {
@@ -55,15 +53,15 @@ func NewConfFromEnv() *Conf {
 }
 
 func (conf *ServerConf) ParseDistro() {
-	if conf.Distrostring == "" || conf.Distrostring == "unknown" {
+	if conf.DistroString == "" || conf.DistroString == "unknown" {
 		// We can find out distro and release on debian systems
 		etcIssue, err := ioutil.ReadFile(env.DistributionFile)
 		// if we fail reading, distro/os is unknown
 		if err != nil {
-			conf.Distrostring = "unknown"
+			conf.DistroString = "unknown"
 			log.Error(err.Error())
 		} else {
-			conf.Distrostring = string(etcIssue)
+			conf.DistroString = string(etcIssue)
 		}
 	}
 }

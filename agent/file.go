@@ -39,10 +39,9 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	case "Gemfile.lock":
 		kind = "gemfile"
 	case "available":
-		//todo support debian
-		kind = "ubuntu"
+		kind = "dpkg"
 	case "status":
-		kind = "ubuntu"
+		kind = "dpkg"
 	}
 	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: kind, UpdatedAt: time.Now()}
 

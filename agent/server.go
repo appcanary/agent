@@ -12,7 +12,7 @@ type Server struct {
 	Ip           string `json:"ip"`
 	Name         string `json:"name"`
 	UUID         string `json:"uuid,omitempty"`
-	Distrostring string `json:"distrostring,omitempty"`
+	DistroString string `json:"distro-string,omitempty"`
 }
 
 // Creates a new server and syncs conf if needed
@@ -54,7 +54,7 @@ func NewServer(conf *ServerConf) *Server {
 
 	conf.ParseDistro()
 
-	return &Server{Hostname: conf.Hostname, Uname: conf.Uname, Ip: conf.Ip, UUID: conf.UUID, Distrostring: conf.Distrostring}
+	return &Server{Hostname: conf.Hostname, Uname: conf.Uname, Ip: conf.Ip, UUID: conf.UUID, DistroString: conf.DistroString}
 }
 
 func (server *Server) IsNew() bool {

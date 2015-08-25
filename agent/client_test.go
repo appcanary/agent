@@ -61,7 +61,7 @@ func (t *ClientTestSuite) TestHeartbeat() {
 		t.Equal(2, len(json_files))
 		monitored_file := json_files[0].(map[string]interface{})
 
-		t.Equal("ubuntu", monitored_file["kind"])
+		t.Equal("dpkg", monitored_file["kind"])
 		t.NotNil(monitored_file["path"])
 		t.NotEqual("", monitored_file["path"])
 		t.NotNil(monitored_file["updated-at"])
@@ -133,7 +133,7 @@ func (t *ClientTestSuite) TestCreateServer() {
 		t.Equal(server.Hostname, json["hostname"])
 		t.Equal(server.Uname, json["uname"])
 		t.Equal(server.Ip, json["ip"])
-		t.Equal(server.Distrostring, json["distrostring"])
+		t.Equal(server.DistroString, json["distro-string"])
 		t.Nil(json["uuid"])
 	})
 
