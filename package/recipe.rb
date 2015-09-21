@@ -174,7 +174,7 @@ end
 
 class MintRecipe < Recipe
   distro_name "linuxmint"
-  distro_versions "rafaela", "rebecca", "qiana", "maya", "betsy"
+  distro_versions "rosa", "rafaela", "rebecca", "qiana" 
   package_type "deb"
 end
 
