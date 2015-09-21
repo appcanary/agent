@@ -172,3 +172,10 @@ class DebianRecipe < Recipe
   package_type "deb"
 end
 
+class MintRecipe < Recipe
+  distro_name "linuxmint"
+  distro_versions "rafaela", "rebecca", "qiana", "maya", "betsy"
+  package_type "deb"
+end
+
+
