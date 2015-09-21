@@ -155,7 +155,7 @@ end
 
 class CentosRecipe < Recipe
   distro_name "centos"
-  distro_versions "6", "7"
+  distro_versions "5", "6", "7"
   package_type "rpm"
   pc_distro_name "el"
 end

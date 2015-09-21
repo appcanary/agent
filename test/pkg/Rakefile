@@ -159,7 +159,7 @@ namespace :integration do
   task :everything do
     ["debian/jessie", "debian/wheezy", "debian/squeeze",
      "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid", "ubuntu/utopic",
-     "centos/6", "centos/7"].each do |distro_version|
+     "centos/6", "centos/7", "centos/5"].each do |distro_version|
        puts "invoke #{distro_version}"
        ENV["V"] = distro_version
        Rake::Task["integration:test"].invoke
