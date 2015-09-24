@@ -111,8 +111,7 @@ namespace :integration do
 
   task :build => :clean do
     puts "# building #{@distro_version}..."
-    release = `ls ../../releases|grep #{@distro}_#{@release}|grep amd64`.lines.last.strip
-    
+    release = `ls ../../releases | grep #{@distro}_#{@release} | grep amd64`.lines.last.strip
     if release.empty?
       puts "Hey, we can't find a release. Did you build the packages?"
       exit

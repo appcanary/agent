@@ -1,9 +1,9 @@
 package agent
 
 import (
-	"os"
-
 	"github.com/BurntSushi/toml"
+	"io/ioutil"
+	"os"
 )
 
 type Conf struct {
@@ -18,12 +18,11 @@ type FileConf struct {
 }
 
 type ServerConf struct {
-	UUID     string `toml:"uuid"`
-	Hostname string `toml:"hostname"`
-	Uname    string `toml:"uname"`
-	Ip       string `toml:"ip"`
-	Distro   string `toml:"distro"`
-	Release  string `toml:"release"`
+	UUID         string `toml:"uuid"`
+	Hostname     string `toml:"hostname"`
+	Uname        string `toml:"uname"`
+	Ip           string `toml:"ip"`
+	DistroString string `toml:"distro_string"`
 }
 
 func NewConf() *Conf {
@@ -51,6 +50,20 @@ func NewConfFromEnv() *Conf {
 	}
 
 	return conf
+}
+
+func (conf *ServerConf) ParseDistro() {
+	if conf.DistroString == "" || conf.DistroString == "unknown" {
+		// We can find out distro and release on debian systems
+		etcIssue, err := ioutil.ReadFile(env.DebianLikeDistributionFile)
+		// if we fail reading, distro/os is unknown
+		if err != nil {
+			conf.DistroString = "unknown"
+			log.Error(err.Error())
+		} else {
+			conf.DistroString = string(etcIssue)
+		}
+	}
 }
 
 func (c *Conf) Save() {
