@@ -17,13 +17,15 @@ If you're reading this because you want to audit the code, the magic starts in [
 ## Installation
 
 1. This project depends on a working golang and ruby environment. 
-2. Go to your `$GOPATH`. Type: 
+2. First, let's set up go. Go to your `$GOPATH` and type: 
 
   `go get github.com/appcanary/agent`
-3. `cd` into the brand new agent folder, and type: 
+
+3. `cd` into the brand new agent folder, and install all of our go dependencies by typing: 
 
   `go get -t -d -v ./…`
-4. Go ahead type: 
+
+4. Now we set bundler and install our ruby dependencies. We use ruby to script all of our build and packaging tasks. Go ahead and type: 
 
   ```bash
 gem install bundler # if you don't have it
