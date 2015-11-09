@@ -3,8 +3,15 @@ require 'json'
 require 'yaml'
 
 CURRENT_VERSION = "0.0.2"
+PC_USER = "appcanary"
+PC_REPO = "agent"
+PC_STAGING_REPO = "appcanary-stg"
 
-@dont_publish = (ENV["CANARY_ENV"] == "test")
+@built_packages = []
+
+def production?
+  @isproduction ||= (ENV["CANARY_ENV"] == "production")
+end
 
 # gets result of shell command
 def shell(str)
@@ -36,7 +43,7 @@ task :testr => :build_all do
 end
 
 task :release_prep do
-  unless @dont_publish
+  if production?
 	  if `git diff --shortstat` != ""
       puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
       exit 1
@@ -44,34 +51,41 @@ task :release_prep do
   end
 
 	@date = `date -u +"%Y.%m.%d-%H%M%S-%Z"`.strip
-	tag_name = "#{CURRENT_VERSION}-#{@date}"
-	sha = shell %{git rev-parse --short HEAD}
-	user = `whoami`.strip
-	commit_message = "#{user} deployed #{sha}"
-
-	@release_version = tag_name
-
-  unless @dont_publish
-	  shell %{git tag -a #{tag_name} -m "#{commit_message}"}
-	  shell %{git push origin #{tag_name}}
-  end
+	@release_version = "#{CURRENT_VERSION}-#{@date}"
 end
 
 task :cross_compile => :release_prep do
   @ldflags = %{-X main.CanaryVersion '#{@release_version}'}
-  shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -bu="#{@date}"  -d="dist/" xc}
+  shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -pv="#{@date}"  -d="dist/" xc}
 end
 
 
 task :package => :cross_compile do
   load 'package/recipe.rb'
   [UbuntuRecipe, CentosRecipe, DebianRecipe, MintRecipe].each do |rcp|
-    
-    build = rcp.build!(CURRENT_VERSION, @date)
-    unless @dont_publish
-      build.publish!
+    @built_packages << rcp.build!(CURRENT_VERSION, @date)
+  end
+end
+
+task :deploy => :package do
+
+  @built_packages.each do |rcp|
+    if production?
+      rcp.publish!(PC_USER, PC_REPO)
+    else
+      rcp.publish!(PC_USER, PC_STAGING_REPO)
     end
   end
+  sha = shell %{git rev-parse --short HEAD}
+  user = `whoami`.strip
+  commit_message = "#{user} deployed #{sha}"
+
+
+  if production?
+    shell %{git tag -a #{@release_version} -m "#{commit_message}"}
+    shell %{git push origin #{@release_version}}
+  end
+
 end
 
 task :release => [:release_prep, :default, :package]

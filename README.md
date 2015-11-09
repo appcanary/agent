@@ -30,11 +30,11 @@ gem install bundler # if you don't have it
 bundle install
 ```
 
-This gets you the basic up on your machine.
+This gets you all the basics up on your machine.
 
-5. In order to package releases, you're going to need `goxc`, so visit [the goxc github page](https://github.com/laher/goxc) and install that.
+5. In order to cross compile releases, you're going to need `goxc`, so visit [the goxc github page](https://github.com/laher/goxc) and install that (last we used was version 0.16.0).
 
-6. Finally, [fpm](https://github.com/jordansissel/fpm/) requires `rpmbuild` for rpm packages. On OSX at least, that util is a apart of the `rpm` homebrew package, so:
+6. We package releases using [`fpm`](https://github.com/jordansissel/fpm/). This is installed via bundler in step 4, HOWEVER, `fpm` requires `rpmbuild` in order to assemble rpm packages. We last used `rpmbuild` version 5.4.15. On OSX at least, that util is a apart of the `rpm` homebrew package, so:
 
 ```bash
 brew install rpm
@@ -46,8 +46,18 @@ Once you've done the above, you're all set!
 
 ```bash
 rake build # to compile
-rake test # to test
+rake test  # to test
 rake test t=path/to/test # to test an individual file
+```
+
+## Packaging
+
+```bash
+rake package # just to create packages
+rake deploy  # packages, then deploys to package cloud
+
+# actually deploy to 'production' package cloud repo
+CANARY_ENV=production rake deploy
 ```
 
 ## Contributing
