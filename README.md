@@ -32,19 +32,19 @@ gem install bundler # if you don't have it
 bundle install
 ```
 
-This gets you all the basics up on your machine.
+  This gets you all the basics up on your machine.
 
 5. In order to cross compile releases, you're going to need `goxc`, so visit [the goxc github page](https://github.com/laher/goxc) and install that (last we used was version 0.16.0).
 
 6. We package releases using [`fpm`](https://github.com/jordansissel/fpm/). This is installed via bundler in step 4, HOWEVER, `fpm` requires `rpmbuild` in order to assemble rpm packages. We last used `rpmbuild` version 5.4.15. On OSX at least, that util is a apart of the `rpm` homebrew package, so:
 
-```bash
+  ```bash
 brew install rpm
 ```
 
 7. At this stage you're able to build, test, package and deploy packages. But you know what you're missing? A way to test that the packages work on the (at time of writing) 10 different linux versions you support. We ended up using docker for this. We went and got [boot2docker](http://boot2docker.io/) (cli/docker version 1.6.2 is what we used).
 
-You may have to also fetch VirtualBox. There's instructions, docker is... complicated.
+  You may have to also fetch VirtualBox. There's instructions, docker is... complicated.
 
 ## Compiling
 
@@ -68,7 +68,7 @@ CANARY_ENV=production rake deploy
 
 ## Testing the packaging
 ```bash
-boot2docker start# copy and paste the export fields it gives you
+boot2docker start # copy and paste the export fields it gives you
 rake integration:everything # yeah, it needs a better name
 ```
 
@@ -79,7 +79,7 @@ boot2docker start # again, make sure you copy those exports
 rake integration:test distro=debian release=jessie package=releases/appcanary_0.0.2-2015.11.10-212042-UTC_amd64_debian_jessie.deb
 ```
 
-Pro-tip! Don't forget to use the correct architecture version.
+Pro-tip! Don't forget to use the correct package architecture version for the machine you're on (frankly, probably amd64).
 
 ## Contributing
 
