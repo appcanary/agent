@@ -54,7 +54,7 @@ func main() {
 	conf := agent.NewConfFromEnv()
 
 	if conf.ApiKey == "" {
-		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/canary-agent/canary.conf")
+		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")
 	}
 
 	a := agent.NewAgent(CanaryVersion, conf)
