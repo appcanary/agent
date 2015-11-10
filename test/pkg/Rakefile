@@ -7,7 +7,6 @@
 #
 # you will want a working docker before you run
 # any of this, by the by.
-require 'pry'
 
 @integration_test_runs = 0
 @integration_test_succ = 0
