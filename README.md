@@ -16,7 +16,7 @@ If you're reading this because you want to audit the code, the magic starts in [
 
 ## Installation
 
-1. This project depends on a working golang and ruby environment. 
+1. This project depends on a working golang and ruby environment, as well as docker.
 2. First, let's set up go. Go to your `$GOPATH` and type: 
 
   `go get github.com/appcanary/agent`
@@ -42,6 +42,10 @@ This gets you all the basics up on your machine.
 brew install rpm
 ```
 
+7. At this stage you're able to build, test, package and deploy packages. But you know what you're missing? A way to test that the packages work on the (at time of writing) 10 different linux versions you support. We ended up using docker for this. We went and got [boot2docker](http://boot2docker.io/) (cli/docker version 1.6.2 is what we used).
+
+You may have to also fetch VirtualBox. There's instructions, docker is... complicated.
+
 ## Compiling
 
 Once you've done the above, you're all set!
@@ -61,6 +65,21 @@ rake deploy  # packages, then deploys to package cloud
 # actually deploy to 'production' package cloud repo
 CANARY_ENV=production rake deploy
 ```
+
+## Testing the packaging
+```bash
+boot2docker start# copy and paste the export fields it gives you
+rake integration:everything # yeah, it needs a better name
+```
+
+or, alternatively, if you built a specific package:
+
+```bash
+boot2docker start # again, make sure you copy those exports
+rake integration:test distro=debian release=jessie package=releases/appcanary_0.0.2-2015.11.10-212042-UTC_amd64_debian_jessie.deb
+```
+
+Pro-tip! Don't forget to use the correct architecture version.
 
 ## Contributing
 

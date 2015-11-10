@@ -1,6 +1,7 @@
 require 'rake/clean'
 require 'json'
 require 'yaml'
+load 'test/pkg/Rakefile'
 
 CURRENT_VERSION = "0.0.2"
 PC_USER = "appcanary"
@@ -29,19 +30,23 @@ task :default => :build
 
 task :build_all => [:setup, :build]
 
+desc "Build the program into ./bin/appcanary"
 task :build do
-  @ldflags = %{"-X main.CanaryVersion #{@release_version || "unreleased"}"}
-  shell "go build -ldflags #{@ldflags} -o ./bin/canary-agent"
+  @ldflags = %{"-X main.CanaryVersion #{@release_version || "#{@release_version}-unreleased"}"}
+  shell "go build -ldflags #{@ldflags} -o ./bin/appcanary"
 end
 
+desc "Build and run all go tests"
 task :test => :build_all do 
 	sh "go test -v ./... -race -timeout 20s"
 end
 
+desc "Build and run a specific go test"
 task :testr => :build_all do
 	sh "go test -v ./... -race -timeout 20s -run #{ENV["t"]}"
 end
 
+desc "Generate release version from date"
 task :release_prep do
   if production?
 	  if `git diff --shortstat` != ""
@@ -54,19 +59,30 @@ task :release_prep do
 	@release_version = "#{CURRENT_VERSION}-#{@date}"
 end
 
+desc "Cross compile a binary for every architecture"
 task :cross_compile => :release_prep do
+  puts "\n\n\n#################################"
+  puts "Cross compiling packages."
+  puts "#################################\n\n\n"
+
   @ldflags = %{-X main.CanaryVersion '#{@release_version}'}
   shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -pv="#{@date}"  -d="dist/" xc}
 end
 
 
+desc "Generate a package archive for every operating system we support"
 task :package => :cross_compile do
   load 'package/recipe.rb'
+  puts "\n\n\n#################################"
+  puts "Building packages."
+  puts "#################################\n\n\n"
+
   [UbuntuRecipe, CentosRecipe, DebianRecipe, MintRecipe].each do |rcp|
     @built_packages << rcp.build!(CURRENT_VERSION, @date)
   end
 end
 
+desc "Cross compile, package and deploy packages to package cloud"
 task :deploy => :package do
 
   @built_packages.each do |rcp|

@@ -7,9 +7,14 @@
 #
 # you will want a working docker before you run
 # any of this, by the by.
+require 'pry'
+
+@integration_test_runs = 0
+@integration_test_succ = 0
+@integration_test_fail = 0
 
 def usage
-  puts "usage: integration:test V='debian/jessie'"
+  puts "usage: integration:test distro=centos release=5 package=releases/appcanary_0.0.2-2015.11.10-212042-UTC_amd64_centos_5.rpm"
   exit 1
 end
 
@@ -64,10 +69,10 @@ echo What happens when we remove it?
   def self.render(dv)
     install_cmd = "exit 1"
     if dv =~ /centos/
-      install_cmd = "rpm -i latest.pkg"
+      install_cmd = "rpm --nosignature -i latest.pkg"
       # only 80% sure this does what we need
       # to test that upgrades don't clobber files
-      remove_cmd = "echo foo > /etc/appcanary/agent.conf && rpm -iv --replacepkgs latest.pkg && (if [ $(cat /etc/appcanary/agent.conf) = 'foo' ]; then exit 0; else exit 1; fi )"
+      remove_cmd = "echo foo > /etc/appcanary/agent.conf && rpm --nosignature -iv --replacepkgs latest.pkg && (if [ $(cat /etc/appcanary/agent.conf) = 'foo' ]; then exit 0; else exit 1; fi )"
     else
       install_cmd = "dpkg -i latest.pkg"
       remove_cmd = "apt-get -y remove appcanary"
@@ -88,16 +93,30 @@ end
 
 namespace :integration do
 
+  desc "test test"
+  task :foo do
+    puts File.dirname(__FILE__)
+    @verbose = true
+    puts `ls`
+    if ENV["DOCKER_HOST"].nil?
+      puts "Sorry partner, you need boot2docker running."
+    end
+  end
+
   task :init do
-    if (@distro_version = ENV["V"]).nil?
-      usage
-    elsif !(@distro_version =~ /\w+\/\w+/)
-      usage
-    else
-      @distro, @release = @distro_version.strip.split("/")[-2..-1]
-      @distro_path = @distro_version
+
+    @integration_test_path = File.dirname(__FILE__)
+
+    if ENV["distro"] && ENV["release"] && ENV["package"]
+      @distro = ENV["distro"]
+      @release = ENV["release"]
+      @package = ENV["package"]
+
       @docker_name = "#{@distro}:#{@release}"
+      @distro_path = File.join(@integration_test_path, "#{@distro}/#{@release}")
       @ac_docker_name = "appcanary:#{@distro}_#{@release}"
+    else
+      usage
     end
   end
 
@@ -111,16 +130,15 @@ namespace :integration do
 
   task :build => :clean do
     puts "# building #{@distro_version}..."
-    release = `ls ../../releases|grep #{@distro}_#{@release}|grep amd64`.lines.last.strip
     
-    if release.empty?
+    if @package.empty?
       puts "Hey, we can't find a release. Did you build the packages?"
       exit
     end
 
-    release_path = "../../releases/#{release}"
+    release_path = @package
 
-    puts "# copying #{release}"
+    puts "# copying #{@package}"
     shell "cp #{release_path} #{@distro_path}/latest.pkg"
 
     puts "# generating test file"
@@ -149,22 +167,44 @@ namespace :integration do
 
     if output.scan("OKAC").count == 6
       puts "OK"
+      @integration_test_succ += 1
       Rake::Task["integration:clean"].execute
     else
+      @integration_test_fail += 1
       puts "FAIL"
     end
 
   end
 
-  task :everything do
-    ["debian/jessie", "debian/wheezy", "debian/squeeze",
-     "ubuntu/precise", "ubuntu/trusty", "ubuntu/vivid", "ubuntu/utopic",
-     "centos/6", "centos/7", "centos/5"].each do |distro_version|
-       puts "invoke #{distro_version}"
-       ENV["V"] = distro_version
-       Rake::Task["integration:test"].invoke
-       Rake::Task.tasks.map(&:reenable)
-     end
+  task :everything => :package do
+    if ENV["DOCKER_HOST"].nil?
+      puts "Sorry partner, you need boot2docker running."
+    end
+
+    puts "\n\n\n#################################"
+    puts "Running docker integration tests."
+    puts "#################################\n\n\n"
+    @built_packages.each do |recipe|
+      next if recipe.skip_docker
+      recipe.releases.select { |name, file| file =~ /amd64/ }.each do |release, file|
+        puts "invoking #{recipe.distro_name}/#{release}"
+        ENV["distro"] = recipe.distro_name
+        ENV["release"] = release
+        ENV["package"] = file
+        Rake::Task["integration:test"].invoke
+        @integration_test_runs += 1
+        Rake::Task.tasks.select { |t| t.name =~ /integration/ }.map(&:reenable)
+      end
+    end
+
+    if @integration_test_fail != 0
+      puts "\n\n\nFAIL: #{@integration_test_fail} tests failed."
+      puts "#################################\n\n\n"
+      exit 1
+    elsif @integration_test_succ == @integration_test_runs
+      puts "\n\n\nOK: All integration tests succeeded"
+      puts "#########################################\n\n\n"
+    end
   end
 end
 

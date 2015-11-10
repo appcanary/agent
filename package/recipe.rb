@@ -16,6 +16,11 @@ class Recipe
       @pc_distro_name = name
     end
 
+    def skip_docker(val)
+      @skip_docker = val
+    end
+
+
     def build!(version, date)
       recipe = self.new
       recipe.distro_name = @distro_name
@@ -24,6 +29,7 @@ class Recipe
       recipe.version = "#{version}-#{date}"
       recipe.date = date
       recipe.pc_distro_name = @pc_distro_name
+      recipe.skip_docker = @skip_docker
       recipe.build!
       recipe
     end
@@ -36,7 +42,7 @@ class Recipe
   VENDOR = "Appcanary"
   NAME = "appcanary"
 
-  attr_accessor :distro_name, :distro_versions, :package_type, :version, :path, :date
+  attr_accessor :distro_name, :distro_versions, :package_type, :version, :path, :date, :skip_docker
   attr_accessor :releases
 
   def filename
@@ -174,6 +180,7 @@ class MintRecipe < Recipe
   distro_name "linuxmint"
   distro_versions "rosa", "rafaela", "rebecca", "qiana" 
   package_type "deb"
+  skip_docker true
 end
 
 
