@@ -10,27 +10,31 @@ import (
 )
 
 var CanaryVersion string
+var flagset *flag.FlagSet
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: canary-agent [OPTION]\n")
-	flag.PrintDefaults()
+	flagset.PrintDefaults()
 }
 
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
-	flag.Usage = usage
 
-	flag.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
-	flag.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
+	// httptest, used in client.test, sets a usage flag
+	// that leaks when you use the 'global' FlagSet.
+	flagset = flag.NewFlagSet("Default", flag.ExitOnError)
+	flagset.Usage = usage
+
+	flagset.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
+	flagset.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
 
 	if !env.Prod {
-		flag.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
-
+		flagset.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
 	}
 
-	version := flag.Bool("version", false, "Display version information")
-	flag.Parse()
+	version := flagset.Bool("version", false, "Display version information")
+	flagset.Parse(os.Args[1:])
 
 	if *version {
 		fmt.Println(CanaryVersion)
