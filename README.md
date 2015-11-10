@@ -1,5 +1,5 @@
 <div style="text-align:center">
-  <a href="https://appcanary.com"><img src="https://github.com/appcanary/agent/raw/master/appcanary.png" /></a>
+  <a href="https://appcanary.com"><img src="https://github.com/appcanary/agent/raw/master/appcanary-hero.png" /></a>
 </div>
 
 # Hello.
