@@ -13,7 +13,7 @@ var CanaryVersion string
 var flagset *flag.FlagSet
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: canary-agent [OPTION]\n")
+	fmt.Fprintf(os.Stderr, "Usage: appcanary [OPTION]\n")
 	flagset.PrintDefaults()
 }
 
@@ -28,6 +28,7 @@ func main() {
 
 	flagset.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
 	flagset.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
+	flagset.StringVar(&env.LogFile, "log", env.LogFile, "Set the log file (will not override if set in config file)")
 
 	if !env.Prod {
 		flagset.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
@@ -93,8 +94,8 @@ func main() {
 	defer a.CloseWatches()
 
 	// Close the logfile when we exit
-	if env.LogFile != nil {
-		defer env.LogFile.Close()
+	if env.LogFileHandle != nil {
+		defer env.LogFileHandle.Close()
 	}
 
 	// wait for the right signal
