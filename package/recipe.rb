@@ -1,7 +1,3 @@
-# TODO: make this play nice with @dont_publish
-PC_USER = "appcanary"
-PC_REPO = "agent"
-
 class Recipe
   class << self
     def distro_name(name)
@@ -20,6 +16,11 @@ class Recipe
       @pc_distro_name = name
     end
 
+    def skip_docker(val)
+      @skip_docker = val
+    end
+
+
     def build!(version, date)
       recipe = self.new
       recipe.distro_name = @distro_name
@@ -28,6 +29,7 @@ class Recipe
       recipe.version = "#{version}-#{date}"
       recipe.date = date
       recipe.pc_distro_name = @pc_distro_name
+      recipe.skip_docker = @skip_docker
       recipe.build!
       recipe
     end
@@ -37,10 +39,10 @@ class Recipe
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
   ARCHS = ["amd64", "i386"]
   LICENSE = "GPLv3"
-  VENDOR = "appCanary"
+  VENDOR = "Appcanary"
   NAME = "appcanary"
 
-  attr_accessor :distro_name, :distro_versions, :package_type, :version, :path, :date
+  attr_accessor :distro_name, :distro_versions, :package_type, :version, :path, :date, :skip_docker
   attr_accessor :releases
 
   def filename
@@ -68,8 +70,10 @@ class Recipe
   end
 
   # huge smell right here, gotta fix this
+  # also, remember to document things. why is this
+  # four layers deep?
   def bin_path(arch)
-    "../../../../dist/0.0.1+b#{@date}/linux_#{arch_dir(arch)}/appcanary"
+    "../../../../dist/#{@date}/linux_#{arch_dir(arch)}/appcanary"
   end
 
   def bin_file(arch)
@@ -128,9 +132,9 @@ class Recipe
     releases << [dv, path]
   end
 
-  def publish!
+  def publish!(pc_user, pc_repo)
     releases.each do |dv, rls|
-      exec %{bundle exec package_cloud push #{PC_USER}/#{PC_REPO}/#{pc_distro_name}/#{dv} #{rls}}
+      exec %{bundle exec package_cloud push #{pc_user}/#{pc_repo}/#{pc_distro_name}/#{dv} #{rls}}
     end
   end
 
@@ -155,7 +159,7 @@ end
 
 class CentosRecipe < Recipe
   distro_name "centos"
-  distro_versions "6", "7"
+  distro_versions "5", "6", "7"
   package_type "rpm"
   pc_distro_name "el"
 end
@@ -168,7 +172,15 @@ end
 
 class DebianRecipe < Recipe
   distro_name "debian"
-  distro_versions "jessie", "wheezy"
+  distro_versions "jessie", "wheezy", "squeeze"
   package_type "deb"
 end
+
+class MintRecipe < Recipe
+  distro_name "linuxmint"
+  distro_versions "rosa", "rafaela", "rebecca", "qiana" 
+  package_type "deb"
+  skip_docker true
+end
+
 

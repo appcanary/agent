@@ -1,10 +1,18 @@
 require 'rake/clean'
 require 'json'
 require 'yaml'
+load 'test/pkg/Rakefile'
 
 CURRENT_VERSION = "0.0.2"
+PC_USER = "appcanary"
+PC_REPO = "agent"
+PC_STAGING_REPO = "appcanary-stg"
 
-@dont_publish = (ENV["CANARY_ENV"] == "test")
+@built_packages = []
+
+def production?
+  @isproduction ||= (ENV["CANARY_ENV"] == "production")
+end
 
 # gets result of shell command
 def shell(str)
@@ -22,21 +30,25 @@ task :default => :build
 
 task :build_all => [:setup, :build]
 
+desc "Build the program into ./bin/appcanary"
 task :build do
-  @ldflags = %{"-X main.CanaryVersion #{@release_version || "unreleased"}"}
-  shell "go build -ldflags #{@ldflags} -o ./bin/canary-agent"
+  @ldflags = %{"-X main.CanaryVersion #{@release_version || "#{@release_version}-unreleased"}"}
+  shell "go build -ldflags #{@ldflags} -o ./bin/appcanary"
 end
 
+desc "Build and run all go tests"
 task :test => :build_all do 
 	sh "go test -v ./... -race -timeout 20s"
 end
 
+desc "Build and run a specific go test"
 task :testr => :build_all do
 	sh "go test -v ./... -race -timeout 20s -run #{ENV["t"]}"
 end
 
+desc "Generate release version from date"
 task :release_prep do
-  unless @dont_publish
+  if production?
 	  if `git diff --shortstat` != ""
       puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
       exit 1
@@ -44,34 +56,52 @@ task :release_prep do
   end
 
 	@date = `date -u +"%Y.%m.%d-%H%M%S-%Z"`.strip
-	tag_name = "#{CURRENT_VERSION}-#{@date}"
-	sha = shell %{git rev-parse --short HEAD}
-	user = `whoami`.strip
-	commit_message = "#{user} deployed #{sha}"
-
-	@release_version = tag_name
-
-  unless @dont_publish
-	  shell %{git tag -a #{tag_name} -m "#{commit_message}"}
-	  shell %{git push origin #{tag_name}}
-  end
+	@release_version = "#{CURRENT_VERSION}-#{@date}"
 end
 
+desc "Cross compile a binary for every architecture"
 task :cross_compile => :release_prep do
+  puts "\n\n\n#################################"
+  puts "Cross compiling packages."
+  puts "#################################\n\n\n"
+
   @ldflags = %{-X main.CanaryVersion '#{@release_version}'}
-  shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -bu="#{@date}"  -d="dist/" xc}
+  shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -pv="#{@date}"  -d="dist/" xc}
 end
 
 
+desc "Generate a package archive for every operating system we support"
 task :package => :cross_compile do
   load 'package/recipe.rb'
-  [UbuntuRecipe, CentosRecipe, DebianRecipe].each do |rcp|
-    
-    build = rcp.build!(CURRENT_VERSION, @date)
-    unless @dont_publish
-      build.publish!
+  puts "\n\n\n#################################"
+  puts "Building packages."
+  puts "#################################\n\n\n"
+
+  [UbuntuRecipe, CentosRecipe, DebianRecipe, MintRecipe].each do |rcp|
+    @built_packages << rcp.build!(CURRENT_VERSION, @date)
+  end
+end
+
+desc "Cross compile, package and deploy packages to package cloud"
+task :deploy => :package do
+
+  @built_packages.each do |rcp|
+    if production?
+      rcp.publish!(PC_USER, PC_REPO)
+    else
+      rcp.publish!(PC_USER, PC_STAGING_REPO)
     end
   end
+  sha = shell %{git rev-parse --short HEAD}
+  user = `whoami`.strip
+  commit_message = "#{user} deployed #{sha}"
+
+
+  if production?
+    shell %{git tag -a #{@release_version} -m "#{commit_message}"}
+    shell %{git push origin #{@release_version}}
+  end
+
 end
 
 task :release => [:release_prep, :default, :package]
