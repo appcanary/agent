@@ -1,12 +1,14 @@
-# extremely flakey integration tests
-# that atm just smokescreen that the
-# packages install and do *something*
-
-# but you can feel that there's something here,
-# just lurking, waiting to be kind of formidable
+# docker package integration test suite/runner
 #
-# you will want a working docker before you run
-# any of this, by the by.
+# We support a lot of different linuxes. We needed
+# an automated way to verify that the packages at the very
+# least "unpack" correctly on all the different platforms.
+#
+# The following, given a distro, release name and package
+# file will generate a Dockerfile, fetch the docker image,
+# build an image with the provided package, install it,
+# then verify that all of the files we care about got
+# put in the right place.
 
 require 'erb'
 VERBOSE = (ENV["CANARY_ENV"] == "test")
@@ -191,7 +193,9 @@ echo Did we get the files in?
 cat /var/log/appcanary.log && echo OKAC LOG
 cat /var/db/appcanary/server.conf && echo OKAC SERVERCONF
 cat /etc/appcanary/agent.conf && echo OKAC CONFCONF
-cat /etc/logrotate.d/appcanary && echo OKAC LOGCONF
+
+echo and logrotate?
+cat /etc/logrotate.d/appcanary && echo OKAC LOGROTATE
 stat -c %U /var/log/appcanary.log | grep appcanary && echo OKAC LOGFILE
 
 echo '#########'
@@ -221,7 +225,7 @@ echo What happens when we remove it?
   end
 
   def success?(output)
-    output.scan("OKAC").count == 6
+    output.scan("OKAC").count == 7
   end
 end
 
