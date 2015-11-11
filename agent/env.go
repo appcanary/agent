@@ -85,7 +85,8 @@ func InitEnv(env_str string) {
 }
 
 func InitLogging() {
-	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), logging.GlogFormatter)
+	format := logging.MustStringFormatter("%{time} %{pid} %{shortfile}] %{message}")
+	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), format)
 	var err error
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
