@@ -8,19 +8,144 @@
 # you will want a working docker before you run
 # any of this, by the by.
 
-@integration_test_runs = 0
-@integration_test_succ = 0
-@integration_test_fail = 0
+require 'erb'
+VERBOSE = (ENV["CANARY_ENV"] == "test")
 
-def usage
-  puts "usage: integration:test distro=centos release=5 package=releases/appcanary_0.0.2-2015.11.10-212042-UTC_amd64_centos_5.rpm"
-  exit 1
+def shell(cmd)
+  if VERBOSE
+    puts "-> #{cmd}"
+    system(cmd)
+  else 
+    `#{cmd}`
+  end
 end
 
-@verbose = (ENV["CANARY_ENV"] == "test")
+# takes a collection of Recipes and orchestrates
+# the test across all of them.
+class DTestRunner
+  attr_accessor :built_packages
+  def initialize(bp)
+    @integration_test_path = File.dirname(__FILE__)
+    @ct_runs = 0
+    @ct_succ= 0
+    @ct_fail = 0
 
-require 'erb'
-module Dockerfile
+    self.built_packages = bp
+  end
+
+  def run!
+    @built_packages.each do |recipe|
+      next if recipe.skip_docker
+
+      # my personal computer is amd64, test only that version
+      recipe.releases.select { |name, file| file =~ /amd64/ }.each do |release, file|
+        docker = Dockerer.new(recipe.distro_name, release, @integration_test_path, file)
+        @ct_runs +=1
+
+        if docker.invoke!
+          @ct_succ += 1
+        else
+          @ct_fail += 1
+        end
+      end
+    end
+
+    if @ct_fail != 0
+      puts "\n\n\nFAIL: #{@ct_fail} tests failed."
+      puts "#####################################"
+      exit 1
+    elsif @ct_succ == @ct_runs
+      puts "\n\n\nOK: All integration tests succeeded"
+      puts "#########################################"
+    end
+  end
+end
+
+# builds, and 'provisions' the docker image by
+# preparing the appropriate folder, constructing
+# the test shell script and the dockerfile
+# then starting the image. 
+class Dockerer
+  attr_accessor :docker_name, :distro_path, :ac_docker_name, :package,
+    :test_script, :dockerfile
+
+  def initialize(distro_name, release, test_path, package)
+    self.docker_name = "#{distro_name}:#{release}"
+    self.distro_path =  File.join(test_path, "#{distro_name}/#{release}")
+    self.ac_docker_name = "appcanary:#{distro_name}_#{release}"
+    self.package = package
+
+    self.test_script = TestSh.new(docker_name)
+    self.dockerfile = Dockerfile.new(docker_name)
+  end
+
+  def invoke!
+    puts "=> Running test for: #{docker_name}"
+    clean_up!
+    build!
+    test!
+  end
+
+  def test!
+    puts "# executing test.sh..."
+    docker = "cd #{@distro_path} && docker run #{@ac_docker_name} /root/test.sh"
+    cmd = "#{docker} &2>&1"
+    output = `#{cmd}`
+
+    if VERBOSE
+      puts "-> #{cmd}"
+      puts output
+    end
+
+    if @test_script.success?(output)
+      puts "OK\n\n"
+      self.clean_up!
+      return true
+    else
+      puts "FAIL\n\n"
+      return false
+    end
+  end
+
+  def build!
+    puts "# building #{@distro_version}..."
+
+    if @package.empty?
+      puts "Hey, we can't find a release. Did you build the packages?"
+      exit
+    end
+
+    release_path = @package
+
+    puts "# copying #{@package}"
+    shell "cp #{release_path} #{@distro_path}/latest.pkg"
+
+    puts "# generating test file"
+    File.write(File.join(@distro_path, "test.sh"), @test_script.render)
+    shell "chmod a+x #{File.join(@distro_path, "test.sh")}"
+
+    puts "# generating dockerfile"
+    File.write(File.join(@distro_path, "Dockerfile"), @dockerfile.render)
+
+    puts "# building docker..."
+    shell "cd #{@distro_path} && docker pull #{@docker_name}"
+    shell "cd #{@distro_path} && docker build -t #{@ac_docker_name} ."
+  end
+
+  def clean_up!
+    `mkdir -p  #{@distro_path}`
+
+    `rm -f #{@distro_path}/latest.pkg`
+    `rm -f #{@distro_path}/Dockerfile`
+    `rm -f #{@distro_path}/test.sh`
+  end
+
+end
+
+# generates a docker file 
+# that copies over the provided package
+# and executes the test script
+class Dockerfile
   TEMPLATE = <<-docker
 FROM <%= container_name %>
 RUN <%= update_cmd %>
@@ -28,8 +153,13 @@ COPY ./test.sh /root/test.sh
 COPY latest.pkg /root/latest.pkg
   docker
 
-  def self.render(dv)
-    container_name = dv
+  attr_accessor :docker_name
+  def initialize(dn)
+    self.docker_name = dn
+  end
+
+  def render
+    container_name = @docker_name
     update_cmd = 'exit 1'
 
     if container_name =~ /centos/
@@ -42,8 +172,12 @@ COPY latest.pkg /root/latest.pkg
   end
 end
 
-
-module TestSh
+# test script
+# installs the package and then verifies
+# that stuff got put in the right place.
+# we check to see whether the test 'ran' by
+# logging the output and counting the OKAC strings
+class TestSh
   TEMPLATE = <<-test
 #!/usr/bin/env bash
 cd /root
@@ -65,9 +199,14 @@ echo What happens when we remove it?
 <%= remove_cmd %> && cat /etc/appcanary/agent.conf 2>&1 && echo OKAC kept
   test
 
-  def self.render(dv)
+  attr_accessor :docker_name
+  def initialize(dn)
+    self.docker_name = dn
+  end
+
+  def render
     install_cmd = "exit 1"
-    if dv =~ /centos/
+    if @docker_name =~ /centos/
       install_cmd = "rpm --nosignature -i latest.pkg"
       # only 80% sure this does what we need
       # to test that upgrades don't clobber files
@@ -79,30 +218,24 @@ echo What happens when we remove it?
 
     ERB.new(TEMPLATE).result(binding)
   end
+
+  def success?(output)
+    output.scan("OKAC").count == 6
+  end
 end
 
-def shell(cmd)
-  if @verbose
-    puts "-> #{cmd}"
-    system(cmd)
-  else 
-    `#{cmd}`
-  end
+def usage
+  puts "usage: integration:single distro=centos release=5 package=releases/package_name_here.rpm"
+  exit 1
 end
 
 namespace :integration do
 
-  desc "test test"
-  task :foo do
-    puts File.dirname(__FILE__)
-    @verbose = true
-    puts `ls`
+  desc "run the integration test on a single distro, release and package"
+  task :single do
     if ENV["DOCKER_HOST"].nil?
       puts "Sorry partner, you need boot2docker running."
     end
-  end
-
-  task :init do
 
     @integration_test_path = File.dirname(__FILE__)
 
@@ -111,71 +244,15 @@ namespace :integration do
       @release = ENV["release"]
       @package = ENV["package"]
 
-      @docker_name = "#{@distro}:#{@release}"
-      @distro_path = File.join(@integration_test_path, "#{@distro}/#{@release}")
-      @ac_docker_name = "appcanary:#{@distro}_#{@release}"
+      docker = Dockerer.new(@distro, @release, @integration_test_path, @package)
+      docker.invoke!
     else
       usage
     end
   end
 
-  task :clean => :init do
-    `mkdir -p  #{@distro_path}`
-
-    `rm -f #{@distro_path}/latest.pkg`
-    `rm -f #{@distro_path}/Dockerfile`
-    `rm -f #{@distro_path}/test.sh`
-  end
-
-  task :build => :clean do
-    puts "# building #{@distro_version}..."
-    
-    if @package.empty?
-      puts "Hey, we can't find a release. Did you build the packages?"
-      exit
-    end
-
-    release_path = @package
-
-    puts "# copying #{@package}"
-    shell "cp #{release_path} #{@distro_path}/latest.pkg"
-
-    puts "# generating test file"
-    File.write(File.join(@distro_path, "test.sh"), TestSh.render(@docker_name))
-    shell "chmod a+x #{File.join(@distro_path, "test.sh")}"
-
-    puts "# generating dockerfile"
-    File.write(File.join(@distro_path, "Dockerfile"), Dockerfile.render(@docker_name))
-
-    puts "# building docker..."
-    shell "cd #{@distro_path} && docker pull #{@docker_name}"
-    shell "cd #{@distro_path} && docker build -t #{@ac_docker_name} ."
-  end
-
-  desc "test"
-  task :test => [:init, :build] do
-    puts "# running test.sh..."
-    docker = "cd #{@distro_path} && docker run #{@ac_docker_name} /root/test.sh"
-    cmd = "#{docker} &2>&1"
-    output = `#{cmd}`
-
-    if @verbose
-      puts "-> #{cmd}"
-      puts output
-    end
-
-    if output.scan("OKAC").count == 6
-      puts "OK"
-      @integration_test_succ += 1
-      Rake::Task["integration:clean"].execute
-    else
-      @integration_test_fail += 1
-      puts "FAIL"
-    end
-
-  end
-
-  task :everything => :package do
+  desc "build every package and then run the integration test on all of them"
+  task :test => :package do
     if ENV["DOCKER_HOST"].nil?
       puts "Sorry partner, you need boot2docker running."
     end
@@ -183,27 +260,7 @@ namespace :integration do
     puts "\n\n\n#################################"
     puts "Running docker integration tests."
     puts "#################################\n\n\n"
-    @built_packages.each do |recipe|
-      next if recipe.skip_docker
-      recipe.releases.select { |name, file| file =~ /amd64/ }.each do |release, file|
-        puts "invoking #{recipe.distro_name}/#{release}"
-        ENV["distro"] = recipe.distro_name
-        ENV["release"] = release
-        ENV["package"] = file
-        Rake::Task["integration:test"].invoke
-        @integration_test_runs += 1
-        Rake::Task.tasks.select { |t| t.name =~ /integration/ }.map(&:reenable)
-      end
-    end
-
-    if @integration_test_fail != 0
-      puts "\n\n\nFAIL: #{@integration_test_fail} tests failed."
-      puts "#################################\n\n\n"
-      exit 1
-    elsif @integration_test_succ == @integration_test_runs
-      puts "\n\n\nOK: All integration tests succeeded"
-      puts "#########################################\n\n\n"
-    end
+    DTestRunner.new(@built_packages).run!
   end
 end
 
