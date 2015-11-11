@@ -69,17 +69,17 @@ CANARY_ENV=production rake deploy
 ## Testing the packaging
 ```bash
 boot2docker start # copy and paste the export fields it gives you
-rake integration:everything # yeah, it needs a better name
+rake integration:test
 ```
 
 or, alternatively, if you built a specific package:
 
 ```bash
 boot2docker start # again, make sure you copy those exports
-rake integration:test distro=debian release=jessie package=releases/appcanary_0.0.2-2015.11.10-212042-UTC_amd64_debian_jessie.deb
+rake integration:single distro=debian release=jessie package=releases/appcanary_0.0.2-2015.11.10-212042-UTC_amd64_debian_jessie.deb
 ```
 
-Pro-tip! Don't forget to use the correct package architecture version for the machine you're on (frankly, probably amd64).
+Pro-tip! Don't forget to use the correct package architecture version for the machine you're on (probably, amd64).
 
 ## Contributing
 
