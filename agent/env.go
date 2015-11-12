@@ -18,7 +18,8 @@ type Env struct {
 	ConfFile          string
 	VarFile           string
 	HeartbeatDuration time.Duration
-	LogFile           *os.File
+	LogFile           string
+	LogFileHandle     *os.File
 }
 
 var env = &Env{}
@@ -36,6 +37,8 @@ func InitEnv(env_str string) {
 	if env_str != "test" && env_str != "debug" {
 		env.Prod = true
 	}
+
+	env.LogFile = DEFAULT_LOG_FILE
 
 	// to be overriden by cli options
 	if env.Prod {
@@ -82,7 +85,8 @@ func InitEnv(env_str string) {
 }
 
 func InitLogging() {
-	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), logging.GlogFormatter)
+	format := logging.MustStringFormatter("%{time} %{pid} %{shortfile}] %{message}")
+	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), format)
 	var err error
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
@@ -92,15 +96,15 @@ func InitLogging() {
 		if conf.LogPath != "" {
 			logPath = conf.LogPath
 		} else {
-			logPath = DEFAULT_LOG_FILE
+			logPath = env.LogFile
 		}
 
-		env.LogFile, err = os.OpenFile(logPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		env.LogFileHandle, err = os.OpenFile(logPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			log.Error("Can't open log file", err) //INCEPTION
 			os.Exit(1)
 		} else {
-			fileBackend := logging.NewBackendFormatter(logging.NewLogBackend(env.LogFile, "", 0), logging.GlogFormatter)
+			fileBackend := logging.NewBackendFormatter(logging.NewLogBackend(env.LogFileHandle, "", 0), logging.GlogFormatter)
 			logging.SetBackend(fileBackend, stdoutBackend)
 		}
 	} else {
