@@ -3,7 +3,7 @@ require 'json'
 require 'yaml'
 load 'test/pkg/Rakefile'
 
-CURRENT_VERSION = "0.0.2"
+CURRENT_VERSION = "0.1.0"
 PC_USER = "appcanary"
 PC_REPO = "agent"
 PC_STAGING_REPO = "appcanary-stg"
@@ -83,7 +83,7 @@ task :package => :cross_compile do
 end
 
 desc "Cross compile, package and deploy packages to package cloud"
-task :deploy => :package do
+task :deploy => "integration:test" do
 
   @built_packages.each do |rcp|
     if production?
