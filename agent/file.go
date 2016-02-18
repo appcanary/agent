@@ -9,30 +9,44 @@ import (
 	"hash/crc32"
 )
 
-type FileChangeHandler func(*WatchedFile)
+type FileChangeHandler func(Watcher)
 
-type WatchedFile struct {
+type Watcher interface {
+	Start()
+	Stop()
+	Contents() ([]byte, error)
+	Path() string
+	Kind() string
+}
+
+type WatchedThing struct {
 	sync.Mutex
 	keepPolling  bool
-	Kind         string            `json:"kind"`
-	Path         string            `json:"path"`
+	kind         string            `json:"kind"`
+	path         string            `json:"path"`
 	UpdatedAt    time.Time         `json:"updated-at"`
 	BeingWatched bool              `json:"being-watched"`
 	OnFileChange FileChangeHandler `json:"-"`
 	Checksum     uint32            `json:"crc"`
 }
 
+type WatchedFile struct {
+	*WatchedThing
+}
+
 type WatchedFiles []*WatchedFile
+type WatchedThings []*WatchedThing
+type Watchers []Watcher
 
 // TODO: time.Now() needs to be called whenever it updates
-func NewWatchedFileWithHook(path string, callback FileChangeHandler) *WatchedFile {
+func NewWatchedFileWithHook(path string, callback FileChangeHandler) Watcher {
 	file := NewWatchedFile(path, callback)
-	file.StartListener()
+	file.Start()
 	return file
 }
 
 // only used for tests
-func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
+func NewWatchedFile(path string, callback FileChangeHandler) Watcher {
 	var kind string
 	filename := filepath.Base(path)
 	switch filename {
@@ -44,7 +58,7 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 	case "status":
 		kind = "ubuntu"
 	}
-	file := &WatchedFile{Path: path, OnFileChange: callback, Kind: kind, UpdatedAt: time.Now()}
+	file := &WatchedFile{&WatchedThing{path: path, OnFileChange: callback, kind: kind, UpdatedAt: time.Now()}}
 
 	// Do a scan off the bat so we get a checksum, and PUT the file
 	file.scan()
@@ -58,75 +72,83 @@ func NewWatchedFile(path string, callback FileChangeHandler) *WatchedFile {
 // 	return ret, err
 // }
 
-func (wf *WatchedFile) KeepPolling() bool {
-	wf.Lock()
-	defer wf.Unlock()
-	return wf.keepPolling
+func (wt *WatchedThing) Kind() string {
+	return wt.kind
 }
 
-func (wf *WatchedFile) StartListener() {
-	wf.Lock()
-	defer wf.Unlock()
-	wf.keepPolling = true
-	go wf.listen()
+func (wt *WatchedThing) Path() string {
+	return wt.path
+}
+
+func (wt *WatchedThing) KeepPolling() bool {
+	wt.Lock()
+	defer wt.Unlock()
+	return wt.keepPolling
+}
+
+func (wt *WatchedThing) Start() {
+	wt.Lock()
+	defer wt.Unlock()
+	wt.keepPolling = true
+	go wt.listen()
 }
 
 // TODO: solve data race issue
-func (wf *WatchedFile) StopListening() {
-	log.Debug("No longer listening to: %s", wf.Path)
-	wf.Lock()
-	defer wf.Unlock()
-	wf.keepPolling = false
+func (wt *WatchedThing) Stop() {
+	log.Debug("No longer listening to: %s", wt.Path)
+	wt.Lock()
+	defer wt.Unlock()
+	wt.keepPolling = false
 }
 
-func (wf *WatchedFile) GetBeingWatched() bool {
-	wf.Lock()
-	defer wf.Unlock()
-	return wf.BeingWatched
+func (wt *WatchedThing) GetBeingWatched() bool {
+	wt.Lock()
+	defer wt.Unlock()
+	return wt.BeingWatched
 }
 
-func (wf *WatchedFile) SetBeingWatched(bw bool) {
-	wf.Lock()
-	wf.BeingWatched = bw
-	wf.Unlock()
+func (wt *WatchedThing) SetBeingWatched(bw bool) {
+	wt.Lock()
+	wt.BeingWatched = bw
+	wt.Unlock()
 }
 
-func (wf *WatchedFile) Contents() ([]byte, error) {
-	return ioutil.ReadFile(wf.Path)
+func (wt *WatchedThing) Contents() ([]byte, error) {
+	return ioutil.ReadFile(wt.Path())
 }
 
-func (wf *WatchedFile) listen() {
-	for wf.KeepPolling() {
+func (wt *WatchedThing) listen() {
+	for wt.KeepPolling() {
 
-		wf.scan()
+		wt.scan()
 		time.Sleep(POLL_SLEEP)
 
 	}
 }
 
-func (wf *WatchedFile) scan() {
-	// log.Debug("WF: Check.")
-	currentCheck := wf.currentChecksum()
+func (wt *WatchedThing) scan() {
+	// log.Debug("wt: Check.")
+	currentCheck := wt.currentChecksum()
 
 	if currentCheck == 0 {
-		// log.Debug("WF: checksum fail.")
+		// log.Debug("wt: checksum fail.")
 		// there was some error reading the file.
 		// try again later?
-		wf.SetBeingWatched(false)
+		wt.SetBeingWatched(false)
 		return
 	}
 
-	wf.SetBeingWatched(true)
+	wt.SetBeingWatched(true)
 
-	if wf.Checksum != currentCheck {
-		go wf.OnFileChange(wf)
-		wf.Checksum = currentCheck
+	if wt.Checksum != currentCheck {
+		go wt.OnFileChange(wt)
+		wt.Checksum = currentCheck
 	}
 }
 
-func (wf *WatchedFile) currentChecksum() uint32 {
+func (wt *WatchedThing) currentChecksum() uint32 {
 
-	file, err := ioutil.ReadFile(wf.Path)
+	file, err := wt.Contents()
 	if err != nil {
 		return 0
 	}

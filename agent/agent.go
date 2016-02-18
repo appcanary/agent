@@ -6,11 +6,11 @@ type Agent struct {
 	conf   *Conf
 	client Client
 	server *Server
-	files  WatchedFiles
+	files  Watchers
 }
 
 func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
-	agent := &Agent{conf: conf, files: WatchedFiles{}}
+	agent := &Agent{conf: conf, files: Watchers{}}
 
 	// Find out what we need about machine
 	// Fills out server conf if some values are missing
@@ -34,8 +34,8 @@ func (agent *Agent) StartWatching() {
 	}
 }
 
-func (agent *Agent) OnFileChange(file *WatchedFile) {
-	log.Info("File change: %s", file.Path)
+func (agent *Agent) OnFileChange(file Watcher) {
+	log.Info("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
 	contents, err := file.Contents()
@@ -47,7 +47,7 @@ func (agent *Agent) OnFileChange(file *WatchedFile) {
 		log.Info("File contents error: %s", err)
 		return
 	}
-	err = agent.client.SendFile(file.Path, file.Kind, contents)
+	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
@@ -80,6 +80,6 @@ func (agent *Agent) RegisterServer() error {
 // This has to be called before exiting
 func (agent *Agent) CloseWatches() {
 	for _, file := range agent.files {
-		file.StopListening()
+		file.Stop()
 	}
 }
