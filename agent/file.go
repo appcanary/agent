@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
@@ -17,13 +18,14 @@ type Watcher interface {
 	Contents() ([]byte, error)
 	Path() string
 	Kind() string
+	MarshalJSON() ([]byte, error)
 }
 
 type WatchedThing struct {
 	sync.Mutex
 	keepPolling  bool
-	kind         string            `json:"kind"`
-	path         string            `json:"path"`
+	kind         string            `json:"-"`
+	path         string            `json:"-"`
 	UpdatedAt    time.Time         `json:"updated-at"`
 	BeingWatched bool              `json:"being-watched"`
 	OnFileChange FileChangeHandler `json:"-"`
@@ -65,12 +67,17 @@ func NewWatchedFile(path string, callback FileChangeHandler) Watcher {
 	return file
 }
 
-// func (wf *WatchedFile) MarshalJson() ([]byte, error) {
-// 	wf.Lock()
-// 	defer wf.Unlock()
-// 	ret, err := json.Marshal(interface{}(wf))
-// 	return ret, err
-// }
+func (wf *WatchedThing) MarshalJSON() ([]byte, error) {
+	wf.Lock()
+	defer wf.Unlock()
+	ret, err := json.Marshal(map[string]interface{}{
+		"path":          wf.Path(),
+		"kind":          wf.Kind(),
+		"updated-at":    wf.UpdatedAt,
+		"being-watched": wf.BeingWatched,
+		"crc":           wf.Checksum})
+	return ret, err
+}
 
 func (wt *WatchedThing) Kind() string {
 	return wt.kind
@@ -95,7 +102,7 @@ func (wt *WatchedThing) Start() {
 
 // TODO: solve data race issue
 func (wt *WatchedThing) Stop() {
-	log.Debug("No longer listening to: %s", wt.Path)
+	log.Debug("No longer listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = false
