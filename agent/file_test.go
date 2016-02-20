@@ -78,7 +78,7 @@ func TestWatchFileFailure(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewWatchedFile(tf.Name(), testcb).(*WatchedFile)
+	wfile := NewWatchedFile(tf.Name(), testcb).(*WatchedThing)
 	wfile.Start()
 	// File is being wartched
 	time.Sleep(TEST_POLL_SLEEP)
@@ -113,7 +113,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewWatchedFile(file_name, testcb).(*WatchedFile)
+	wfile := NewWatchedFile(file_name, testcb).(*WatchedThing)
 
 	// file gets read on hook add
 	wfile.Start()

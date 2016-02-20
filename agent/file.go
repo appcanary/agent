@@ -2,12 +2,20 @@ package agent
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"hash/crc32"
+)
+
+const (
+	WatchedProcess = 1
+	WatchedFile    = 2
 )
 
 type FileChangeHandler func(Watcher)
@@ -30,21 +38,24 @@ type WatchedThing struct {
 	BeingWatched bool              `json:"being-watched"`
 	OnFileChange FileChangeHandler `json:"-"`
 	Checksum     uint32            `json:"crc"`
+	Name         string
+	Args         []string
+	Klass        int
 }
 
-type WatchedFile struct {
-	*WatchedThing
-}
-
-type WatchedFiles []*WatchedFile
-type WatchedThings []*WatchedThing
 type Watchers []Watcher
 
 // TODO: time.Now() needs to be called whenever it updates
-func NewWatchedFileWithHook(path string, callback FileChangeHandler) Watcher {
-	file := NewWatchedFile(path, callback)
-	file.Start()
-	return file
+func NewWatcherWithHook(path string, callback FileChangeHandler, klass int) Watcher {
+	var w Watcher
+	switch klass {
+	case WatchedFile:
+		w = NewWatchedFile(path, callback)
+	case WatchedProcess:
+		w = NewWatchedProcess(path, callback)
+	}
+	w.Start()
+	return w
 }
 
 // only used for tests
@@ -60,11 +71,23 @@ func NewWatchedFile(path string, callback FileChangeHandler) Watcher {
 	case "status":
 		kind = "ubuntu"
 	}
-	file := &WatchedFile{&WatchedThing{path: path, OnFileChange: callback, kind: kind, UpdatedAt: time.Now()}}
+	file := &WatchedThing{path: path, OnFileChange: callback, kind: kind, UpdatedAt: time.Now(), Klass: WatchedFile}
 
 	// Do a scan off the bat so we get a checksum, and PUT the file
 	file.scan()
 	return file
+}
+
+func NewWatchedProcess(process string, callback FileChangeHandler) Watcher {
+
+	splat := strings.Split(process, " ")
+	name := splat[0]
+	args := splat[1:]
+
+	watcher := &WatchedThing{path: process, OnFileChange: callback, kind: "process", UpdatedAt: time.Now(), Name: name, Args: args, Klass: WatchedProcess}
+
+	watcher.scan()
+	return watcher
 }
 
 func (wf *WatchedThing) MarshalJSON() ([]byte, error) {
@@ -121,20 +144,17 @@ func (wt *WatchedThing) SetBeingWatched(bw bool) {
 }
 
 func (wt *WatchedThing) Contents() ([]byte, error) {
-	return ioutil.ReadFile(wt.Path())
-}
-
-func (wt *WatchedThing) listen() {
-	for wt.KeepPolling() {
-
-		wt.scan()
-		time.Sleep(POLL_SLEEP)
-
+	switch wt.Klass {
+	case WatchedFile:
+		return wt.FileContents()
+	case WatchedProcess:
+		return wt.ProcessContents()
 	}
+	return nil, errors.New("Invalid WatchedThing class")
 }
 
 func (wt *WatchedThing) scan() {
-	// log.Debug("wt: Check.")
+	// log.Debug("wt: Check for %s", wt.Path())
 	currentCheck := wt.currentChecksum()
 
 	if currentCheck == 0 {
@@ -161,4 +181,26 @@ func (wt *WatchedThing) currentChecksum() uint32 {
 	}
 
 	return crc32.ChecksumIEEE(file)
+}
+
+func (wt *WatchedThing) FileContents() ([]byte, error) {
+	// log.Debug("####### file contents for %s!", wt.Path())
+	return ioutil.ReadFile(wt.Path())
+}
+
+func (wt *WatchedThing) listen() {
+	for wt.KeepPolling() {
+
+		wt.scan()
+		time.Sleep(POLL_SLEEP)
+
+	}
+}
+
+func (wt *WatchedThing) ProcessContents() ([]byte, error) {
+	// log.Debug("####### process contents!")
+	cmd := exec.Command(wt.Name, wt.Args...)
+	out, err := cmd.Output()
+
+	return out, err
 }
