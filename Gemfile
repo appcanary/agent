@@ -6,3 +6,4 @@ gem "rake"
 gem "rest-client"
 gem "package_cloud"
 gem 'pry'
+gem 'sinatra'
