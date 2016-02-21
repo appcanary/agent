@@ -33,10 +33,10 @@ func (t *ClientTestSuite) SetupTest() {
 	t.server_uuid = "server uuid"
 
 	dpkgPath := DEV_CONF_PATH + "/dpkg/available"
-	dpkgFile := NewWatcherWithHook(dpkgPath, testCallbackNOP, WatchedFile)
+	dpkgFile := NewFileWatcherWithHook(dpkgPath, testCallbackNOP)
 
 	gemfilePath := DEV_CONF_PATH + "/Gemfile.lock"
-	gemfile := NewWatcherWithHook(gemfilePath, testCallbackNOP, WatchedFile)
+	gemfile := NewFileWatcherWithHook(gemfilePath, testCallbackNOP)
 
 	t.files = Watchers{dpkgFile, gemfile}
 

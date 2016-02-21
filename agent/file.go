@@ -2,7 +2,6 @@ package agent
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -11,11 +10,6 @@ import (
 	"time"
 
 	"hash/crc32"
-)
-
-const (
-	WatchedProcess = 1
-	WatchedFile    = 2
 )
 
 type FileChangeHandler func(Watcher)
@@ -29,7 +23,7 @@ type Watcher interface {
 	MarshalJSON() ([]byte, error)
 }
 
-type WatchedThing struct {
+type watcher struct {
 	sync.Mutex
 	keepPolling  bool
 	kind         string            `json:"-"`
@@ -38,28 +32,28 @@ type WatchedThing struct {
 	BeingWatched bool              `json:"being-watched"`
 	OnFileChange FileChangeHandler `json:"-"`
 	Checksum     uint32            `json:"crc"`
-	Name         string
-	Args         []string
-	Klass        int
+	CmdName      string
+	CmdArgs      []string
+	contents     func() ([]byte, error)
 }
 
 type Watchers []Watcher
 
 // TODO: time.Now() needs to be called whenever it updates
-func NewWatcherWithHook(path string, callback FileChangeHandler, klass int) Watcher {
-	var w Watcher
-	switch klass {
-	case WatchedFile:
-		w = NewWatchedFile(path, callback)
-	case WatchedProcess:
-		w = NewWatchedProcess(path, callback)
-	}
+func NewFileWatcherWithHook(path string, callback FileChangeHandler) Watcher {
+	w := NewFileWatcher(path, callback)
+	w.Start()
+	return w
+}
+
+func NewProcessWatcherWithHook(path string, callback FileChangeHandler) Watcher {
+	w := NewProcessWatcher(path, callback)
 	w.Start()
 	return w
 }
 
 // only used for tests
-func NewWatchedFile(path string, callback FileChangeHandler) Watcher {
+func NewFileWatcher(path string, callback FileChangeHandler) Watcher {
 	var kind string
 	filename := filepath.Base(path)
 	switch filename {
@@ -71,26 +65,28 @@ func NewWatchedFile(path string, callback FileChangeHandler) Watcher {
 	case "status":
 		kind = "ubuntu"
 	}
-	file := &WatchedThing{path: path, OnFileChange: callback, kind: kind, UpdatedAt: time.Now(), Klass: WatchedFile}
+	file := &watcher{path: path, OnFileChange: callback, kind: kind, UpdatedAt: time.Now()}
+	file.contents = file.FileContents
 
 	// Do a scan off the bat so we get a checksum, and PUT the file
 	file.scan()
 	return file
 }
 
-func NewWatchedProcess(process string, callback FileChangeHandler) Watcher {
+func NewProcessWatcher(process string, callback FileChangeHandler) Watcher {
 
 	splat := strings.Split(process, " ")
 	name := splat[0]
 	args := splat[1:]
 
-	watcher := &WatchedThing{path: process, OnFileChange: callback, kind: "process", UpdatedAt: time.Now(), Name: name, Args: args, Klass: WatchedProcess}
+	watcher := &watcher{path: process, OnFileChange: callback, kind: "process", UpdatedAt: time.Now(), CmdName: name, CmdArgs: args}
+	watcher.contents = watcher.ProcessContents
 
 	watcher.scan()
 	return watcher
 }
 
-func (wf *WatchedThing) MarshalJSON() ([]byte, error) {
+func (wf *watcher) MarshalJSON() ([]byte, error) {
 	wf.Lock()
 	defer wf.Unlock()
 	ret, err := json.Marshal(map[string]interface{}{
@@ -102,21 +98,21 @@ func (wf *WatchedThing) MarshalJSON() ([]byte, error) {
 	return ret, err
 }
 
-func (wt *WatchedThing) Kind() string {
+func (wt *watcher) Kind() string {
 	return wt.kind
 }
 
-func (wt *WatchedThing) Path() string {
+func (wt *watcher) Path() string {
 	return wt.path
 }
 
-func (wt *WatchedThing) KeepPolling() bool {
+func (wt *watcher) KeepPolling() bool {
 	wt.Lock()
 	defer wt.Unlock()
 	return wt.keepPolling
 }
 
-func (wt *WatchedThing) Start() {
+func (wt *watcher) Start() {
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = true
@@ -124,36 +120,26 @@ func (wt *WatchedThing) Start() {
 }
 
 // TODO: solve data race issue
-func (wt *WatchedThing) Stop() {
+func (wt *watcher) Stop() {
 	log.Debug("No longer listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = false
 }
 
-func (wt *WatchedThing) GetBeingWatched() bool {
+func (wt *watcher) GetBeingWatched() bool {
 	wt.Lock()
 	defer wt.Unlock()
 	return wt.BeingWatched
 }
 
-func (wt *WatchedThing) SetBeingWatched(bw bool) {
+func (wt *watcher) SetBeingWatched(bw bool) {
 	wt.Lock()
 	wt.BeingWatched = bw
 	wt.Unlock()
 }
 
-func (wt *WatchedThing) Contents() ([]byte, error) {
-	switch wt.Klass {
-	case WatchedFile:
-		return wt.FileContents()
-	case WatchedProcess:
-		return wt.ProcessContents()
-	}
-	return nil, errors.New("Invalid WatchedThing class")
-}
-
-func (wt *WatchedThing) scan() {
+func (wt *watcher) scan() {
 	// log.Debug("wt: Check for %s", wt.Path())
 	currentCheck := wt.currentChecksum()
 
@@ -173,7 +159,7 @@ func (wt *WatchedThing) scan() {
 	}
 }
 
-func (wt *WatchedThing) currentChecksum() uint32 {
+func (wt *watcher) currentChecksum() uint32 {
 
 	file, err := wt.Contents()
 	if err != nil {
@@ -183,12 +169,7 @@ func (wt *WatchedThing) currentChecksum() uint32 {
 	return crc32.ChecksumIEEE(file)
 }
 
-func (wt *WatchedThing) FileContents() ([]byte, error) {
-	// log.Debug("####### file contents for %s!", wt.Path())
-	return ioutil.ReadFile(wt.Path())
-}
-
-func (wt *WatchedThing) listen() {
+func (wt *watcher) listen() {
 	for wt.KeepPolling() {
 
 		wt.scan()
@@ -197,9 +178,18 @@ func (wt *WatchedThing) listen() {
 	}
 }
 
-func (wt *WatchedThing) ProcessContents() ([]byte, error) {
+func (wt *watcher) Contents() ([]byte, error) {
+	return wt.contents()
+}
+
+func (wt *watcher) FileContents() ([]byte, error) {
+	// log.Debug("####### file contents for %s!", wt.Path())
+	return ioutil.ReadFile(wt.Path())
+}
+
+func (wt *watcher) ProcessContents() ([]byte, error) {
 	// log.Debug("####### process contents!")
-	cmd := exec.Command(wt.Name, wt.Args...)
+	cmd := exec.Command(wt.CmdName, wt.CmdArgs...)
 	out, err := cmd.Output()
 
 	return out, err

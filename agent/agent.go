@@ -33,9 +33,9 @@ func (agent *Agent) StartWatching() {
 		var watcher Watcher
 
 		if f.Process == "" {
-			watcher = NewWatcherWithHook(f.Path, agent.OnFileChange, WatchedFile)
+			watcher = NewFileWatcherWithHook(f.Path, agent.OnFileChange)
 		} else {
-			watcher = NewWatcherWithHook(f.Process, agent.OnFileChange, WatchedProcess)
+			watcher = NewProcessWatcherWithHook(f.Process, agent.OnFileChange)
 		}
 
 		agent.files = append(agent.files, watcher)
