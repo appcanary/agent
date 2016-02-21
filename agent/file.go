@@ -79,7 +79,7 @@ func NewProcessWatcher(process string, callback FileChangeHandler) Watcher {
 	name := splat[0]
 	args := splat[1:]
 
-	watcher := &watcher{path: process, OnFileChange: callback, kind: "process", UpdatedAt: time.Now(), CmdName: name, CmdArgs: args}
+	watcher := &watcher{path: process, OnFileChange: callback, kind: "centos", UpdatedAt: time.Now(), CmdName: name, CmdArgs: args}
 	watcher.contents = watcher.ProcessContents
 
 	watcher.scan()
