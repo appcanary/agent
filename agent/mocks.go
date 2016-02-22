@@ -8,7 +8,7 @@ type MockClient struct {
 	mock.Mock
 }
 
-func (m *MockClient) Heartbeat(_a0 string, _a1 WatchedFiles) error {
+func (m *MockClient) Heartbeat(_a0 string, _a1 Watchers) error {
 	ret := m.Called()
 
 	r0 := ret.Error(0)

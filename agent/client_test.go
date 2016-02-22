@@ -19,7 +19,7 @@ type ClientTestSuite struct {
 	suite.Suite
 	api_key     string
 	server_uuid string
-	files       WatchedFiles
+	files       Watchers
 	client      Client
 }
 
@@ -33,12 +33,12 @@ func (t *ClientTestSuite) SetupTest() {
 	t.server_uuid = "server uuid"
 
 	dpkgPath := DEV_CONF_PATH + "/dpkg/available"
-	dpkgFile := NewWatchedFileWithHook(dpkgPath, testCallbackNOP)
+	dpkgFile := NewFileWatcherWithHook(dpkgPath, testCallbackNOP)
 
 	gemfilePath := DEV_CONF_PATH + "/Gemfile.lock"
-	gemfile := NewWatchedFileWithHook(gemfilePath, testCallbackNOP)
+	gemfile := NewFileWatcherWithHook(gemfilePath, testCallbackNOP)
 
-	t.files = WatchedFiles{dpkgFile, gemfile}
+	t.files = Watchers{dpkgFile, gemfile}
 
 	t.client = NewClient(t.api_key, &Server{UUID: t.server_uuid})
 
@@ -85,7 +85,7 @@ func (t *ClientTestSuite) TestHeartbeat() {
 	t.client.Heartbeat(t.server_uuid, t.files)
 
 	ts.Close()
-	t.files[0].StopListening()
+	t.files[0].Stop()
 	t.True(serverInvoked)
 }
 
@@ -143,7 +143,7 @@ func (t *ClientTestSuite) TestCreateServer() {
 	t.Equal(test_uuid, response_uuid)
 }
 
-func testCallbackNOP(foo *WatchedFile) {
+func testCallbackNOP(foo Watcher) {
 	// NOP
 }
 

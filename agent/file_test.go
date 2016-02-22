@@ -24,13 +24,13 @@ func TestWatchFile(t *testing.T) {
 
 	timer := time.Tick(5 * time.Second)
 	cbInvoked := make(chan bool)
-	testcb := func(nop *WatchedFile) {
+	testcb := func(nop Watcher) {
 		cbInvoked <- true
 	}
 
-	wfile := NewWatchedFile(tf.Name(), testcb)
+	wfile := NewFileWatcher(tf.Name(), testcb)
 
-	wfile.StartListener()
+	wfile.Start()
 
 	// let's make sure the file got written to
 	read_contents, _ := wfile.Contents()
@@ -62,7 +62,7 @@ func TestWatchFile(t *testing.T) {
 		assert.True(false)
 	}
 
-	wfile.StopListening()
+	wfile.Stop()
 }
 
 func TestWatchFileFailure(t *testing.T) {
@@ -74,12 +74,12 @@ func TestWatchFileFailure(t *testing.T) {
 	tf.Close()
 
 	cbInvoked := make(chan bool)
-	testcb := func(nop *WatchedFile) {
+	testcb := func(nop Watcher) {
 		cbInvoked <- true
 	}
 
-	wfile := NewWatchedFile(tf.Name(), testcb)
-	wfile.StartListener()
+	wfile := NewFileWatcher(tf.Name(), testcb).(*watcher)
+	wfile.Start()
 	// File is being wartched
 	time.Sleep(TEST_POLL_SLEEP)
 	assert.True(wfile.GetBeingWatched())
@@ -87,7 +87,7 @@ func TestWatchFileFailure(t *testing.T) {
 	time.Sleep(TEST_POLL_SLEEP)
 	//Since the file is gone, we stopped watching it
 	assert.False(wfile.GetBeingWatched())
-	wfile.StopListening()
+	wfile.Stop()
 }
 
 // does the callback get fired when the directory
@@ -106,18 +106,18 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 
 	mutex := &sync.Mutex{}
 	counter := 0
-	testcb := func(wfile *WatchedFile) {
+	testcb := func(wfile Watcher) {
 		mutex.Lock()
 		counter++
 		mutex.Unlock()
 		cbInvoked <- true
 	}
 
-	wfile := NewWatchedFile(file_name, testcb)
+	wfile := NewFileWatcher(file_name, testcb).(*watcher)
 
 	// file gets read on hook add
-	wfile.StartListener()
-	defer wfile.StopListening()
+	wfile.Start()
+	defer wfile.Stop()
 	<-cbInvoked
 
 	// aight. let's rename the folder it's in.
@@ -162,17 +162,17 @@ func TestWatchFileHookLoop(t *testing.T) {
 
 	mutex := &sync.Mutex{}
 	counter := 0
-	testcb := func(wfile *WatchedFile) {
+	testcb := func(wfile Watcher) {
 		mutex.Lock()
 		counter++
 		mutex.Unlock()
 		cbInvoked <- true
 	}
 
-	wfile := NewWatchedFile(file_name, testcb)
+	wfile := NewFileWatcher(file_name, testcb)
 
 	// file gets read on hook add
-	wfile.StartListener()
+	wfile.Start()
 	<-cbInvoked
 
 	// // file gets read on rewrite
@@ -224,7 +224,7 @@ func TestWatchFileHookLoop(t *testing.T) {
 	mutex.Unlock()
 
 	// cleanup
-	wfile.StopListening()
+	wfile.Stop()
 	os.Remove(file_name)
 }
 

@@ -14,7 +14,8 @@ type Conf struct {
 }
 
 type FileConf struct {
-	Path string `toml:"path"`
+	Path    string `toml:"path"`
+	Process string `tom:"process"`
 }
 
 type ServerConf struct {

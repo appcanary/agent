@@ -6,11 +6,11 @@ type Agent struct {
 	conf   *Conf
 	client Client
 	server *Server
-	files  WatchedFiles
+	files  Watchers
 }
 
 func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
-	agent := &Agent{conf: conf, files: WatchedFiles{}}
+	agent := &Agent{conf: conf, files: Watchers{}}
 
 	// Find out what we need about machine
 	// Fills out server conf if some values are missing
@@ -30,12 +30,20 @@ func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
 // instantiate structs, fs hook
 func (agent *Agent) StartWatching() {
 	for _, f := range agent.conf.Files {
-		agent.files = append(agent.files, NewWatchedFileWithHook(f.Path, agent.OnFileChange))
+		var watcher Watcher
+
+		if f.Process == "" {
+			watcher = NewFileWatcherWithHook(f.Path, agent.OnFileChange)
+		} else {
+			watcher = NewProcessWatcherWithHook(f.Process, agent.OnFileChange)
+		}
+
+		agent.files = append(agent.files, watcher)
 	}
 }
 
-func (agent *Agent) OnFileChange(file *WatchedFile) {
-	log.Info("File change: %s", file.Path)
+func (agent *Agent) OnFileChange(file Watcher) {
+	log.Info("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
 	contents, err := file.Contents()
@@ -47,7 +55,7 @@ func (agent *Agent) OnFileChange(file *WatchedFile) {
 		log.Info("File contents error: %s", err)
 		return
 	}
-	err = agent.client.SendFile(file.Path, file.Kind, contents)
+	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
@@ -80,6 +88,6 @@ func (agent *Agent) RegisterServer() error {
 // This has to be called before exiting
 func (agent *Agent) CloseWatches() {
 	for _, file := range agent.files {
-		file.StopListening()
+		file.Stop()
 	}
 }

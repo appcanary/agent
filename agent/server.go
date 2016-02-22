@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
@@ -56,18 +57,34 @@ func NewServer(conf *ServerConf) *Server {
 	}
 
 	if conf.Distro == "" || conf.Release == "" || conf.Distro == "unknown" || conf.Release == "unknown" {
-		// We can find out distro and release on debian systems
-		etcIssue, err := ioutil.ReadFile("/etc/issue")
-		// if we fail reading, distro/os is unknown
-		if err != nil {
-			conf.Distro = "unknown"
-			conf.Release = "unknown"
-			log.Error(err.Error())
+
+		// We now support CentOS 7.
+		// This needs to be overhauled but for now:
+
+		if centosRelease, err := ioutil.ReadFile("/etc/centos-release"); err == nil {
+			conf.Distro = "centos"
+
+			sevenMatch, err := regexp.Match("release 7", centosRelease)
+			if sevenMatch && (err == nil) {
+				conf.Release = "7"
+			} else {
+				conf.Release = "unknown"
+			}
 		} else {
-			// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
-			s := strings.Split(string(etcIssue), " ")
-			conf.Distro = strings.ToLower(s[0])
-			conf.Release = s[1]
+
+			// We can find out distro and release on debian systems
+			etcIssue, err := ioutil.ReadFile("/etc/issue")
+			// if we fail reading, distro/os is unknown
+			if err != nil {
+				conf.Distro = "unknown"
+				conf.Release = "unknown"
+				// log.Error(err.Error())
+			} else {
+				// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
+				s := strings.Split(string(etcIssue), " ")
+				conf.Distro = strings.ToLower(s[0])
+				conf.Release = s[1]
+			}
 		}
 
 	}

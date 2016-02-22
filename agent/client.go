@@ -23,7 +23,7 @@ var (
 )
 
 type Client interface {
-	Heartbeat(string, WatchedFiles) error
+	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
 	CreateServer(*Server) (string, error)
 }
@@ -38,7 +38,7 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 	return client
 }
 
-func (client *CanaryClient) Heartbeat(uuid string, files WatchedFiles) error {
+func (client *CanaryClient) Heartbeat(uuid string, files Watchers) error {
 
 	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion, "distro": client.server.Distro, "release": client.server.Release})
 

@@ -20,6 +20,7 @@ type Env struct {
 	HeartbeatDuration time.Duration
 	LogFile           string
 	LogFileHandle     *os.File
+	PollSleep         time.Duration
 }
 
 var env = &Env{}
@@ -53,6 +54,8 @@ func InitEnv(env_str string) {
 
 		env.HeartbeatDuration = DEFAULT_HEARTBEAT_DURATION
 
+		env.PollSleep = 5 * time.Minute
+
 	} else {
 		// ###### resolve path
 		// filepath.Abs was resolving to a different folder
@@ -80,6 +83,8 @@ func InitEnv(env_str string) {
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
+
+		env.PollSleep = time.Second
 
 	}
 }
