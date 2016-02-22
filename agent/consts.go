@@ -34,8 +34,9 @@ const (
 
 // file polling
 const (
-	POLL_SLEEP      = 1000 * time.Millisecond
-	TEST_POLL_SLEEP = (POLL_SLEEP + (50 * time.Millisecond)) * 2
+	// test env.PollSleep is 1second
+	// test poll sleep is double to give the fs time to flush
+	TEST_POLL_SLEEP = (time.Second + (50 * time.Millisecond)) * 2
 )
 
 // trolol
