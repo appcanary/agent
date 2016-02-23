@@ -12,8 +12,6 @@ import (
 	"hash/crc32"
 )
 
-var POLL_SLEEP = env.PollSleep
-
 type FileChangeHandler func(Watcher)
 
 type Watcher interface {
@@ -175,7 +173,7 @@ func (wt *watcher) listen() {
 	for wt.KeepPolling() {
 
 		wt.scan()
-		time.Sleep(POLL_SLEEP)
+		time.Sleep(env.PollSleep)
 
 	}
 }
