@@ -33,16 +33,16 @@ func (agent *Agent) StartWatching() {
 		var watcher Watcher
 
 		if f.Process == "" {
-			watcher = NewFileWatcherWithHook(f.Path, agent.OnFileChange)
+			watcher = NewFileWatcherWithHook(f.Path, agent.OnChange)
 		} else {
-			watcher = NewProcessWatcherWithHook(f.Process, agent.OnFileChange)
+			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
 		}
 
 		agent.files = append(agent.files, watcher)
 	}
 }
 
-func (agent *Agent) OnFileChange(file Watcher) {
+func (agent *Agent) OnChange(file Watcher) {
 	log.Info("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
