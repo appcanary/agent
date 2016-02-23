@@ -114,6 +114,7 @@ func (wt *watcher) KeepPolling() bool {
 }
 
 func (wt *watcher) Start() {
+	// log.Debug("Listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = true
@@ -121,7 +122,7 @@ func (wt *watcher) Start() {
 }
 
 func (wt *watcher) Stop() {
-	log.Debug("No longer listening to: %s", wt.Path())
+	// log.Debug("No longer listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = false
