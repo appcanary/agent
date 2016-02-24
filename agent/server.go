@@ -1,12 +1,11 @@
 package agent
 
 import (
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
-	"regexp"
-	"strings"
+
+	"github.com/appcanary/agent/agent/detect"
 )
 
 type Server struct {
@@ -52,34 +51,14 @@ func NewServer(name string, conf *ServerConf) *Server {
 		}
 	}
 
-	// We now support CentOS 7.
-	// This needs to be overhauled but for now:
-
-	if centosRelease, err := ioutil.ReadFile("/etc/centos-release"); err == nil {
-
-		distro = "centos"
-
-		sevenMatch, err := regexp.Match("release 7", centosRelease)
-		if sevenMatch && (err == nil) {
-			release = "7"
-		} else {
-			release = "unknown"
-		}
+	osInfo, err := detect.DetectOS()
+	if err != nil {
+		log.Error(err.Error())
+		distro = "unknown"
+		release = "unknown"
 	} else {
-
-		// We can find out distro and release on debian systems
-		etcIssue, err := ioutil.ReadFile("/etc/issue")
-		// if we fail reading, distro/os is unknown
-		if err != nil {
-			distro = "unknown"
-			release = "unknown"
-			// log.Error(err.Error())
-		} else {
-			// /etc/issue looks like Ubuntu 14.04.2 LTS \n \l
-			s := strings.Split(string(etcIssue), " ")
-			distro = strings.ToLower(s[0])
-			release = s[1]
-		}
+		distro = osInfo.Distro
+		release = osInfo.Release
 	}
 
 	return &Server{Name: name, Hostname: hostname, Uname: uname, Ip: this_ip, UUID: conf.UUID, Distro: distro, Release: release}
