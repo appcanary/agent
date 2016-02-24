@@ -11,12 +11,17 @@ func TestAgent(t *testing.T) {
 	assert := assert.New(t)
 
 	// setup
+	server_uuid := "123456"
 	InitEnv("test")
 	conf := NewConfFromEnv()
 
 	conf.Files[0].Path = DEV_CONF_PATH + "/dpkg/available"
 
 	client := &MockClient{}
+	client.On("CreateServer").Return(server_uuid)
+	client.On("SendFile").Return(nil).Once()
+	client.On("Heartbeat").Return(nil).Once()
+
 	agent := NewAgent("test", conf, client)
 
 	// let's make sure stuff got set
@@ -30,19 +35,15 @@ func TestAgent(t *testing.T) {
 	agent.server.UUID = ""
 
 	assert.Equal(true, agent.FirstRun())
-	server_uuid := "123456"
 
-	client.On("CreateServer").Return(server_uuid)
 	agent.RegisterServer()
 
 	// registering the server actually set the right val
 	assert.Equal(server_uuid, agent.server.UUID)
 
 	// Let's ensure that the client gets exercised.
-	client.On("SendFile").Return(nil).Once()
 	agent.StartWatching()
 
-	client.On("Heartbeat").Return(nil).Once()
 	agent.Heartbeat()
 
 	// the filewatcher needs enough time to

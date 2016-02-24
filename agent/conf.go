@@ -7,11 +7,17 @@ import (
 )
 
 type Conf struct {
-	ApiKey     string      `toml:"api_key"`
-	LogPath    string      `toml:"log_path"`
-	ServerName string      `toml:"server_name"`
+	ApiKey     string `toml:"api_key"`
+	LogPath    string `toml:"log_path"`
+	ServerName string `toml:"server_name"`
+	osInfo
 	Files      []*FileConf `toml:"files"`
 	ServerConf *ServerConf `toml:"-"`
+}
+
+type osInfo struct {
+	Distro  string `toml:"distro"`
+	Release string `toml:"release"`
 }
 
 type FileConf struct {
@@ -48,6 +54,14 @@ func NewConfFromEnv() *Conf {
 	}
 
 	return conf
+}
+
+func (c *Conf) OSInfo() *osInfo {
+	if c.Distro != "" && c.Release != "" {
+		return &c.osInfo
+	} else {
+		return nil
+	}
 }
 
 func (c *Conf) Save() {

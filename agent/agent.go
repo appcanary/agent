@@ -14,7 +14,7 @@ func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
 
 	// Find out what we need about machine
 	// Fills out server conf if some values are missing
-	agent.server = NewServer(conf.ServerName, conf.ServerConf)
+	agent.server = NewServer(conf, conf.ServerConf)
 
 	if len(clients) > 0 {
 		agent.client = clients[0]

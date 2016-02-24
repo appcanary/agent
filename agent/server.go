@@ -19,7 +19,7 @@ type Server struct {
 }
 
 // Creates a new server and syncs conf if needed
-func NewServer(name string, conf *ServerConf) *Server {
+func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 	var err error
 	var hostname, uname, this_ip, distro, release string
 
@@ -51,17 +51,25 @@ func NewServer(name string, conf *ServerConf) *Server {
 		}
 	}
 
-	osInfo, err := detect.DetectOS()
-	if err != nil {
-		log.Error(err.Error())
-		distro = "unknown"
-		release = "unknown"
+	confOSInfo := agentConf.OSInfo()
+	if confOSInfo != nil {
+		distro = confOSInfo.Distro
+		release = confOSInfo.Release
+
 	} else {
-		distro = osInfo.Distro
-		release = osInfo.Release
+
+		osInfo, err := detect.DetectOS()
+		if err != nil {
+			log.Error(err.Error())
+			distro = "unknown"
+			release = "unknown"
+		} else {
+			distro = osInfo.Distro
+			release = osInfo.Release
+		}
 	}
 
-	return &Server{Name: name, Hostname: hostname, Uname: uname, Ip: this_ip, UUID: conf.UUID, Distro: distro, Release: release}
+	return &Server{Name: agentConf.ServerName, Hostname: hostname, Uname: uname, Ip: this_ip, UUID: conf.UUID, Distro: distro, Release: release}
 }
 
 func (server *Server) IsNew() bool {

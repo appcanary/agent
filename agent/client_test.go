@@ -117,7 +117,7 @@ func (t *ClientTestSuite) TestSendFile() {
 }
 
 func (t *ClientTestSuite) TestCreateServer() {
-	server := NewServer("", &ServerConf{})
+	server := NewServer(&Conf{}, &ServerConf{})
 
 	test_uuid := "12345"
 	json_response := "{\"uuid\":\"" + test_uuid + "\"}"
