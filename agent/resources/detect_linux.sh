@@ -23,7 +23,7 @@ detect_linux() {
   elif [[ -e /etc/lsb-release ]]; then
     source /etc/lsb-release
     distro=${DISTRIB_ID}
-    release=${DISTRIB_CODENAME}
+    release=${DISTRIB_RELEASE}
 
     print_version ${distro} ${release}
 
