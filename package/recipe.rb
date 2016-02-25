@@ -164,6 +164,18 @@ class CentosRecipe < Recipe
   pc_distro_name "el"
 end
 
+# right now we only support centos 7, and 
+# i want to ship a conf file w/default turned on
+class Centos7Recipe < Recipe
+  distro_name "centos"
+  distro_versions "7"
+  package_type "rpm"
+  pc_distro_name "el"
+
+  CONFIG_FILES = {"config/etc/appcanary/rpm.agent.conf" => "/etc/appcanary/agent.conf",  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
+end
+
+
 class RedhatRecipe < Recipe
   distro_name "redhat"
   distro_versions "6", "7"

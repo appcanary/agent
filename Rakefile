@@ -78,7 +78,7 @@ task :package => :cross_compile do
   puts "Building packages."
   puts "#################################\n\n\n"
 
-  [UbuntuRecipe, CentosRecipe, DebianRecipe, MintRecipe].each do |rcp|
+  [UbuntuRecipe, CentosRecipe, Centos7Recipe, DebianRecipe, MintRecipe].each do |rcp|
     @built_packages << rcp.build!(CURRENT_VERSION, @date)
   end
 end
