@@ -36,7 +36,7 @@ const (
 const (
 	// test env.PollSleep is 1second
 	// test poll sleep is double to give the fs time to flush
-	TEST_POLL_SLEEP = (time.Second + (50 * time.Millisecond)) * 2
+	TEST_POLL_SLEEP = (time.Second + (150 * time.Millisecond)) * 2
 )
 
 // trolol

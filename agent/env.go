@@ -23,7 +23,7 @@ type Env struct {
 	PollSleep         time.Duration
 }
 
-var env = &Env{}
+var env = &Env{PollSleep: time.Second}
 
 func FetchEnv() *Env {
 	return env

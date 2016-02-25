@@ -65,6 +65,48 @@ func TestWatchFile(t *testing.T) {
 	wfile.Stop()
 }
 
+func TestWatchProcess(t *testing.T) {
+	assert := assert.New(t)
+
+	timer := time.Tick(5 * time.Second)
+	cbInvoked := make(chan bool)
+	testcb := func(nop Watcher) {
+		cbInvoked <- true
+	}
+
+	wfile := NewProcessWatcher("date +%S", testcb)
+
+	wfile.Start()
+
+	// let's make sure the file got written to
+	read_contents, _ := wfile.Contents()
+	assert.NotEqual("", string(read_contents))
+
+	// but really we want to know if the
+	// callback was ever invoked
+	select {
+	case invoked := <-cbInvoked:
+		assert.True(invoked)
+
+	case _ = <-timer:
+		assert.True(false)
+	}
+
+	// solid. on boot it worked.
+	// date changes every second, so we should get
+	// another call back
+
+	select {
+	case invoked := <-cbInvoked:
+		assert.True(invoked)
+
+	case _ = <-timer:
+		assert.True(false)
+	}
+
+	wfile.Stop()
+}
+
 func TestWatchFileFailure(t *testing.T) {
 	assert := assert.New(t)
 
