@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/appcanary/agent/agent"
+	"github.com/appcanary/agent/agent/detect"
 )
 
 var CanaryVersion string
@@ -21,6 +22,7 @@ func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
 
+	var flaggedVersion, flaggedDetectOS *bool
 	// httptest, used in client.test, sets a usage flag
 	// that leaks when you use the 'global' FlagSet.
 	flagset = flag.NewFlagSet("Default", flag.ExitOnError)
@@ -32,13 +34,24 @@ func main() {
 
 	if !env.Prod {
 		flagset.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
+		flaggedDetectOS = flagset.Bool("detect-os", false, "Guess my operating system")
 	}
 
-	version := flagset.Bool("version", false, "Display version information")
+	flaggedVersion = flagset.Bool("version", false, "Display version information")
 	flagset.Parse(os.Args[1:])
 
-	if *version {
+	if *flaggedVersion {
 		fmt.Println(CanaryVersion)
+		os.Exit(0)
+	}
+
+	if *flaggedDetectOS {
+		guess, err := detect.DetectOS()
+		if err == nil {
+			fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
+		} else {
+			fmt.Println(err.Error())
+		}
 		os.Exit(0)
 	}
 
