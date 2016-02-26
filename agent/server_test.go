@@ -3,13 +3,14 @@ package agent
 import (
 	"testing"
 
+	"github.com/appcanary/agent/agent/detect"
 	"github.com/appcanary/testify/assert"
 )
 
 func TestServerConf(t *testing.T) {
 	assert := assert.New(t)
 
-	aconf := &Conf{osInfo: osInfo{Distro: "testDistro", Release: "testRelease"}, ServerName: "TestName"}
+	aconf := &Conf{LinuxOSInfo: detect.LinuxOSInfo{Distro: "testDistro", Release: "testRelease"}, ServerName: "TestName"}
 	server := NewServer(aconf, &ServerConf{})
 
 	assert.Equal("testDistro", server.Distro)

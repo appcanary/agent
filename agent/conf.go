@@ -4,20 +4,16 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/appcanary/agent/agent/detect"
 )
 
 type Conf struct {
 	ApiKey     string `toml:"api_key"`
 	LogPath    string `toml:"log_path"`
 	ServerName string `toml:"server_name"`
-	osInfo
+	detect.LinuxOSInfo
 	Files      []*FileConf `toml:"files"`
 	ServerConf *ServerConf `toml:"-"`
-}
-
-type osInfo struct {
-	Distro  string `toml:"distro"`
-	Release string `toml:"release"`
 }
 
 type FileConf struct {
@@ -56,9 +52,9 @@ func NewConfFromEnv() *Conf {
 	return conf
 }
 
-func (c *Conf) OSInfo() *osInfo {
+func (c *Conf) OSInfo() *detect.LinuxOSInfo {
 	if c.Distro != "" && c.Release != "" {
-		return &c.osInfo
+		return &c.LinuxOSInfo
 	} else {
 		return nil
 	}
