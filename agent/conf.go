@@ -34,11 +34,11 @@ func NewConfFromEnv() *Conf {
 
 	_, err := toml.DecodeFile(env.ConfFile, &conf)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Can't seem to read ", env.ConfFile, ". Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
 	if len(conf.Files) == 0 {
-		log.Fatal("No files to monitor!")
+		log.Fatal("No files to monitor! Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
 	if _, err := os.Stat(env.VarFile); err == nil {
