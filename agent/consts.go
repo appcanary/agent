@@ -22,6 +22,9 @@ const (
 	DEFAULT_HEARTBEAT_DURATION = 1 * time.Hour
 	DEV_HEARTBEAT_DURATION     = 10 * time.Second
 
+	DEFAULT_SYNC_ALL_DURATION = 24 * time.Hour
+	DEV_SYNC_ALL_DURATION     = 30 * time.Second
+
 	DEFAULT_LOG_FILE = "/var/log/appcanary.log"
 )
 
@@ -34,8 +37,10 @@ const (
 
 // file polling
 const (
+	DEFAULT_POLL_SLEEP = 5 * time.Minute
 	// test env.PollSleep is 1second
 	// test poll sleep is double to give the fs time to flush
+	DEV_POLL_SLEEP  = time.Second
 	TEST_POLL_SLEEP = (time.Second + (150 * time.Millisecond)) * 2
 )
 

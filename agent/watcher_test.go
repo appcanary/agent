@@ -16,6 +16,7 @@ import (
 // when file changes. TODO: test all other fs events.
 func TestWatchFile(t *testing.T) {
 	assert := assert.New(t)
+	InitEnv("test")
 
 	file_content := "tst1"
 	tf, _ := ioutil.TempFile("", "gems.lock")
@@ -67,6 +68,7 @@ func TestWatchFile(t *testing.T) {
 
 func TestWatchProcess(t *testing.T) {
 	assert := assert.New(t)
+	InitEnv("test")
 
 	timer := time.Tick(5 * time.Second)
 	cbInvoked := make(chan bool)
@@ -109,6 +111,7 @@ func TestWatchProcess(t *testing.T) {
 
 func TestWatchFileFailure(t *testing.T) {
 	assert := assert.New(t)
+	InitEnv("test")
 
 	file_content := "tst1"
 	tf, _ := ioutil.TempFile("", "gems.lock")
@@ -122,7 +125,7 @@ func TestWatchFileFailure(t *testing.T) {
 
 	wfile := NewFileWatcher(tf.Name(), testcb).(*watcher)
 	wfile.Start()
-	// File is being wartched
+	// File is being watched
 	time.Sleep(TEST_POLL_SLEEP)
 	assert.True(wfile.GetBeingWatched())
 	os.Remove(tf.Name())
@@ -137,6 +140,7 @@ func TestWatchFileFailure(t *testing.T) {
 // TODO: replace with tempfiles.
 func TestWatchFileRenameDirectory(t *testing.T) {
 	assert := assert.New(t)
+	InitEnv("test")
 
 	folder := "/tmp/CANARYTEST"
 	file_name := folder + "/test1.gems"
@@ -193,6 +197,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 func TestWatchFileHookLoop(t *testing.T) {
 
 	assert := assert.New(t)
+	InitEnv("test")
 
 	file_content := []byte("tst1")
 	tf, _ := ioutil.TempFile("", "gems.lock")
