@@ -29,7 +29,7 @@ var env = &Env{
 	Logo:              PROD_LOGO,
 	BaseUrl:           PROD_URL,
 	ConfFile:          DEFAULT_CONF_FILE,
-	VarFile:           DEFAULT_VAR_PATH,
+	VarFile:           DEFAULT_VAR_FILE,
 	LogFile:           DEFAULT_LOG_FILE,
 	HeartbeatDuration: DEFAULT_HEARTBEAT_DURATION,
 	SyncAllDuration:   DEFAULT_SYNC_ALL_DURATION,
