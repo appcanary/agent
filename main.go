@@ -105,6 +105,15 @@ func main() {
 		}
 	}()
 
+	go func() {
+		tick := time.Tick(env.SyncAllDuration)
+
+		for {
+			a.SyncAllFiles()
+			<-tick
+		}
+	}()
+
 	defer a.CloseWatches()
 
 	// Close the logfile when we exit

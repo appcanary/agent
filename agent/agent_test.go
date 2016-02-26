@@ -19,7 +19,7 @@ func TestAgent(t *testing.T) {
 
 	client := &MockClient{}
 	client.On("CreateServer").Return(server_uuid)
-	client.On("SendFile").Return(nil).Once()
+	client.On("SendFile").Return(nil).Twice()
 	client.On("Heartbeat").Return(nil).Once()
 
 	agent := NewAgent("test", conf, client)
@@ -45,6 +45,9 @@ func TestAgent(t *testing.T) {
 	agent.StartWatching()
 
 	agent.Heartbeat()
+
+	// after a period of time, we sync all files
+	agent.SyncAllFiles()
 
 	// the filewatcher needs enough time to
 	// actually be able to start watching

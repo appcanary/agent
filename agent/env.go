@@ -79,6 +79,7 @@ func InitEnv(env_str string) {
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
+		env.SyncAllDuration = DEV_SYNC_ALL_DURATION
 
 		env.PollSleep = DEV_POLL_SLEEP
 
