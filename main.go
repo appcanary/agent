@@ -111,8 +111,8 @@ func main() {
 		tick := time.Tick(env.SyncAllDuration)
 
 		for {
-			a.SyncAllFiles()
 			<-tick
+			a.SyncAllFiles()
 		}
 	}()
 
