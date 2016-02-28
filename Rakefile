@@ -33,6 +33,7 @@ task :build_all => [:setup, :build]
 desc "Build the program into ./bin/appcanary"
 task :build do
   @ldflags = %{"-X main.CanaryVersion #{@release_version || "#{@release_version}-unreleased"}"}
+  shell "go-bindata -pkg detect -o agent/detect/bindata.go agent/resources/"
   shell "go build -ldflags #{@ldflags} -o ./bin/appcanary"
 end
 
@@ -77,7 +78,7 @@ task :package => :cross_compile do
   puts "Building packages."
   puts "#################################\n\n\n"
 
-  [UbuntuRecipe, CentosRecipe, DebianRecipe, MintRecipe].each do |rcp|
+  [UbuntuRecipe, CentosRecipe, Centos7Recipe, DebianRecipe, MintRecipe].each do |rcp|
     @built_packages << rcp.build!(CURRENT_VERSION, @date)
   end
 end
