@@ -11,19 +11,29 @@ import (
 var log = logging.MustGetLogger("canary-agent")
 
 type Env struct {
-	Logo              string
 	Env               string
 	Prod              bool
+	Logo              string
 	BaseUrl           string
 	ConfFile          string
 	VarFile           string
-	HeartbeatDuration time.Duration
 	LogFile           string
 	LogFileHandle     *os.File
+	HeartbeatDuration time.Duration
+	SyncAllDuration   time.Duration
 	PollSleep         time.Duration
 }
 
-var env = &Env{}
+var env = &Env{
+	Prod:              true,
+	Logo:              PROD_LOGO,
+	BaseUrl:           PROD_URL,
+	ConfFile:          DEFAULT_CONF_FILE,
+	VarFile:           DEFAULT_VAR_FILE,
+	LogFile:           DEFAULT_LOG_FILE,
+	HeartbeatDuration: DEFAULT_HEARTBEAT_DURATION,
+	SyncAllDuration:   DEFAULT_SYNC_ALL_DURATION,
+	PollSleep:         DEFAULT_POLL_SLEEP}
 
 func FetchEnv() *Env {
 	return env
@@ -35,35 +45,21 @@ func FetchLog() *logging.Logger {
 
 func InitEnv(env_str string) {
 	env.Env = env_str
-	if env_str != "test" && env_str != "debug" {
-		env.Prod = true
+	if env_str == "test" || env_str == "debug" {
+		env.Prod = false
 	}
 
-	env.LogFile = DEFAULT_LOG_FILE
-
 	// to be overriden by cli options
-	if env.Prod {
-
-		env.BaseUrl = PROD_URL
-
-		env.Logo = PROD_LOGO
-
-		env.ConfFile = DEFAULT_CONF_FILE
-
-		env.VarFile = DEFAULT_VAR_FILE
-
-		env.HeartbeatDuration = DEFAULT_HEARTBEAT_DURATION
-
-		env.PollSleep = 5 * time.Minute
-
-	} else {
+	if env.Prod == false {
 		// ###### resolve path
 		// filepath.Abs was resolving to a different folder
 		// depending on whether it was run from main or a test
 		DEV_CONF_PATH, _ = filepath.Abs("test/data")
+
 		if _, err := os.Stat(DEV_CONF_PATH); err != nil {
 			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
 		}
+
 		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test.conf")
 
 		DEV_VAR_PATH, _ = filepath.Abs("test/var")
@@ -83,8 +79,9 @@ func InitEnv(env_str string) {
 		env.VarFile = DEV_VAR_FILE
 
 		env.HeartbeatDuration = DEV_HEARTBEAT_DURATION
+		env.SyncAllDuration = DEV_SYNC_ALL_DURATION
 
-		env.PollSleep = time.Second
+		env.PollSleep = DEV_POLL_SLEEP
 
 	}
 }

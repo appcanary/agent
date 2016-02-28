@@ -63,6 +63,14 @@ func (agent *Agent) OnChange(file Watcher) {
 	}
 }
 
+func (agent *Agent) SyncAllFiles() {
+	log.Info("Synching all files.")
+
+	for _, f := range agent.files {
+		agent.OnChange(f)
+	}
+}
+
 func (agent *Agent) Heartbeat() error {
 	return agent.client.Heartbeat(agent.server.UUID, agent.files)
 }
