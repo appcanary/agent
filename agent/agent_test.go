@@ -19,6 +19,13 @@ func TestAgent(t *testing.T) {
 	client := &MockClient{}
 	agent := NewAgent("test", conf, client)
 
+	// let's make sure stuff got set
+	assert.Equal("deployment1", agent.server.Name)
+	assert.NotEqual("", agent.server.Hostname)
+	assert.NotEqual("", agent.server.Uname)
+	assert.NotEqual("", agent.server.Distro)
+	assert.NotEqual("", agent.server.Ip)
+
 	// let's ensure our server is unregistered
 	agent.server.UUID = ""
 

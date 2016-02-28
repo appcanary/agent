@@ -9,22 +9,18 @@ import (
 type Conf struct {
 	ApiKey     string      `toml:"api_key"`
 	LogPath    string      `toml:"log_path"`
+	ServerName string      `toml:"server_name"`
 	Files      []*FileConf `toml:"files"`
 	ServerConf *ServerConf `toml:"-"`
 }
 
 type FileConf struct {
 	Path    string `toml:"path"`
-	Process string `tom:"process"`
+	Process string `toml:"process"`
 }
 
 type ServerConf struct {
-	UUID     string `toml:"uuid"`
-	Hostname string `toml:"hostname"`
-	Uname    string `toml:"uname"`
-	Ip       string `toml:"ip"`
-	Distro   string `toml:"distro"`
-	Release  string `toml:"release"`
+	UUID string `toml:"uuid"`
 }
 
 func NewConf() *Conf {
