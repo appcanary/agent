@@ -40,28 +40,31 @@ func main() {
 	flaggedVersion = flagset.Bool("version", false, "Display version information")
 	flagset.Parse(os.Args[1:])
 
-	if *flaggedVersion {
-		fmt.Println(CanaryVersion)
-		os.Exit(0)
+	if flaggedVersion != nil {
+		if *flaggedVersion {
+			fmt.Println(CanaryVersion)
+			os.Exit(0)
+		}
 	}
 
-	if *flaggedDetectOS {
-		guess, err := detect.DetectOS()
-		if err == nil {
-			fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
-		} else {
-			fmt.Println(err.Error())
+	if flaggedDetectOS != nil {
+		if *flaggedDetectOS {
+			guess, err := detect.DetectOS()
+			if err == nil {
+				fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
+			} else {
+				fmt.Println(err.Error())
+			}
+			os.Exit(0)
 		}
-		os.Exit(0)
 	}
 
 	//start the logger
+	fmt.Println(env.Logo)
 	agent.InitLogging()
 	log := agent.FetchLog()
 
 	done := make(chan os.Signal, 1)
-
-	fmt.Println(env.Logo)
 
 	// slurp env, instantiate agent
 	conf := agent.NewConfFromEnv()
@@ -101,6 +104,15 @@ func main() {
 				log.Info("<3 error: %s", err)
 			}
 			<-tick
+		}
+	}()
+
+	go func() {
+		tick := time.Tick(env.SyncAllDuration)
+
+		for {
+			<-tick
+			a.SyncAllFiles()
 		}
 	}()
 
