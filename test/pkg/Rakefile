@@ -150,7 +150,6 @@ end
 class Dockerfile
   TEMPLATE = <<-docker
 FROM <%= container_name %>
-RUN <%= update_cmd %>
 COPY ./test.sh /root/test.sh
 COPY latest.pkg /root/latest.pkg
   docker
