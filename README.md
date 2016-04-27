@@ -6,7 +6,7 @@
 
 ![circle ci](https://circleci.com/gh/appcanary/agent.png?circle-token=e005a24f2a9e1202caede198cb41d3c09e3eccd6)
 
-This repository holds the source for the [appcanary](https://appcanary.com) agent. 
+This repository holds the source for the [appcanary](https://appcanary.com) agent. **Please note**: To install the agent on your servers, please consult [the instructions](https://appcanary.com/servers/new). If you're interested in how it works, read on!
 
 The agent itself is pretty "dumb". Its sole purpose is to monitor files paths, supplied via config file, for changes and, whenever the file has changed, send it over to the appcanary api for us to parse and make decisions on.
 
@@ -14,7 +14,7 @@ Oh, and it also pings us once an hour so we know it's still working.
 
 If you're reading this because you want to audit the code, the magic starts in [`main.go`](https://github.com/appcanary/agent/blob/master/main.go), [`agent/file.go`](https://github.com/appcanary/agent/blob/master/agent/file.go) and [`agent/agent.go`](https://github.com/appcanary/agent/blob/master/agent/agent.go). We think it's pretty straightforward!
 
-## Installation
+## Setup
 
 1. This project depends on a working golang and ruby environment, as well as docker.
 2. First, let's set up go. Go to your `$GOPATH` and type: 
@@ -25,7 +25,11 @@ If you're reading this because you want to audit the code, the magic starts in [
 
   `go get -t -d -v ./…`
 
-4. Now we set bundler and install our ruby dependencies. We use ruby to script all of our build and packaging tasks. Go ahead and type: 
+4. We'll also need [go-bindata](https://github.com/jteeuwen/go-bindata):
+
+  `go get -u github.com/jteeuwen/go-bindata/...`
+
+5. Now we set bundler and install our ruby dependencies. We use ruby to script all of our build and packaging tasks. Go ahead and type: 
 
   ```bash
 gem install bundler # if you don't have it
@@ -34,15 +38,15 @@ bundle install
 
   This gets you all the basics up on your machine.
 
-5. In order to cross compile releases, you're going to need `goxc`, so visit [the goxc github page](https://github.com/laher/goxc) and install that (last we used was version 0.16.0).
+6. In order to cross compile releases, you're going to need `goxc`, so visit [the goxc github page](https://github.com/laher/goxc) and install that (last we used was version 0.16.0).
 
-6. We package releases using [`fpm`](https://github.com/jordansissel/fpm/). This is installed via bundler in step 4, HOWEVER, `fpm` requires `rpmbuild` in order to assemble rpm packages. We last used `rpmbuild` version 5.4.15. On OSX at least, that util is a apart of the `rpm` homebrew package, so:
+7. We package releases using [`fpm`](https://github.com/jordansissel/fpm/). This is installed via bundler in step 4, HOWEVER, `fpm` requires `rpmbuild` in order to assemble rpm packages. We last used `rpmbuild` version 5.4.15. On OSX at least, that util is a apart of the `rpm` homebrew package, so:
 
   ```bash
 brew install rpm
 ```
 
-7. At this stage you're able to build, test, package and deploy packages. But you know what you're missing? A way to test that the packages work on the (at time of writing) 10 different linux versions you support. We ended up using docker for this. We went and got [boot2docker](http://boot2docker.io/) (cli/docker version 1.6.2 is what we used).
+8. At this stage you're able to build, test, package and deploy packages. But you know what you're missing? A way to test that the packages work on the (at time of writing) 10 different linux versions you support. We ended up using docker for this. We went and got [boot2docker](http://boot2docker.io/) (cli/docker version 1.6.2 is what we used).
 
   You may have to also fetch VirtualBox. There's instructions, docker is... complicated.
 

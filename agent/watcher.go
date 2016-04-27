@@ -12,7 +12,7 @@ import (
 	"hash/crc32"
 )
 
-type FileChangeHandler func(Watcher)
+type ChangeHandler func(Watcher)
 
 type Watcher interface {
 	Start()
@@ -26,34 +26,35 @@ type Watcher interface {
 type watcher struct {
 	sync.Mutex
 	keepPolling  bool
-	kind         string            `json:"-"`
-	path         string            `json:"-"`
-	UpdatedAt    time.Time         `json:"updated-at"`
-	BeingWatched bool              `json:"being-watched"`
-	OnFileChange FileChangeHandler `json:"-"`
-	Checksum     uint32            `json:"crc"`
+	kind         string
+	path         string
+	UpdatedAt    time.Time
+	BeingWatched bool
+	OnChange     ChangeHandler
+	Checksum     uint32
 	CmdName      string
 	CmdArgs      []string
 	contents     func() ([]byte, error)
+	pollSleep    time.Duration
 }
 
 type Watchers []Watcher
 
 // TODO: time.Now() needs to be called whenever it updates
-func NewFileWatcherWithHook(path string, callback FileChangeHandler) Watcher {
+func NewFileWatcherWithHook(path string, callback ChangeHandler) Watcher {
 	w := NewFileWatcher(path, callback)
 	w.Start()
 	return w
 }
 
-func NewProcessWatcherWithHook(path string, callback FileChangeHandler) Watcher {
+func NewProcessWatcherWithHook(path string, callback ChangeHandler) Watcher {
 	w := NewProcessWatcher(path, callback)
 	w.Start()
 	return w
 }
 
 // only used for tests
-func NewFileWatcher(path string, callback FileChangeHandler) Watcher {
+func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 	var kind string
 	filename := filepath.Base(path)
 	switch filename {
@@ -65,7 +66,7 @@ func NewFileWatcher(path string, callback FileChangeHandler) Watcher {
 	case "status":
 		kind = "ubuntu"
 	}
-	file := &watcher{path: path, OnFileChange: callback, kind: kind, UpdatedAt: time.Now()}
+	file := &watcher{path: path, OnChange: callback, kind: kind, UpdatedAt: time.Now(), pollSleep: env.PollSleep}
 	file.contents = file.FileContents
 
 	// Do a scan off the bat so we get a checksum, and PUT the file
@@ -73,13 +74,13 @@ func NewFileWatcher(path string, callback FileChangeHandler) Watcher {
 	return file
 }
 
-func NewProcessWatcher(process string, callback FileChangeHandler) Watcher {
+func NewProcessWatcher(process string, callback ChangeHandler) Watcher {
 
 	splat := strings.Split(process, " ")
 	name := splat[0]
 	args := splat[1:]
 
-	watcher := &watcher{path: process, OnFileChange: callback, kind: "centos", UpdatedAt: time.Now(), CmdName: name, CmdArgs: args}
+	watcher := &watcher{path: process, OnChange: callback, kind: "centos", UpdatedAt: time.Now(), pollSleep: env.PollSleep, CmdName: name, CmdArgs: args}
 	watcher.contents = watcher.ProcessContents
 
 	watcher.scan()
@@ -113,15 +114,15 @@ func (wt *watcher) KeepPolling() bool {
 }
 
 func (wt *watcher) Start() {
+	// log.Debug("Listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = true
 	go wt.listen()
 }
 
-// TODO: solve data race issue
 func (wt *watcher) Stop() {
-	log.Debug("No longer listening to: %s", wt.Path())
+	// log.Debug("No longer listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = false
@@ -154,7 +155,7 @@ func (wt *watcher) scan() {
 	wt.SetBeingWatched(true)
 
 	if wt.Checksum != currentCheck {
-		go wt.OnFileChange(wt)
+		go wt.OnChange(wt)
 		wt.Checksum = currentCheck
 	}
 }
@@ -171,10 +172,8 @@ func (wt *watcher) currentChecksum() uint32 {
 
 func (wt *watcher) listen() {
 	for wt.KeepPolling() {
-
 		wt.scan()
-		time.Sleep(env.PollSleep)
-
+		time.Sleep(wt.pollSleep)
 	}
 }
 

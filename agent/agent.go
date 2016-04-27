@@ -14,8 +14,7 @@ func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
 
 	// Find out what we need about machine
 	// Fills out server conf if some values are missing
-	agent.server = NewServer(conf.ServerConf)
-	agent.conf.Save()
+	agent.server = NewServer(conf, conf.ServerConf)
 
 	if len(clients) > 0 {
 		agent.client = clients[0]
@@ -33,16 +32,16 @@ func (agent *Agent) StartWatching() {
 		var watcher Watcher
 
 		if f.Process == "" {
-			watcher = NewFileWatcherWithHook(f.Path, agent.OnFileChange)
+			watcher = NewFileWatcherWithHook(f.Path, agent.OnChange)
 		} else {
-			watcher = NewProcessWatcherWithHook(f.Process, agent.OnFileChange)
+			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
 		}
 
 		agent.files = append(agent.files, watcher)
 	}
 }
 
-func (agent *Agent) OnFileChange(file Watcher) {
+func (agent *Agent) OnChange(file Watcher) {
 	log.Info("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
@@ -61,6 +60,14 @@ func (agent *Agent) OnFileChange(file Watcher) {
 		// beyond the exponential backoff in the client.
 		// What if the connection fails for whatever reason?
 		log.Info("Sendfile error: %s", err)
+	}
+}
+
+func (agent *Agent) SyncAllFiles() {
+	log.Info("Synching all files.")
+
+	for _, f := range agent.files {
+		agent.OnChange(f)
 	}
 }
 
