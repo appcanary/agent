@@ -4,27 +4,25 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/appcanary/agent/agent/detect"
 )
 
 type Conf struct {
-	ApiKey     string      `toml:"api_key"`
-	LogPath    string      `toml:"log_path"`
+	ApiKey     string `toml:"api_key"`
+	LogPath    string `toml:"log_path"`
+	ServerName string `toml:"server_name"`
+	detect.LinuxOSInfo
 	Files      []*FileConf `toml:"files"`
 	ServerConf *ServerConf `toml:"-"`
 }
 
 type FileConf struct {
 	Path    string `toml:"path"`
-	Process string `tom:"process"`
+	Process string `toml:"process"`
 }
 
 type ServerConf struct {
-	UUID     string `toml:"uuid"`
-	Hostname string `toml:"hostname"`
-	Uname    string `toml:"uname"`
-	Ip       string `toml:"ip"`
-	Distro   string `toml:"distro"`
-	Release  string `toml:"release"`
+	UUID string `toml:"uuid"`
 }
 
 func NewConf() *Conf {
@@ -36,11 +34,11 @@ func NewConfFromEnv() *Conf {
 
 	_, err := toml.DecodeFile(env.ConfFile, &conf)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Can't seem to read ", env.ConfFile, ". Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
 	if len(conf.Files) == 0 {
-		log.Fatal("No files to monitor!")
+		log.Fatal("No files to monitor! Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
 	if _, err := os.Stat(env.VarFile); err == nil {
@@ -52,6 +50,14 @@ func NewConfFromEnv() *Conf {
 	}
 
 	return conf
+}
+
+func (c *Conf) OSInfo() *detect.LinuxOSInfo {
+	if c.Distro != "" && c.Release != "" {
+		return &c.LinuxOSInfo
+	} else {
+		return nil
+	}
 }
 
 func (c *Conf) Save() {
