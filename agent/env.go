@@ -18,6 +18,7 @@ type Env struct {
 	ConfFile          string
 	VarFile           string
 	LogFile           string
+	PerformUpgrade    bool
 	LogFileHandle     *os.File
 	HeartbeatDuration time.Duration
 	SyncAllDuration   time.Duration

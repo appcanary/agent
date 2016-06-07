@@ -18,10 +18,7 @@ func usage() {
 	flagset.PrintDefaults()
 }
 
-func main() {
-	agent.InitEnv(os.Getenv("CANARY_ENV"))
-	env := agent.FetchEnv()
-
+func setAndPrintFlags(env *agent.Env) {
 	var flaggedVersion, flaggedDetectOS *bool
 	// httptest, used in client.test, sets a usage flag
 	// that leaks when you use the 'global' FlagSet.
@@ -30,11 +27,11 @@ func main() {
 
 	flagset.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
 	flagset.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
-	flagset.StringVar(&env.LogFile, "log", env.LogFile, "Set the log file (will not override if set in config file)")
+	flagset.BoolVar(&env.PerformUpgrade, "upgrade", false, "Perform security upgrades")
+	flaggedDetectOS = flagset.Bool("detect-os", false, "Guess my operating system")
 
 	if !env.Prod {
 		flagset.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
-		flaggedDetectOS = flagset.Bool("detect-os", false, "Guess my operating system")
 	}
 
 	flaggedVersion = flagset.Bool("version", false, "Display version information")
@@ -58,6 +55,13 @@ func main() {
 			os.Exit(0)
 		}
 	}
+}
+
+func main() {
+	agent.InitEnv(os.Getenv("CANARY_ENV"))
+	env := agent.FetchEnv()
+
+	setAndPrintFlags(env)
 
 	//start the logger
 	fmt.Println(env.Logo)
@@ -88,6 +92,12 @@ func main() {
 			err = a.RegisterServer()
 		}
 
+	}
+
+	if env.PerformUpgrade {
+		fmt.Println("lol")
+		// ideally should know to send over update first.
+		os.Exit(0)
 	}
 
 	// Add hooks to files, and push them over
