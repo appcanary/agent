@@ -1,5 +1,7 @@
 package agent
 
+import "fmt"
+
 var CanaryVersion string
 
 type Agent struct {
@@ -89,6 +91,32 @@ func (agent *Agent) RegisterServer() error {
 	agent.server.UUID = uuid
 	agent.conf.ServerConf.UUID = uuid
 	agent.conf.Save()
+	return nil
+}
+
+func (agent *Agent) PerformUpgrade() error {
+	package_list, err := agent.client.FetchUpgradeablePackages(agent.server.UUID)
+
+	if err != nil {
+		return err
+	}
+
+	if agent.server.DebianLike() {
+		agent.runDebianUpgrade(package_list)
+	}
+	return nil
+}
+
+func (agent *Agent) runDebianUpgrade(package_list map[string]string) error {
+	cmd := "apt-get"
+	args := []string{"install --only-upgrade"}
+	package_args := make([]string, len(package_list))
+
+	for name, version := range package_list {
+		package_args = append(package_args, name+"="+version)
+	}
+
+	fmt.Println(cmd, args, package_args)
 	return nil
 }
 

@@ -116,6 +116,14 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 	return respServer.UUID, nil
 }
 
+func (c *CanaryClient) FetchUpgradeablePackages(uuid string) (map[string]string, error) {
+	package_list := make(map[string]string, 2)
+	package_list["foo"] = "version"
+	package_list["bar"] = "version2"
+
+	return package_list, nil
+}
+
 func (client *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
 	return client.send("POST", rPath, body)
 }

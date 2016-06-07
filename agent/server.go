@@ -75,3 +75,8 @@ func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 func (server *Server) IsNew() bool {
 	return server.UUID == ""
 }
+
+func (server *Server) DebianLike() bool {
+	// return server.Distro == "debian" || distro == "ubuntu"
+	return true
+}

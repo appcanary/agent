@@ -95,7 +95,7 @@ func main() {
 	}
 
 	if env.PerformUpgrade {
-		fmt.Println("lol")
+		a.PerformUpgrade()
 		// ideally should know to send over update first.
 		os.Exit(0)
 	}
