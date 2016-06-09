@@ -3,10 +3,11 @@ require 'json'
 require 'pry'
 require 'base64'
 
+set :bind, '0.0.0.0'
 def print_bod(body)
   bod = JSON.load(body.read)
   puts "#" * 10
-  if bod["contents"]
+  if bod && bod["contents"]
     bod["contents"] = Base64.decode64(bod["contents"])
   end
   puts bod
@@ -30,4 +31,10 @@ end
 put '/api/v1/agent/servers/:id' do
   print_bod(request.body)
   "OK"
+end
+
+get '/api/v1/agent/servers/:id' do
+  print_bod(request.body)
+  content_type :json
+  File.read("dump.json")
 end

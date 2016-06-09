@@ -1,6 +1,12 @@
 package agent
 
-import "fmt"
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"os/exec"
+)
 
 var CanaryVersion string
 
@@ -95,9 +101,10 @@ func (agent *Agent) RegisterServer() error {
 }
 
 func (agent *Agent) PerformUpgrade() error {
-	package_list, err := agent.client.FetchUpgradeablePackages(agent.server.UUID)
+	package_list, err := agent.client.FetchUpgradeablePackages()
 
 	if err != nil {
+		log.Info("Can't fetch upgrade info: %s", err)
 		return err
 	}
 
@@ -109,15 +116,70 @@ func (agent *Agent) PerformUpgrade() error {
 
 func (agent *Agent) runDebianUpgrade(package_list map[string]string) error {
 	cmd := "apt-get"
-	args := []string{"install --only-upgrade"}
-	package_args := make([]string, len(package_list))
+	args := []string{"install", "--only-upgrade"}
 
 	for name, version := range package_list {
-		package_args = append(package_args, name+"="+version)
+		args = append(args, name+"="+version)
 	}
 
-	fmt.Println(cmd, args, package_args)
+	fmt.Println(cmd, args)
+	_, _ = agent.runCmd(cmd, args)
 	return nil
+}
+
+func (agent *Agent) runCmd(cmd_name string, args []string) (string, error) {
+	_, err := exec.LookPath(cmd_name)
+
+	if err != nil {
+		return "", errors.New("Can't find " + cmd_name)
+	}
+
+	cmd := exec.Command(cmd_name, args...)
+
+	if cmd.Stdout != nil {
+		return "", errors.New("exec: Stdout already set")
+	}
+	if cmd.Stderr != nil {
+		return "", errors.New("exec: Stderr already set")
+	}
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatalf("Fetching stdin failed: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Was unable to start %s. Error: %v", cmd_name, err)
+	}
+
+	_, err = io.WriteString(stdin, "y\n")
+	if err != nil {
+		log.Fatalf("Was unable to tell %s to start. Error: %v", cmd_name, err)
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		log.Fatalf("Command error!")
+		errar := string(stderr.Bytes())
+		fmt.Println(errar)
+		oot := string(stdout.Bytes())
+		fmt.Println(oot)
+
+		return errar, err
+	} else {
+		log.Debug("Command success!")
+		errar := string(stderr.Bytes())
+		fmt.Println(errar)
+
+		oot := string(stdout.Bytes())
+		fmt.Println(oot)
+		return oot, err
+	}
+
 }
 
 // This has to be called before exiting

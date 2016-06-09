@@ -26,6 +26,7 @@ type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
 	CreateServer(*Server) (string, error)
+	FetchUpgradeablePackages() (map[string]string, error)
 }
 
 type CanaryClient struct {
@@ -116,10 +117,19 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 	return respServer.UUID, nil
 }
 
-func (c *CanaryClient) FetchUpgradeablePackages(uuid string) (map[string]string, error) {
-	package_list := make(map[string]string, 2)
-	package_list["foo"] = "version"
-	package_list["bar"] = "version2"
+func (client *CanaryClient) FetchUpgradeablePackages() (map[string]string, error) {
+	respBody, err := client.get(ApiServerPath(client.server.UUID))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var package_list map[string]string
+	err = json.Unmarshal(respBody, &package_list)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return package_list, nil
 }
@@ -130,6 +140,10 @@ func (client *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
 
 func (client *CanaryClient) put(rPath string, body []byte) ([]byte, error) {
 	return client.send("PUT", rPath, body)
+}
+
+func (client *CanaryClient) get(rPath string) ([]byte, error) {
+	return client.send("GET", rPath, []byte{})
 }
 
 func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, error) {
