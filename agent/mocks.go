@@ -25,3 +25,15 @@ func (m *MockClient) SendFile(_a0 string, _a1 string, _a2 []byte) error {
 func (m *MockClient) CreateServer(_a0 *Server) (string, error) {
 	return m.Called().String(0), nil
 }
+
+func (m *MockClient) FetchUpgradeablePackages() (map[string]string, error) {
+	ret := m.Called()
+
+	var r0 map[string]string
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(map[string]string)
+	}
+	r1 := ret.Error(1)
+
+	return r0, r1
+}
