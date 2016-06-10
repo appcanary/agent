@@ -11,57 +11,76 @@ import (
 )
 
 var CanaryVersion string
-var flagset *flag.FlagSet
+var defaultFlags *flag.FlagSet
 
-func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: appcanary [OPTION]\n")
-	flagset.PrintDefaults()
+type CommandArgs struct {
+	PerformUpgrade bool
+	DisplayVersion bool
+	DetectOS       bool
 }
 
-func setAndPrintFlags(env *agent.Env) {
-	var flaggedVersion, flaggedDetectOS *bool
+func usage() {
+	fmt.Fprintf(os.Stderr, "Usage: appcanary [COMMAND] [OPTIONS]\nOptions:\n")
+
+	defaultFlags.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "\nCommands:\n"+
+		"\tupgrade\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
+		"\tdetect-os\tDetect current operating system\n")
+}
+
+func setFlagset(env *agent.Env, cmdargs *CommandArgs) {
 	// httptest, used in client.test, sets a usage flag
 	// that leaks when you use the 'global' FlagSet.
-	flagset = flag.NewFlagSet("Default", flag.ExitOnError)
-	flagset.Usage = usage
+	defaultFlags = flag.NewFlagSet("Default", flag.ExitOnError)
+	defaultFlags.Usage = usage
+	defaultFlags.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
+	defaultFlags.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
 
-	flagset.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
-	flagset.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
-	flagset.BoolVar(&env.PerformUpgrade, "upgrade", false, "Perform security upgrades")
-	flaggedDetectOS = flagset.Bool("detect-os", false, "Guess my operating system")
+	// -version will always override all other args
+	defaultFlags.BoolVar(&cmdargs.DisplayVersion, "version", false, "Display version information")
 
 	if !env.Prod {
-		flagset.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
+		defaultFlags.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
 	}
 
-	flaggedVersion = flagset.Bool("version", false, "Display version information")
-	flagset.Parse(os.Args[1:])
+}
 
-	if flaggedVersion != nil {
-		if *flaggedVersion {
-			fmt.Println(CanaryVersion)
-			os.Exit(0)
-		}
-	}
+func parseArguments(env *agent.Env, cmdargs *CommandArgs) {
+	setFlagset(env, cmdargs)
 
-	if flaggedDetectOS != nil {
-		if *flaggedDetectOS {
-			guess, err := detect.DetectOS()
-			if err == nil {
-				fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
-			} else {
-				fmt.Println(err.Error())
-			}
-			os.Exit(0)
-		}
+	switch os.Args[1] {
+	case "upgrade":
+		cmdargs.PerformUpgrade = true
+		defaultFlags.Parse(os.Args[2:])
+	case "detect-os":
+		// ignore all flags, since we'll just quit
+		cmdargs.DetectOS = true
+	default:
+		defaultFlags.Parse(os.Args[1:])
 	}
 }
 
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
+	cmdargs := &CommandArgs{}
 
-	setAndPrintFlags(env)
+	parseArguments(env, cmdargs)
+
+	if cmdargs.DisplayVersion {
+		fmt.Println(CanaryVersion)
+		os.Exit(0)
+	}
+
+	if cmdargs.DetectOS {
+		guess, err := detect.DetectOS()
+		if err == nil {
+			fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
+		} else {
+			fmt.Println(err.Error())
+		}
+		os.Exit(0)
+	}
 
 	//start the logger
 	fmt.Println(env.Logo)
@@ -94,9 +113,8 @@ func main() {
 
 	}
 
-	if env.PerformUpgrade {
+	if cmdargs.PerformUpgrade {
 		a.PerformUpgrade()
-		// ideally should know to send over update first.
 		os.Exit(0)
 	}
 
