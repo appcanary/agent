@@ -2,10 +2,9 @@ package agent
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"os/exec"
+	"strings"
 )
 
 var CanaryVersion string
@@ -110,74 +109,63 @@ func (agent *Agent) PerformUpgrade() error {
 
 	if agent.server.DebianLike() {
 		agent.runDebianUpgrade(package_list)
+	} else {
+		log.Fatal("Sorry, we don't support your operating system at the moment. Is this a mistake? Run `appcanary detect-os` and tell us about it at support@appcanary.com")
 	}
 	return nil
 }
 
-func (agent *Agent) runDebianUpgrade(package_list map[string]string) error {
-	cmd := "apt-get"
-	args := []string{"install", "--only-upgrade"}
+func (agent *Agent) runDebianUpgrade(package_list map[string]string) {
+	updateCmd := "apt-get"
+	updateArg := []string{"update", "-q"}
+
+	installCmd := "apt-get"
+	installArg := []string{"install", "--only-upgrade", "--no-install-recommends", "-y", "-q"}
 
 	for name, version := range package_list {
-		args = append(args, name+"="+version)
+		installArg = append(installArg, name+"="+version)
 	}
 
-	fmt.Println(cmd, args)
-	_, _ = agent.runCmd(cmd, args)
-	return nil
+	if env.DryRun {
+		log.Info("Running upgrade in dry-run mode...")
+	}
+
+	err := agent.runCmd(updateCmd, updateArg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = agent.runCmd(installCmd, installArg)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func (agent *Agent) runCmd(cmd_name string, args []string) (string, error) {
+func (agent *Agent) runCmd(cmd_name string, args []string) error {
 	_, err := exec.LookPath(cmd_name)
 
 	if err != nil {
-		return "", errors.New("Can't find " + cmd_name)
+		log.Fatal("Can't find " + cmd_name)
 	}
 
 	cmd := exec.Command(cmd_name, args...)
 
-	if cmd.Stdout != nil {
-		return "", errors.New("exec: Stdout already set")
-	}
-	if cmd.Stderr != nil {
-		return "", errors.New("exec: Stderr already set")
-	}
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	cmd.Stderr = &output
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	log.Infof("Running: %s %s", cmd_name, strings.Join(args, " "))
+	if !env.DryRun {
+		if err := cmd.Start(); err != nil {
+			log.Fatalf("Was unable to start %s. Error: %v", cmd_name, err)
+		}
 
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		log.Fatalf("Fetching stdin failed: %v", err)
-	}
+		err = cmd.Wait()
+		fmt.Println(string(output.Bytes()))
 
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("Was unable to start %s. Error: %v", cmd_name, err)
-	}
-
-	_, err = io.WriteString(stdin, "y\n")
-	if err != nil {
-		log.Fatalf("Was unable to tell %s to start. Error: %v", cmd_name, err)
-	}
-
-	err = cmd.Wait()
-	if err != nil {
-		log.Fatalf("Command error!")
-		errar := string(stderr.Bytes())
-		fmt.Println(errar)
-		oot := string(stdout.Bytes())
-		fmt.Println(oot)
-
-		return errar, err
+		return err
 	} else {
-		log.Debug("Command success!")
-		errar := string(stderr.Bytes())
-		fmt.Println(errar)
-
-		oot := string(stdout.Bytes())
-		fmt.Println(oot)
-		return oot, err
+		return nil
 	}
 
 }

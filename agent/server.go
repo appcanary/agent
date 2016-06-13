@@ -77,6 +77,5 @@ func (server *Server) IsNew() bool {
 }
 
 func (server *Server) DebianLike() bool {
-	// return server.Distro == "debian" || distro == "ubuntu"
-	return true
+	return server.Distro == "debian" || server.Distro == "ubuntu"
 }

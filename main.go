@@ -36,6 +36,7 @@ func setFlagset(env *agent.Env, cmdargs *CommandArgs) {
 	defaultFlags.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
 	defaultFlags.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
 
+	defaultFlags.BoolVar(&env.DryRun, "dry-run", false, "Only print, and do not execute, potentially destructive commands")
 	// -version will always override all other args
 	defaultFlags.BoolVar(&cmdargs.DisplayVersion, "version", false, "Display version information")
 
@@ -63,8 +64,9 @@ func parseArguments(env *agent.Env, cmdargs *CommandArgs) {
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
-	cmdargs := &CommandArgs{}
 
+	// parse the args
+	cmdargs := &CommandArgs{}
 	parseArguments(env, cmdargs)
 
 	if cmdargs.DisplayVersion {
@@ -77,15 +79,17 @@ func main() {
 		if err == nil {
 			fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
 		} else {
-			fmt.Println(err.Error())
+			fmt.Printf(err.Error())
 		}
 		os.Exit(0)
 	}
 
-	//start the logger
-	fmt.Println(env.Logo)
+	// let's get started eh
+	// start the logger
 	agent.InitLogging()
 	log := agent.FetchLog()
+
+	fmt.Println(env.Logo)
 
 	done := make(chan os.Signal, 1)
 
