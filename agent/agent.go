@@ -49,7 +49,7 @@ func (agent *Agent) StartWatching() {
 }
 
 func (agent *Agent) OnChange(file Watcher) {
-	log.Info("File change: %s", file.Path())
+	log.Infof("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
 	contents, err := file.Contents()
@@ -58,7 +58,7 @@ func (agent *Agent) OnChange(file Watcher) {
 		// we couldn't read it; something weird is happening
 		// let's just wait until this callback gets issued
 		// again when the file reappears.
-		log.Info("File contents error: %s", err)
+		log.Infof("File contents error: %s", err)
 		return
 	}
 	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
@@ -66,7 +66,7 @@ func (agent *Agent) OnChange(file Watcher) {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
 		// What if the connection fails for whatever reason?
-		log.Info("Sendfile error: %s", err)
+		log.Infof("Sendfile error: %s", err)
 	}
 }
 
@@ -103,8 +103,7 @@ func (agent *Agent) PerformUpgrade() error {
 	package_list, err := agent.client.FetchUpgradeablePackages()
 
 	if err != nil {
-		log.Info("Can't fetch upgrade info: %s", err)
-		return err
+		log.Fatalf("Can't fetch upgrade info: %s", err)
 	}
 
 	if agent.server.DebianLike() {
