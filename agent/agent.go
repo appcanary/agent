@@ -1,12 +1,5 @@
 package agent
 
-import (
-	"bytes"
-	"fmt"
-	"os/exec"
-	"strings"
-)
-
 var CanaryVersion string
 
 type Agent struct {
@@ -99,7 +92,8 @@ func (agent *Agent) RegisterServer() error {
 	return nil
 }
 
-func (agent *Agent) PerformUpgrade() error {
+func (agent *Agent) PerformUpgrade() {
+	var cmds UpgradeSequence
 	package_list, err := agent.client.FetchUpgradeablePackages()
 
 	if err != nil {
@@ -107,66 +101,15 @@ func (agent *Agent) PerformUpgrade() error {
 	}
 
 	if agent.server.DebianLike() {
-		agent.runDebianUpgrade(package_list)
+		cmds = buildDebianUpgrade(package_list)
 	} else {
 		log.Fatal("Sorry, we don't support your operating system at the moment. Is this a mistake? Run `appcanary detect-os` and tell us about it at support@appcanary.com")
 	}
-	return nil
-}
 
-func (agent *Agent) runDebianUpgrade(package_list map[string]string) {
-	updateCmd := "apt-get"
-	updateArg := []string{"update", "-q"}
-
-	installCmd := "apt-get"
-	installArg := []string{"install", "--only-upgrade", "--no-install-recommends", "-y", "-q"}
-
-	for name, version := range package_list {
-		installArg = append(installArg, name+"="+version)
-	}
-
-	if env.DryRun {
-		log.Info("Running upgrade in dry-run mode...")
-	}
-
-	err := agent.runCmd(updateCmd, updateArg)
+	err = executeUpgradeSequence(cmds)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	err = agent.runCmd(installCmd, installArg)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func (agent *Agent) runCmd(cmd_name string, args []string) error {
-	_, err := exec.LookPath(cmd_name)
-
-	if err != nil {
-		log.Fatal("Can't find " + cmd_name)
-	}
-
-	cmd := exec.Command(cmd_name, args...)
-
-	var output bytes.Buffer
-	cmd.Stdout = &output
-	cmd.Stderr = &output
-
-	log.Infof("Running: %s %s", cmd_name, strings.Join(args, " "))
-	if !env.DryRun {
-		if err := cmd.Start(); err != nil {
-			log.Fatalf("Was unable to start %s. Error: %v", cmd_name, err)
-		}
-
-		err = cmd.Wait()
-		fmt.Println(string(output.Bytes()))
-
-		return err
-	} else {
-		return nil
-	}
-
 }
 
 // This has to be called before exiting
