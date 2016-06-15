@@ -100,6 +100,11 @@ func (agent *Agent) PerformUpgrade() {
 		log.Fatalf("Can't fetch upgrade info: %s", err)
 	}
 
+	if len(package_list) == 0 {
+		log.Info("No vulnerable packages reported. Carry on!")
+		return
+	}
+
 	if agent.server.DebianLike() {
 		cmds = buildDebianUpgrade(package_list)
 	} else {

@@ -182,7 +182,12 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, errors.New(fmt.Sprintf("API Error: %d %s", res.StatusCode, uri))
+		errorstr := fmt.Sprintf("API Error: %d %s", res.StatusCode, uri)
+		if res.StatusCode == 401 {
+			log.Fatal("Please double check your settings: " + errorstr)
+		} else {
+			return nil, errors.New(errorstr)
+		}
 	}
 
 	respBody, err := ioutil.ReadAll(res.Body)
