@@ -49,6 +49,10 @@ func setFlagset(env *agent.Env, cmdargs *CommandArgs) {
 func parseArguments(env *agent.Env, cmdargs *CommandArgs) {
 	setFlagset(env, cmdargs)
 
+	if len(os.Args) < 2 {
+		return
+	}
+
 	switch os.Args[1] {
 	case "upgrade":
 		cmdargs.PerformUpgrade = true
