@@ -21,8 +21,12 @@ func buildDebianUpgrade(package_list map[string]string) UpgradeSequence {
 	installCmd := "apt-get"
 	installArg := []string{"install", "--only-upgrade", "--no-install-recommends", "-y", "-q"}
 
-	for name, version := range package_list {
-		installArg = append(installArg, name+"="+version)
+	for name, _ := range package_list {
+		// for now let's just stick to blanket updates
+		// to the packages. At a glance, it seems in ubuntu land you only
+		// get access to the most recent version anyways.
+		// installArg = append(installArg, name+"="+version)
+		installArg = append(installArg, name)
 	}
 
 	return UpgradeSequence{UpgradeCommand{updateCmd, updateArg}, UpgradeCommand{installCmd, installArg}}

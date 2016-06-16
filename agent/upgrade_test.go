@@ -19,5 +19,5 @@ func TestBuildDebianUpgrade(t *testing.T) {
 	upgrade_args := commands[1].Args
 	last_arg := upgrade_args[len(upgrade_args)-1]
 
-	assert.Equal("foobar=version", last_arg)
+	assert.Equal("foobar", last_arg)
 }

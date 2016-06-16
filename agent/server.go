@@ -76,6 +76,6 @@ func (server *Server) IsNew() bool {
 	return server.UUID == ""
 }
 
-func (server *Server) DebianLike() bool {
-	return server.Distro == "debian" || server.Distro == "ubuntu"
+func (server *Server) IsUbuntu() bool {
+	return server.Distro == "ubuntu"
 }
