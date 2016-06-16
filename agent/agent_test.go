@@ -42,7 +42,8 @@ func TestAgent(t *testing.T) {
 	assert.Equal(server_uuid, agent.server.UUID)
 
 	// Let's ensure that the client gets exercised.
-	agent.StartWatching()
+	agent.BuildAndSyncWatchers()
+	agent.StartPolling()
 
 	agent.Heartbeat()
 

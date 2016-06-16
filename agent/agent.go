@@ -27,7 +27,13 @@ func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
 }
 
 // instantiate structs, fs hook
-func (agent *Agent) StartWatching() {
+func (agent *Agent) StartPolling() {
+	for _, watcher := range agent.files {
+		watcher.Start()
+	}
+}
+
+func (agent *Agent) BuildAndSyncWatchers() {
 	for _, f := range agent.conf.Files {
 		var watcher Watcher
 
@@ -36,9 +42,9 @@ func (agent *Agent) StartWatching() {
 		} else {
 			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
 		}
-
 		agent.files = append(agent.files, watcher)
 	}
+
 }
 
 func (agent *Agent) OnChange(file Watcher) {
@@ -105,7 +111,7 @@ func (agent *Agent) PerformUpgrade() {
 		return
 	}
 
-	if agent.server.DebianLike() {
+	if agent.server.IsUbuntu() {
 		cmds = buildDebianUpgrade(package_list)
 	} else {
 		log.Fatal("Sorry, we don't support your operating system at the moment. Is this a mistake? Run `appcanary detect-os` and tell us about it at support@appcanary.com")

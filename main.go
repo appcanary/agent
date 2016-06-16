@@ -117,6 +117,10 @@ func main() {
 
 	}
 
+	// Now that we're registered,
+	// let's init our watchers. We auto sync on watcher init.
+	a.BuildAndSyncWatchers()
+
 	if cmdargs.PerformUpgrade {
 		a.PerformUpgrade()
 		os.Exit(0)
@@ -124,7 +128,7 @@ func main() {
 
 	// Add hooks to files, and push them over
 	// whenever they change
-	a.StartWatching()
+	a.StartPolling()
 
 	// send a heartbeat every ~60min, forever
 	go func() {
