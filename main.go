@@ -24,6 +24,7 @@ func usage() {
 
 	defaultFlags.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\nCommands:\n"+
+		"\t[none]\t\tStart the agent\n"+
 		"\tupgrade\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
 		"\tdetect-os\tDetect current operating system\n")
 }
@@ -53,6 +54,8 @@ func parseArguments(env *agent.Env, cmdargs *CommandArgs) {
 		return
 	}
 
+	// TODO: replace this boolean switch statement
+	// with some kind of enum dispatch
 	switch os.Args[1] {
 	case "upgrade":
 		cmdargs.PerformUpgrade = true
