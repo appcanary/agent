@@ -143,6 +143,24 @@ func (t *ClientTestSuite) TestCreateServer() {
 	t.Equal(test_uuid, response_uuid)
 }
 
+func (t *ClientTestSuite) TestFetchUpgradeablePackages() {
+
+	json_response := "{\"libkrb5-3\":\"1.12+dfsg-2ubuntu5.2\",\"isc-dhcp-client\":\"4.2.4-7ubuntu12.4\"}"
+	serverInvoked := false
+	ts := testServerSansInput(t, "GET", json_response, func(r *http.Request, rBody TestJsonRequest) {
+		serverInvoked = true
+
+		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+	})
+
+	env.BaseUrl = ts.URL
+	package_list, _ := t.client.FetchUpgradeablePackages()
+	ts.Close()
+
+	t.Equal("1.12+dfsg-2ubuntu5.2", package_list["libkrb5-3"])
+	t.True(serverInvoked)
+}
+
 func testCallbackNOP(foo Watcher) {
 	// NOP
 }
@@ -165,6 +183,28 @@ func testServer(assert *ClientTestSuite, method string, respondWithBody string, 
 		var datBody TestJsonRequest
 		if err := json.Unmarshal(body, &datBody); err != nil {
 			panic(err)
+		}
+
+		callback(r, datBody)
+		tsrespond(w, 200, respondWithBody)
+	}))
+
+	return ts
+}
+
+func testServerSansInput(assert *ClientTestSuite, method string, respondWithBody string, callback func(*http.Request, TestJsonRequest)) *httptest.Server {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(method, r.Method, "method")
+		assert.Equal("application/json", r.Header.Get("Content-Type"), "content type")
+
+		body, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+
+		var datBody TestJsonRequest
+		if len(body) > 0 {
+			if err := json.Unmarshal(body, &datBody); err != nil {
+				panic(err)
+			}
 		}
 
 		callback(r, datBody)

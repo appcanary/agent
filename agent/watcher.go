@@ -43,13 +43,11 @@ type Watchers []Watcher
 // TODO: time.Now() needs to be called whenever it updates
 func NewFileWatcherWithHook(path string, callback ChangeHandler) Watcher {
 	w := NewFileWatcher(path, callback)
-	w.Start()
 	return w
 }
 
 func NewProcessWatcherWithHook(path string, callback ChangeHandler) Watcher {
 	w := NewProcessWatcher(path, callback)
-	w.Start()
 	return w
 }
 
@@ -140,6 +138,8 @@ func (wt *watcher) SetBeingWatched(bw bool) {
 	wt.Unlock()
 }
 
+// since on init the checksum never match,
+// we always trigger an OnChange when we boot up
 func (wt *watcher) scan() {
 	// log.Debug("wt: Check for %s", wt.Path())
 	currentCheck := wt.currentChecksum()

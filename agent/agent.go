@@ -27,7 +27,13 @@ func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
 }
 
 // instantiate structs, fs hook
-func (agent *Agent) StartWatching() {
+func (agent *Agent) StartPolling() {
+	for _, watcher := range agent.files {
+		watcher.Start()
+	}
+}
+
+func (agent *Agent) BuildAndSyncWatchers() {
 	for _, f := range agent.conf.Files {
 		var watcher Watcher
 
@@ -36,13 +42,13 @@ func (agent *Agent) StartWatching() {
 		} else {
 			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
 		}
-
 		agent.files = append(agent.files, watcher)
 	}
+
 }
 
 func (agent *Agent) OnChange(file Watcher) {
-	log.Info("File change: %s", file.Path())
+	log.Infof("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
 	contents, err := file.Contents()
@@ -51,7 +57,7 @@ func (agent *Agent) OnChange(file Watcher) {
 		// we couldn't read it; something weird is happening
 		// let's just wait until this callback gets issued
 		// again when the file reappears.
-		log.Info("File contents error: %s", err)
+		log.Infof("File contents error: %s", err)
 		return
 	}
 	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
@@ -59,7 +65,7 @@ func (agent *Agent) OnChange(file Watcher) {
 		// TODO: some kind of queuing mechanism to keep trying
 		// beyond the exponential backoff in the client.
 		// What if the connection fails for whatever reason?
-		log.Info("Sendfile error: %s", err)
+		log.Infof("Sendfile error: %s", err)
 	}
 }
 
@@ -90,6 +96,31 @@ func (agent *Agent) RegisterServer() error {
 	agent.conf.ServerConf.UUID = uuid
 	agent.conf.Save()
 	return nil
+}
+
+func (agent *Agent) PerformUpgrade() {
+	var cmds UpgradeSequence
+	package_list, err := agent.client.FetchUpgradeablePackages()
+
+	if err != nil {
+		log.Fatalf("Can't fetch upgrade info: %s", err)
+	}
+
+	if len(package_list) == 0 {
+		log.Info("No vulnerable packages reported. Carry on!")
+		return
+	}
+
+	if agent.server.IsUbuntu() {
+		cmds = buildDebianUpgrade(package_list)
+	} else {
+		log.Fatal("Sorry, we don't support your operating system at the moment. Is this a mistake? Run `appcanary detect-os` and tell us about it at support@appcanary.com")
+	}
+
+	err = executeUpgradeSequence(cmds)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // This has to be called before exiting

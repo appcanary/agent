@@ -11,58 +11,92 @@ import (
 )
 
 var CanaryVersion string
-var flagset *flag.FlagSet
+var defaultFlags *flag.FlagSet
+
+type CommandArgs struct {
+	PerformUpgrade bool
+	DisplayVersion bool
+	DetectOS       bool
+}
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: appcanary [OPTION]\n")
-	flagset.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "Usage: appcanary [COMMAND] [OPTIONS]\nOptions:\n")
+
+	defaultFlags.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "\nCommands:\n"+
+		"\t[none]\t\tStart the agent\n"+
+		"\tupgrade\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
+		"\tdetect-os\tDetect current operating system\n")
+}
+
+func setFlagset(env *agent.Env, cmdargs *CommandArgs) {
+	// httptest, used in client.test, sets a usage flag
+	// that leaks when you use the 'global' FlagSet.
+	defaultFlags = flag.NewFlagSet("Default", flag.ExitOnError)
+	defaultFlags.Usage = usage
+	defaultFlags.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
+	defaultFlags.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
+
+	defaultFlags.BoolVar(&env.DryRun, "dry-run", false, "Only print, and do not execute, potentially destructive commands")
+	// -version will always override all other args
+	defaultFlags.BoolVar(&cmdargs.DisplayVersion, "version", false, "Display version information")
+
+	if !env.Prod {
+		defaultFlags.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
+	}
+
+}
+
+func parseArguments(env *agent.Env, cmdargs *CommandArgs) {
+	setFlagset(env, cmdargs)
+
+	if len(os.Args) < 2 {
+		return
+	}
+
+	// TODO: replace this boolean switch statement
+	// with some kind of enum dispatch
+	switch os.Args[1] {
+	case "upgrade":
+		cmdargs.PerformUpgrade = true
+		defaultFlags.Parse(os.Args[2:])
+	case "detect-os":
+		// ignore all flags, since we'll just quit
+		cmdargs.DetectOS = true
+	default:
+		defaultFlags.Parse(os.Args[1:])
+	}
 }
 
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
 
-	var flaggedVersion, flaggedDetectOS *bool
-	// httptest, used in client.test, sets a usage flag
-	// that leaks when you use the 'global' FlagSet.
-	flagset = flag.NewFlagSet("Default", flag.ExitOnError)
-	flagset.Usage = usage
+	// parse the args
+	cmdargs := &CommandArgs{}
+	parseArguments(env, cmdargs)
 
-	flagset.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
-	flagset.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
-	flagset.StringVar(&env.LogFile, "log", env.LogFile, "Set the log file (will not override if set in config file)")
-
-	if !env.Prod {
-		flagset.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
-		flaggedDetectOS = flagset.Bool("detect-os", false, "Guess my operating system")
+	if cmdargs.DisplayVersion {
+		fmt.Println(CanaryVersion)
+		os.Exit(0)
 	}
 
-	flaggedVersion = flagset.Bool("version", false, "Display version information")
-	flagset.Parse(os.Args[1:])
-
-	if flaggedVersion != nil {
-		if *flaggedVersion {
-			fmt.Println(CanaryVersion)
-			os.Exit(0)
+	if cmdargs.DetectOS {
+		guess, err := detect.DetectOS()
+		if err == nil {
+			fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
+		} else {
+			fmt.Printf(err.Error())
 		}
+		os.Exit(0)
 	}
 
-	if flaggedDetectOS != nil {
-		if *flaggedDetectOS {
-			guess, err := detect.DetectOS()
-			if err == nil {
-				fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
-			} else {
-				fmt.Println(err.Error())
-			}
-			os.Exit(0)
-		}
-	}
-
-	//start the logger
-	fmt.Println(env.Logo)
+	// let's get started eh
+	// start the logger
 	agent.InitLogging()
 	log := agent.FetchLog()
+
+	fmt.Println(env.Logo)
 
 	done := make(chan os.Signal, 1)
 
@@ -84,15 +118,24 @@ func main() {
 			// we don't need to wait here because of the backoff
 			// exponential decay library; by the time we hit this
 			// point we've been trying for about, what, an hour?
-			log.Info("Register server error: %s", err)
+			log.Infof("Register server error: %s", err)
 			err = a.RegisterServer()
 		}
 
 	}
 
+	// Now that we're registered,
+	// let's init our watchers. We auto sync on watcher init.
+	a.BuildAndSyncWatchers()
+
+	if cmdargs.PerformUpgrade {
+		a.PerformUpgrade()
+		os.Exit(0)
+	}
+
 	// Add hooks to files, and push them over
 	// whenever they change
-	a.StartWatching()
+	a.StartPolling()
 
 	// send a heartbeat every ~60min, forever
 	go func() {
@@ -101,7 +144,7 @@ func main() {
 		for {
 			err := a.Heartbeat()
 			if err != nil {
-				log.Info("<3 error: %s", err)
+				log.Infof("<3 error: %s", err)
 			}
 			<-tick
 		}

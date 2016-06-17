@@ -26,6 +26,7 @@ type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
 	CreateServer(*Server) (string, error)
+	FetchUpgradeablePackages() (map[string]string, error)
 }
 
 type CanaryClient struct {
@@ -116,12 +117,33 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 	return respServer.UUID, nil
 }
 
+func (client *CanaryClient) FetchUpgradeablePackages() (map[string]string, error) {
+	respBody, err := client.get(ApiServerPath(client.server.UUID))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var package_list map[string]string
+	err = json.Unmarshal(respBody, &package_list)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return package_list, nil
+}
+
 func (client *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
 	return client.send("POST", rPath, body)
 }
 
 func (client *CanaryClient) put(rPath string, body []byte) ([]byte, error) {
 	return client.send("PUT", rPath, body)
+}
+
+func (client *CanaryClient) get(rPath string) ([]byte, error) {
+	return client.send("GET", rPath, []byte{})
 }
 
 func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, error) {
@@ -142,10 +164,10 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 	// if the request fails for whatever reason, keep
 	// trying to reach the server
 	err = backoff.Retry(func() error {
-		log.Debug("Request: %s %s", method, uri)
+		log.Debugf("Request: %s %s", method, uri)
 		res, err = client.Do(req)
 		if err != nil {
-			log.Error("Error in request %s", err)
+			log.Errorf("Error in request %s", err)
 		}
 
 		return err
@@ -160,7 +182,12 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, errors.New(fmt.Sprintf("API Error: %d %s", res.StatusCode, uri))
+		errorstr := fmt.Sprintf("API Error: %d %s", res.StatusCode, uri)
+		if res.StatusCode == 401 {
+			log.Fatal("Please double check your settings: " + errorstr)
+		} else {
+			return nil, errors.New(errorstr)
+		}
 	}
 
 	respBody, err := ioutil.ReadAll(res.Body)

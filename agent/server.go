@@ -75,3 +75,7 @@ func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 func (server *Server) IsNew() bool {
 	return server.UUID == ""
 }
+
+func (server *Server) IsUbuntu() bool {
+	return server.Distro == "ubuntu"
+}

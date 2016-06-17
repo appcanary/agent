@@ -32,7 +32,7 @@ task :build_all => [:setup, :build]
 
 desc "Build the program into ./bin/appcanary"
 task :build do
-  @ldflags = %{"-X main.CanaryVersion #{@release_version || "#{@release_version}-unreleased"}"}
+  @ldflags = %{"-X main.CanaryVersion=#{@release_version || "unreleased"}"}
   # actually, do we need to run this every time? let's not for now.
   # shell "go-bindata -pkg detect -o agent/detect/bindata.go agent/resources/"
   shell "go build -ldflags #{@ldflags} -o ./bin/appcanary"
