@@ -72,7 +72,7 @@ class Dockerer
     :test_script, :dockerfile
 
   def initialize(distro_name, release, test_path, package)
-    self.docker_name = "#{distro_name}:#{release}"
+    self.docker_name = "appcanary/#{distro_name}_#{release}"
     self.distro_path =  File.join(test_path, "#{distro_name}/#{release}")
     self.ac_docker_name = "appcanary:#{distro_name}_#{release}"
     self.package = package
