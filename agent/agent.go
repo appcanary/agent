@@ -1,12 +1,15 @@
 package agent
 
+import "os"
+
 var CanaryVersion string
 
 type Agent struct {
-	conf   *Conf
-	client Client
-	server *Server
-	files  Watchers
+	conf        *Conf
+	client      Client
+	server      *Server
+	files       Watchers
+	DoneChannel chan os.Signal
 }
 
 func NewAgent(version string, conf *Conf, clients ...Client) *Agent {

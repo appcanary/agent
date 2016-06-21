@@ -13,11 +13,14 @@ import (
 var CanaryVersion string
 var defaultFlags *flag.FlagSet
 
-type CommandArgs struct {
-	PerformUpgrade bool
-	DisplayVersion bool
-	DetectOS       bool
-}
+type CommandToPerform int
+
+const (
+	PerformAgentLoop CommandToPerform = iota
+	PerformUpgrade
+	PerformDisplayVersion
+	PerformDetectOS
+)
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "Usage: appcanary [COMMAND] [OPTIONS]\nOptions:\n")
@@ -29,7 +32,8 @@ func usage() {
 		"\tdetect-os\tDetect current operating system\n")
 }
 
-func setFlagset(env *agent.Env, cmdargs *CommandArgs) {
+func parseFlags(argRange int, env *agent.Env, performCmd *CommandToPerform) {
+	var displayVersionFlagged bool
 	// httptest, used in client.test, sets a usage flag
 	// that leaks when you use the 'global' FlagSet.
 	defaultFlags = flag.NewFlagSet("Default", flag.ExitOnError)
@@ -39,66 +43,68 @@ func setFlagset(env *agent.Env, cmdargs *CommandArgs) {
 
 	defaultFlags.BoolVar(&env.DryRun, "dry-run", false, "Only print, and do not execute, potentially destructive commands")
 	// -version will always override all other args
-	defaultFlags.BoolVar(&cmdargs.DisplayVersion, "version", false, "Display version information")
+	defaultFlags.BoolVar(&displayVersionFlagged, "version", false, "Display version information")
 
 	if !env.Prod {
 		defaultFlags.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
 	}
 
+	defaultFlags.Parse(os.Args[argRange:])
+
+	if displayVersionFlagged {
+		*performCmd = PerformDisplayVersion
+	}
 }
 
-func parseArguments(env *agent.Env, cmdargs *CommandArgs) {
-	setFlagset(env, cmdargs)
+func parseArguments(env *agent.Env) CommandToPerform {
+	var performCmd CommandToPerform
 
 	if len(os.Args) < 2 {
-		return
+		return PerformAgentLoop
 	}
 
+	argRange := 1
 	// TODO: replace this boolean switch statement
 	// with some kind of enum dispatch
 	switch os.Args[1] {
 	case "upgrade":
-		cmdargs.PerformUpgrade = true
-		defaultFlags.Parse(os.Args[2:])
+		argRange = 2
+		// defaultFlags.Parse(os.Args[2:])
+		performCmd = PerformUpgrade
 	case "detect-os":
-		// ignore all flags, since we'll just quit
-		cmdargs.DetectOS = true
+		argRange = 2
+		performCmd = PerformDetectOS
 	default:
-		defaultFlags.Parse(os.Args[1:])
+		// defaultFlags.Parse(os.Args[1:])
+		performCmd = PerformAgentLoop
 	}
+
+	parseFlags(argRange, env, &performCmd)
+	return performCmd
 }
 
-func main() {
-	agent.InitEnv(os.Getenv("CANARY_ENV"))
-	env := agent.FetchEnv()
+func runDisplayVersion() {
+	fmt.Println(CanaryVersion)
+	os.Exit(0)
+}
 
-	// parse the args
-	cmdargs := &CommandArgs{}
-	parseArguments(env, cmdargs)
-
-	if cmdargs.DisplayVersion {
-		fmt.Println(CanaryVersion)
-		os.Exit(0)
+func runDetectOS() {
+	guess, err := detect.DetectOS()
+	if err == nil {
+		fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
+	} else {
+		fmt.Printf("%v\n", err.Error())
 	}
+	os.Exit(0)
+}
 
-	if cmdargs.DetectOS {
-		guess, err := detect.DetectOS()
-		if err == nil {
-			fmt.Printf("%s/%s\n", guess.Distro, guess.Release)
-		} else {
-			fmt.Printf(err.Error())
-		}
-		os.Exit(0)
-	}
-
+func initialize(env *agent.Env) *agent.Agent {
 	// let's get started eh
 	// start the logger
 	agent.InitLogging()
 	log := agent.FetchLog()
 
 	fmt.Println(env.Logo)
-
-	done := make(chan os.Signal, 1)
 
 	// slurp env, instantiate agent
 	conf := agent.NewConfFromEnv()
@@ -108,6 +114,7 @@ func main() {
 	}
 
 	a := agent.NewAgent(CanaryVersion, conf)
+	a.DoneChannel = make(chan os.Signal, 1)
 
 	// we prob can't reliably fingerprint servers.
 	// so instead, we assign a uuid by registering
@@ -127,12 +134,16 @@ func main() {
 	// Now that we're registered,
 	// let's init our watchers. We auto sync on watcher init.
 	a.BuildAndSyncWatchers()
+	return a
+}
 
-	if cmdargs.PerformUpgrade {
-		a.PerformUpgrade()
-		os.Exit(0)
-	}
+func runUpgrade(a *agent.Agent) {
+	a.PerformUpgrade()
+	os.Exit(0)
+}
 
+func runAgentLoop(env *agent.Env, a *agent.Agent) {
+	log := agent.FetchLog()
 	// Add hooks to files, and push them over
 	// whenever they change
 	a.StartPolling()
@@ -161,12 +172,38 @@ func main() {
 
 	defer a.CloseWatches()
 
+	// wait for the right signal?
+	// signal.Notify(done, os.Interrupt, os.Kill)
+
+	// block forever
+	<-a.DoneChannel
+}
+
+func main() {
+	agent.InitEnv(os.Getenv("CANARY_ENV"))
+	env := agent.FetchEnv()
+
+	// parse the args
+	switch parseArguments(env) {
+
+	case PerformDisplayVersion:
+		runDisplayVersion()
+
+	case PerformDetectOS:
+		runDetectOS()
+
+	case PerformUpgrade:
+		a := initialize(env)
+		runUpgrade(a)
+
+	case PerformAgentLoop:
+		a := initialize(env)
+		runAgentLoop(env, a)
+	}
+
 	// Close the logfile when we exit
 	if env.LogFileHandle != nil {
 		defer env.LogFileHandle.Close()
 	}
 
-	// wait for the right signal
-	// signal.Notify(done, os.Interrupt, os.Kill)
-	<-done
 }
