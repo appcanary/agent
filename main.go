@@ -32,7 +32,7 @@ func usage() {
 		"\tdetect-os\tDetect current operating system\n")
 }
 
-func parseFlags(argRange int, env *agent.Env, performCmd *CommandToPerform) {
+func parseFlags(argRange int, env *agent.Env) {
 	var displayVersionFlagged bool
 	// httptest, used in client.test, sets a usage flag
 	// that leaks when you use the 'global' FlagSet.
@@ -42,7 +42,7 @@ func parseFlags(argRange int, env *agent.Env, performCmd *CommandToPerform) {
 	defaultFlags.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
 
 	defaultFlags.BoolVar(&env.DryRun, "dry-run", false, "Only print, and do not execute, potentially destructive commands")
-	// -version will always override all other args
+	// -version is handled in parseArguments, but is set here for the usage print out
 	defaultFlags.BoolVar(&displayVersionFlagged, "version", false, "Display version information")
 
 	if !env.Prod {
@@ -50,10 +50,6 @@ func parseFlags(argRange int, env *agent.Env, performCmd *CommandToPerform) {
 	}
 
 	defaultFlags.Parse(os.Args[argRange:])
-
-	if displayVersionFlagged {
-		*performCmd = PerformDisplayVersion
-	}
 }
 
 func parseArguments(env *agent.Env) CommandToPerform {
@@ -63,23 +59,25 @@ func parseArguments(env *agent.Env) CommandToPerform {
 		return PerformAgentLoop
 	}
 
-	argRange := 1
-	// TODO: replace this boolean switch statement
-	// with some kind of enum dispatch
+	// if first arg is a command,
+	// flags will follow in os.Args[2:]
+	// else in os.Args[1:]
+	argRange := 2
 	switch os.Args[1] {
 	case "upgrade":
-		argRange = 2
-		// defaultFlags.Parse(os.Args[2:])
 		performCmd = PerformUpgrade
 	case "detect-os":
-		argRange = 2
 		performCmd = PerformDetectOS
+	case "-version":
+		performCmd = PerformDisplayVersion
+	case "--version":
+		performCmd = PerformDisplayVersion
 	default:
-		// defaultFlags.Parse(os.Args[1:])
+		argRange = 1
 		performCmd = PerformAgentLoop
 	}
 
-	parseFlags(argRange, env, &performCmd)
+	parseFlags(argRange, env)
 	return performCmd
 }
 
@@ -138,6 +136,8 @@ func initialize(env *agent.Env) *agent.Agent {
 }
 
 func runUpgrade(a *agent.Agent) {
+	log := agent.FetchLog()
+	log.Info("Running upgrade...")
 	a.PerformUpgrade()
 	os.Exit(0)
 }
