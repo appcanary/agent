@@ -45,6 +45,8 @@ func parseFlags(argRange int, env *agent.Env, performCmd *CommandToPerform) {
 	// -version will always override all other args
 	defaultFlags.BoolVar(&displayVersionFlagged, "version", false, "Display version information")
 
+	defaultFlags.BoolVar(&env.FailOnConflict, "fail-on-conflict", false, "Should upgrade encounter a configuration conflict, abort")
+
 	if !env.Prod {
 		defaultFlags.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
 	}

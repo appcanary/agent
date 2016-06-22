@@ -23,8 +23,11 @@ func buildDebianUpgrade(package_list map[string]string) UpgradeSequence {
 	// if the existing conf has not changed from default, or
 	// leave old conf in place
 	installCmd := "apt-get"
-	installArg := []string{"install", "--only-upgrade", "--no-install-recommends", "-y", "-q",
-		"-o Dpkg::Options::=\"--force-confdef\"", "-o Dpkg::Options::=\"--force-confold\""}
+	installArg := []string{"install", "--only-upgrade", "--no-install-recommends", "-y", "-q"}
+
+	if !env.FailOnConflict {
+		installArg = append(installArg, "-o Dpkg::Options::=\"--force-confdef\"", "-o Dpkg::Options::=\"--force-confold\"")
+	}
 
 	for name, _ := range package_list {
 		// for now let's just stick to blanket updates
