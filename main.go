@@ -45,6 +45,8 @@ func parseFlags(argRange int, env *agent.Env) {
 	// -version is handled in parseArguments, but is set here for the usage print out
 	defaultFlags.BoolVar(&displayVersionFlagged, "version", false, "Display version information")
 
+	defaultFlags.BoolVar(&env.FailOnConflict, "fail-on-conflict", false, "Should upgrade encounter a conflict with configuration files, abort (default: old configuration files are kept, or updated if not modified)")
+
 	if !env.Prod {
 		defaultFlags.StringVar(&env.BaseUrl, "url", env.BaseUrl, "Set the endpoint")
 	}

@@ -14,6 +14,7 @@ type Env struct {
 	Env               string
 	Prod              bool
 	DryRun            bool
+	FailOnConflict    bool
 	Logo              string
 	BaseUrl           string
 	ConfFile          string
@@ -28,6 +29,7 @@ type Env struct {
 var env = &Env{
 	Prod:              true,
 	DryRun:            false,
+	FailOnConflict:    false,
 	Logo:              PROD_LOGO,
 	BaseUrl:           PROD_URL,
 	ConfFile:          DEFAULT_CONF_FILE,
