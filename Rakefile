@@ -68,32 +68,41 @@ task :cross_compile => :release_prep do
   puts "#################################\n\n\n"
 
   @ldflags = %{-X main.CanaryVersion '#{@release_version}'}
-  shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -pv="#{@date}"  -d="dist/" xc}
+  shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -pv="#{@release_version}"  -d="dist/" xc}
 end
 
 
 desc "Generate a package archive for every operating system we support"
 task :package => :cross_compile do
-  load 'package/recipe.rb'
+  load 'package/packager.rb'
   puts "\n\n\n#################################"
   puts "Building packages."
   puts "#################################\n\n\n"
 
   [UbuntuRecipe, CentosRecipe, Centos7Recipe, DebianRecipe, MintRecipe].each do |rcp|
-    @built_packages << rcp.build!(CURRENT_VERSION, @date)
+    puts "#######"
+    puts "#{rcp.distro}"
+    puts "#######\n\n"
+
+    pkger = rcp.new(@release_version).build_packager
+    @built_packages = @built_packages + pkger.build_packages
   end
 end
 
 desc "Cross compile, package and deploy packages to package cloud"
 task :deploy => "integration:test" do
 
-  @built_packages.each do |rcp|
-    if production?
-      rcp.publish!(PC_USER, PC_REPO)
-    else
-      rcp.publish!(PC_USER, PC_STAGING_REPO)
-    end
+  publisher = nil
+  if production?
+    publisher = PackagePublisher.new(PC_USER, PC_REPO)
+  else
+    publisher = PackagePublisher.new(PC_USER, PC_STAGING_REPO)
   end
+
+  @built_packages.each do |pkg|
+    publisher.publish!(pkg)
+  end
+
   sha = shell %{git rev-parse --short HEAD}
   user = `whoami`.strip
   commit_message = "#{user} deployed #{sha}"
