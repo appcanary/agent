@@ -36,12 +36,12 @@ class DTestRunner
   end
 
   def run!
-    @built_packages.each do |recipe|
-      next if recipe.skip_docker
+    @built_packages.each do |pkg|
+      next if pkg.skip_docker
 
       # my personal computer is amd64, test only that version
-      recipe.releases.select { |name, file| file =~ /amd64/ }.each do |release, file|
-        docker = Dockerer.new(recipe.distro_name, release, @integration_test_path, file)
+      if pkg.path =~ /amd64/ 
+        docker = Dockerer.new(pkg.distro, pkg.release, @integration_test_path, pkg.path)
         @ct_runs +=1
 
         if docker.invoke!
