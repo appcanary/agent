@@ -90,7 +90,7 @@ task :package => :cross_compile do
 end
 
 desc "Cross compile, package and deploy packages to package cloud"
-task :deploy => "integration:test" do
+task :deploy => :package do # "integration:test" do
 
   publisher = nil
   if production?
