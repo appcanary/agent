@@ -54,3 +54,10 @@ class MintRecipe < PrePackager
   self.package_type = "deb"
   self.skip_docker = true
 end
+
+class FedoraRecipe < PrePackager
+  self.distro =  "fedora"
+  self.releases = ["24", "23"]
+  self.package_type = "rpm"
+  self.skip_docker = true
+end
