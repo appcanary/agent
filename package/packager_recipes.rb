@@ -2,7 +2,7 @@ class UbuntuRecipe < PrePackager
   self.distro = "ubuntu"
   self.releases = "trusty", "precise", "vivid", "utopic", "wily", "xenial"
   self.package_type = "deb"
-  CONFIG_FILES = {"config/etc/appcanary/ubuntu.agent.conf" => "/etc/appcanary/agent.conf",
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
                   "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
 end
 
@@ -10,8 +10,10 @@ end
 # don't use for now.
 class AmazonRecipe < PrePackager
   self.distro = "amazon"
-  self.releases = ["2015.03"]
+  self.releases = ["2015.03", "2015.09", "2016.03"]
   self.package_type ="rpm"
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
+                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
 end
 
 class CentosRecipe < PrePackager
@@ -42,6 +44,8 @@ class DebianRecipe < PrePackager
   self.distro =  "debian"
   self.releases = ["jessie", "wheezy", "squeeze"]
   self.package_type = "deb"
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
+                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
 end
 
 class MintRecipe < PrePackager
