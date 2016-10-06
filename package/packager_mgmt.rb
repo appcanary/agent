@@ -1,4 +1,4 @@
-class PrePackager
+class Packager
   CONFIG_FILES = {"config/etc/appcanary/agent.conf" => "/etc/appcanary/agent.conf",  
                   "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
@@ -18,27 +18,13 @@ class PrePackager
     self.skip_docker = self.class.skip_docker
   end
 
-  def build_packager
-    pre_packages = releases.map do |rel|
+  def build_packages
+    releases.map do |rel|
       ARCHS.map do |arch|
-        PrePackage.new(distro, rel, package_type, arch, version, CONFIG_FILES, DIRECTORIES, skip_docker)
+        pre_pkg = PrePackage.new(distro, rel, package_type, arch, version, self.class::CONFIG_FILES, DIRECTORIES, skip_docker)
+        PackageBuilder.new(pre_pkg).build!
       end
     end.flatten
-
-    Packager.new(pre_packages)
-  end
-end
-
-class Packager
-  attr_accessor :pre_packages
-  def initialize(packages)
-    self.pre_packages = packages
-  end
-
-  def build_packages
-    self.pre_packages.map do |pkg|
-      PackageBuilder.new(pkg).build!
-    end
   end
 end
 

@@ -84,8 +84,7 @@ task :package => :cross_compile do
     puts "#{rcp.distro}"
     puts "#######\n\n"
 
-    pkger = rcp.new(@release_version).build_packager
-    @built_packages = @built_packages + pkger.build_packages
+    @built_packages = @built_packages + rcp.new(@release_version).build_packages
   end
 end
 

@@ -1,4 +1,4 @@
-class UbuntuRecipe < PrePackager
+class UbuntuRecipe < Packager
   self.distro = "ubuntu"
   self.releases = "trusty", "precise", "vivid", "utopic", "wily", "xenial"
   self.package_type = "deb"
@@ -8,7 +8,7 @@ end
 
 # amazon/2015.03 == el/6 so perhaps
 # don't use for now.
-class AmazonRecipe < PrePackager
+class AmazonRecipe < Packager
   self.distro = "amazon"
   self.releases = ["2015.03", "2015.09", "2016.03"]
   self.package_type ="rpm"
@@ -16,7 +16,7 @@ class AmazonRecipe < PrePackager
                   "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
 end
 
-class CentosRecipe < PrePackager
+class CentosRecipe < Packager
   self.distro = "centos"
   self.releases =  ["5", "6"]
   self.package_type = "rpm"
@@ -24,7 +24,7 @@ end
 
 # right now we only support centos 7, and 
 # i want to ship a conf file w/default turned on
-class Centos7Recipe < PrePackager
+class Centos7Recipe < Packager
   self.distro =  "centos"
   self.releases = ["7"]
   self.package_type = "rpm"
@@ -34,13 +34,13 @@ class Centos7Recipe < PrePackager
 end
 
 
-class RedhatRecipe < PrePackager
+class RedhatRecipe < Packager
   self.distro = "redhat"
   self.releases =  ["6", "7"]
   self.package_type = "rpm"
 end
 
-class DebianRecipe < PrePackager
+class DebianRecipe < Packager
   self.distro =  "debian"
   self.releases = ["jessie", "wheezy", "squeeze"]
   self.package_type = "deb"
@@ -48,14 +48,14 @@ class DebianRecipe < PrePackager
                   "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
 end
 
-class MintRecipe < PrePackager
+class MintRecipe < Packager
   self.distro =  "linuxmint"
   self.releases = ["rosa", "rafaela", "rebecca", "qiana"]
   self.package_type = "deb"
   self.skip_docker = true
 end
 
-class FedoraRecipe < PrePackager
+class FedoraRecipe < Packager
   self.distro =  "fedora"
   self.releases = ["24", "23"]
   self.package_type = "rpm"
