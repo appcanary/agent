@@ -113,6 +113,13 @@ func initialize(env *agent.Env) *agent.Agent {
 		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")
 	}
 
+	// If the config sets a startup delay, we wait to boot up here
+	if conf.StartupDelay != 0 {
+		delay := time.Duration(conf.StartupDelay) * time.Second
+		tick := time.Tick(delay)
+		<-tick
+	}
+
 	a := agent.NewAgent(CanaryVersion, conf)
 	a.DoneChannel = make(chan os.Signal, 1)
 
@@ -133,12 +140,6 @@ func initialize(env *agent.Env) *agent.Agent {
 
 	// Now that we're registered,
 	// let's init our watchers. We auto sync on watcher init.
-	// If the config sets a startup delay, we wait to boot up here
-	if conf.StartupDelay != 0 {
-		delay := time.Duration(conf.StartupDelay) * time.Second
-		tick := time.Tick(delay)
-		<-tick
-	}
 	a.BuildAndSyncWatchers()
 	return a
 }
