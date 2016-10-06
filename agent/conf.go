@@ -12,8 +12,9 @@ type Conf struct {
 	LogPath    string `toml:"log_path"`
 	ServerName string `toml:"server_name"`
 	detect.LinuxOSInfo
-	Files      []*FileConf `toml:"files"`
-	ServerConf *ServerConf `toml:"-"`
+	Files        []*FileConf `toml:"files"`
+	StartupDelay int         `toml:"startup_delay"`
+	ServerConf   *ServerConf `toml:"-"`
 }
 
 type FileConf struct {

@@ -133,6 +133,12 @@ func initialize(env *agent.Env) *agent.Agent {
 
 	// Now that we're registered,
 	// let's init our watchers. We auto sync on watcher init.
+	// If the config sets a startup delay, we wait to boot up here
+	if conf.StartupDelay != 0 {
+		delay := time.Duration(conf.StartupDelay) * time.Second
+		tick := time.Tick(delay)
+		<-tick
+	}
 	a.BuildAndSyncWatchers()
 	return a
 }
