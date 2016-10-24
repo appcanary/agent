@@ -1,6 +1,6 @@
 class UbuntuRecipe < Packager
   self.distro = "ubuntu"
-  self.releases = "trusty", "precise", "vivid", "utopic", "wily", "xenial"
+  self.releases = "trusty", "precise", "vivid", "utopic", "wily", "xenial", "yakkety"
   self.package_type = "deb"
   CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
                   "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
