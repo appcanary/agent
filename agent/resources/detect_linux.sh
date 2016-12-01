@@ -13,15 +13,22 @@ print_version() {
 
 detect_linux() {
 
+  # These two contain env variables, but they may not have the ones we need, so
+  # we load them in first and then check if we got the variables we wanted
   if [[ -e /etc/os-release ]]; then
     source /etc/os-release
+  fi
+  if [[ -e /etc/lsb-release ]]; then
+    source /etc/lsb-release
+  fi
+
+  if [[ (-n "${ID}") && (-n "${VERSION_ID}")]]; then
     distro=${ID}
     release=${VERSION_ID}
 
     print_version ${distro} ${release}
 
-  elif [[ -e /etc/lsb-release ]]; then
-    source /etc/lsb-release
+  elif [[ (-n "${DISTRIB_ID}") && (-n "${DISTRIB_RELEASE}")]]; then
     distro=${DISTRIB_ID}
     release=${DISTRIB_RELEASE}
 
@@ -32,6 +39,7 @@ detect_linux() {
     release=$(lsb_release -r | cut -f2)
 
     print_version ${distro} ${release}
+
 
   elif [[ -e /etc/debian_version ]]; then
     # some Debians have jessie/sid in their /etc/debian_version
