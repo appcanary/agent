@@ -29,6 +29,12 @@ If you're reading this because you want to audit the code, the magic starts in [
 
   `go get -u github.com/jteeuwen/go-bindata/...`
 
+  We don't run it by default, cos it's annoying, but whenever you touch a binned file don't forget to run:
+```bash
+go-bindata -pkg detect -o agent/detect/bindata.go agent/resources/
+```
+  and check in the result.
+
 5. Now we set bundler and install our ruby dependencies. We use ruby to script all of our build and packaging tasks. Go ahead and type: 
 
   ```bash
