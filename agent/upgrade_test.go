@@ -9,15 +9,30 @@ import (
 func TestBuildDebianUpgrade(t *testing.T) {
 	assert := assert.New(t)
 
-	package_list := map[string]string{"foobar": "version"}
-	commands := buildDebianUpgrade(package_list)
+	packageList := map[string]string{"foobar": "version"}
+	commands := buildDebianUpgrade(packageList)
 
 	assert.Equal(2, len(commands))
 	assert.Equal("apt-get", commands[0].Name)
 	assert.Equal("apt-get", commands[1].Name)
 
-	upgrade_args := commands[1].Args
-	last_arg := upgrade_args[len(upgrade_args)-1]
+	upgradeArgs := commands[1].Args
+	lastArg := upgradeArgs[len(upgradeArgs)-1]
 
-	assert.Equal("foobar", last_arg)
+	assert.Equal("foobar", lastArg)
+}
+
+func TestBuildCentOSUpgrade(t *testing.T) {
+	assert := assert.New(t)
+
+	packageList := map[string]string{"foobar": "version"}
+	commands := buildCentOSUpgrade(packageList)
+
+	assert.Equal(1, len(commands))
+	assert.Equal("yum", commands[0].Name)
+
+	upgradeArgs := commands[0].Args
+	lastArg := upgradeArgs[len(upgradeArgs)-1]
+
+	assert.Equal("foobar-version", lastArg)
 }

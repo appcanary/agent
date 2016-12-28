@@ -103,19 +103,21 @@ func (agent *Agent) RegisterServer() error {
 
 func (agent *Agent) PerformUpgrade() {
 	var cmds UpgradeSequence
-	package_list, err := agent.client.FetchUpgradeablePackages()
+	packageList, err := agent.client.FetchUpgradeablePackages()
 
 	if err != nil {
 		log.Fatalf("Can't fetch upgrade info: %s", err)
 	}
 
-	if len(package_list) == 0 {
+	if len(packageList) == 0 {
 		log.Info("No vulnerable packages reported. Carry on!")
 		return
 	}
 
 	if agent.server.IsUbuntu() {
-		cmds = buildDebianUpgrade(package_list)
+		cmds = buildDebianUpgrade(packageList)
+	} else if agent.server.IsCentOS() {
+		cmds = buildCentOSUpgrade(packageList)
 	} else {
 		log.Fatal("Sorry, we don't support your operating system at the moment. Is this a mistake? Run `appcanary detect-os` and tell us about it at support@appcanary.com")
 	}

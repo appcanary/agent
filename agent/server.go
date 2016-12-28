@@ -79,3 +79,7 @@ func (server *Server) IsNew() bool {
 func (server *Server) IsUbuntu() bool {
 	return server.Distro == "ubuntu"
 }
+
+func (server *Server) IsCentOS() bool {
+	return server.Distro == "centos"
+}
