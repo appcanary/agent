@@ -25,7 +25,7 @@ func TestBuildDebianUpgrade(t *testing.T) {
 func TestBuildCentOSUpgrade(t *testing.T) {
 	assert := assert.New(t)
 
-	packageList := map[string]string{"foobar": "version"}
+	packageList := map[string]string{"foobar": "foobar-version-with-suffix.rpm"}
 	commands := buildCentOSUpgrade(packageList)
 
 	assert.Equal(1, len(commands))
@@ -34,5 +34,5 @@ func TestBuildCentOSUpgrade(t *testing.T) {
 	upgradeArgs := commands[0].Args
 	lastArg := upgradeArgs[len(upgradeArgs)-1]
 
-	assert.Equal("foobar-version", lastArg)
+	assert.Equal("foobar-version-with-suffix", lastArg)
 }
