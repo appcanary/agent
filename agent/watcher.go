@@ -40,6 +40,7 @@ type watcher struct {
 
 type Watchers []Watcher
 
+// File watchers track changes in the contents of a file
 func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 	var kind string
 	filename := filepath.Base(path)
@@ -52,21 +53,36 @@ func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 	case "status":
 		kind = "ubuntu"
 	}
-	file := &watcher{path: path, OnChange: callback, kind: kind, UpdatedAt: time.Now(), pollSleep: env.PollSleep}
-	file.contents = file.FileContents
+
+	watcher := &watcher{
+		path:      path,
+		OnChange:  callback,
+		kind:      kind,
+		UpdatedAt: time.Now(),
+		pollSleep: env.PollSleep,
+	}
+	watcher.contents = watcher.FileContents
 
 	// Do a scan off the bat so we get a checksum, and PUT the file
-	file.scan()
-	return file
+	watcher.scan()
+	return watcher
 }
 
-func NewProcessWatcher(process string, callback ChangeHandler) Watcher {
-
+// Process watchers track changes in the output of a command
+func NewCommandOutputWatcher(process string, callback ChangeHandler) Watcher {
 	splat := strings.Split(process, " ")
 	name := splat[0]
 	args := splat[1:]
 
-	watcher := &watcher{path: process, OnChange: callback, kind: "centos", UpdatedAt: time.Now(), pollSleep: env.PollSleep, CmdName: name, CmdArgs: args}
+	watcher := &watcher{
+		path:      process,
+		OnChange:  callback,
+		kind:      "centos",
+		UpdatedAt: time.Now(),
+		pollSleep: env.PollSleep,
+		CmdName:   name,
+		CmdArgs:   args,
+	}
 	watcher.contents = watcher.ProcessContents
 
 	watcher.scan()
@@ -126,8 +142,8 @@ func (wt *watcher) SetBeingWatched(bw bool) {
 	wt.Unlock()
 }
 
-// since on init the checksum never match,
-// we always trigger an OnChange when we boot up
+// since on init the checksum never match, we always trigger an OnChange when we
+// boot up
 func (wt *watcher) scan() {
 	// log.Debug("wt: Check for %s", wt.Path())
 	currentCheck := wt.currentChecksum()
@@ -149,7 +165,6 @@ func (wt *watcher) scan() {
 }
 
 func (wt *watcher) currentChecksum() uint32 {
-
 	file, err := wt.Contents()
 	if err != nil {
 		return 0

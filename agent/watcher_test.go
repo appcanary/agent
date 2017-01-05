@@ -76,7 +76,7 @@ func TestWatchProcess(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewProcessWatcher("date +%S", testcb)
+	wfile := NewCommandOutputWatcher("date +%S", testcb)
 
 	wfile.Start()
 

@@ -43,7 +43,7 @@ func (agent *Agent) BuildAndSyncWatchers() {
 		if f.Process == "" {
 			watcher = NewFileWatcher(f.Path, agent.OnChange)
 		} else {
-			watcher = NewProcessWatcher(f.Process, agent.OnChange)
+			watcher = NewCommandOutputWatcher(f.Process, agent.OnChange)
 		}
 		agent.files = append(agent.files, watcher)
 	}
@@ -55,19 +55,18 @@ func (agent *Agent) OnChange(file Watcher) {
 
 	// should probably be in the actual hook code
 	contents, err := file.Contents()
-
 	if err != nil {
-		// we couldn't read it; something weird is happening
-		// let's just wait until this callback gets issued
-		// again when the file reappears.
+		// we couldn't read it; something weird is happening let's just wait
+		// until this callback gets issued again when the file reappears.
 		log.Infof("File contents error: %s", err)
 		return
 	}
+
 	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
 	if err != nil {
-		// TODO: some kind of queuing mechanism to keep trying
-		// beyond the exponential backoff in the client.
-		// What if the connection fails for whatever reason?
+		// TODO: some kind of queuing mechanism to keep trying beyond the
+		// exponential backoff in the client. What if the connection fails for
+		// whatever reason?
 		log.Infof("Sendfile error: %s", err)
 	}
 }
