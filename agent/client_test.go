@@ -13,8 +13,6 @@ import (
 
 type TestJsonRequest map[string]interface{}
 
-//[]map[string]string
-
 type ClientTestSuite struct {
 	suite.Suite
 	api_key     string
@@ -33,10 +31,10 @@ func (t *ClientTestSuite) SetupTest() {
 	t.server_uuid = "server uuid"
 
 	dpkgPath := DEV_CONF_PATH + "/dpkg/available"
-	dpkgFile := NewFileWatcherWithHook(dpkgPath, testCallbackNOP)
+	dpkgFile := NewFileWatcher(dpkgPath, testCallbackNOP)
 
 	gemfilePath := DEV_CONF_PATH + "/Gemfile.lock"
-	gemfile := NewFileWatcherWithHook(gemfilePath, testCallbackNOP)
+	gemfile := NewFileWatcher(gemfilePath, testCallbackNOP)
 
 	t.files = Watchers{dpkgFile, gemfile}
 

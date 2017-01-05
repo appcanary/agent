@@ -41,9 +41,9 @@ func (agent *Agent) BuildAndSyncWatchers() {
 		var watcher Watcher
 
 		if f.Process == "" {
-			watcher = NewFileWatcherWithHook(f.Path, agent.OnChange)
+			watcher = NewFileWatcher(f.Path, agent.OnChange)
 		} else {
-			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
+			watcher = NewProcessWatcher(f.Process, agent.OnChange)
 		}
 		agent.files = append(agent.files, watcher)
 	}

@@ -40,18 +40,6 @@ type watcher struct {
 
 type Watchers []Watcher
 
-// TODO: time.Now() needs to be called whenever it updates
-func NewFileWatcherWithHook(path string, callback ChangeHandler) Watcher {
-	w := NewFileWatcher(path, callback)
-	return w
-}
-
-func NewProcessWatcherWithHook(path string, callback ChangeHandler) Watcher {
-	w := NewProcessWatcher(path, callback)
-	return w
-}
-
-// only used for tests
 func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 	var kind string
 	filename := filepath.Base(path)
