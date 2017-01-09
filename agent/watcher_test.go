@@ -29,7 +29,7 @@ func TestWatchFile(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewFileWatcher(tf.Name(), testcb)
+	wfile := NewFileWatcher(tf.Name(), testcb).(TextWatcher)
 
 	wfile.Start()
 
@@ -76,7 +76,7 @@ func TestWatchProcess(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewCommandOutputWatcher("date +%S", testcb)
+	wfile := NewCommandOutputWatcher("date +%S", testcb).(TextWatcher)
 
 	wfile.Start()
 
@@ -123,7 +123,7 @@ func TestWatchFileFailure(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewFileWatcher(tf.Name(), testcb).(*watcher)
+	wfile := NewFileWatcher(tf.Name(), testcb).(*textWatcher)
 	wfile.Start()
 	// File is being watched
 	time.Sleep(TEST_POLL_SLEEP)
@@ -159,7 +159,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewFileWatcher(file_name, testcb).(*watcher)
+	wfile := NewFileWatcher(file_name, testcb).(*textWatcher)
 
 	// file gets read on hook add
 	wfile.Start()

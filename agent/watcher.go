@@ -17,13 +17,18 @@ type ChangeHandler func(Watcher)
 type Watcher interface {
 	Start()
 	Stop()
+}
+
+type TextWatcher interface {
+	Start()
+	Stop()
 	Contents() ([]byte, error)
 	Path() string
 	Kind() string
 	MarshalJSON() ([]byte, error)
 }
 
-type watcher struct {
+type textWatcher struct {
 	sync.Mutex
 	keepPolling  bool
 	kind         string
@@ -54,7 +59,7 @@ func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 		kind = "ubuntu"
 	}
 
-	watcher := &watcher{
+	watcher := &textWatcher{
 		path:      path,
 		OnChange:  callback,
 		kind:      kind,
@@ -74,7 +79,7 @@ func NewCommandOutputWatcher(process string, callback ChangeHandler) Watcher {
 	name := splat[0]
 	args := splat[1:]
 
-	watcher := &watcher{
+	watcher := &textWatcher{
 		path:      process,
 		OnChange:  callback,
 		kind:      "centos",
@@ -89,7 +94,7 @@ func NewCommandOutputWatcher(process string, callback ChangeHandler) Watcher {
 	return watcher
 }
 
-func (wf *watcher) MarshalJSON() ([]byte, error) {
+func (wf *textWatcher) MarshalJSON() ([]byte, error) {
 	wf.Lock()
 	defer wf.Unlock()
 	ret, err := json.Marshal(map[string]interface{}{
@@ -101,21 +106,21 @@ func (wf *watcher) MarshalJSON() ([]byte, error) {
 	return ret, err
 }
 
-func (wt *watcher) Kind() string {
+func (wt *textWatcher) Kind() string {
 	return wt.kind
 }
 
-func (wt *watcher) Path() string {
+func (wt *textWatcher) Path() string {
 	return wt.path
 }
 
-func (wt *watcher) KeepPolling() bool {
+func (wt *textWatcher) KeepPolling() bool {
 	wt.Lock()
 	defer wt.Unlock()
 	return wt.keepPolling
 }
 
-func (wt *watcher) Start() {
+func (wt *textWatcher) Start() {
 	// log.Debug("Listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
@@ -123,20 +128,20 @@ func (wt *watcher) Start() {
 	go wt.listen()
 }
 
-func (wt *watcher) Stop() {
+func (wt *textWatcher) Stop() {
 	// log.Debug("No longer listening to: %s", wt.Path())
 	wt.Lock()
 	defer wt.Unlock()
 	wt.keepPolling = false
 }
 
-func (wt *watcher) GetBeingWatched() bool {
+func (wt *textWatcher) GetBeingWatched() bool {
 	wt.Lock()
 	defer wt.Unlock()
 	return wt.BeingWatched
 }
 
-func (wt *watcher) SetBeingWatched(bw bool) {
+func (wt *textWatcher) SetBeingWatched(bw bool) {
 	wt.Lock()
 	wt.BeingWatched = bw
 	wt.Unlock()
@@ -144,7 +149,7 @@ func (wt *watcher) SetBeingWatched(bw bool) {
 
 // since on init the checksum never match, we always trigger an OnChange when we
 // boot up
-func (wt *watcher) scan() {
+func (wt *textWatcher) scan() {
 	// log.Debug("wt: Check for %s", wt.Path())
 	currentCheck := wt.currentChecksum()
 
@@ -164,7 +169,7 @@ func (wt *watcher) scan() {
 	}
 }
 
-func (wt *watcher) currentChecksum() uint32 {
+func (wt *textWatcher) currentChecksum() uint32 {
 	file, err := wt.Contents()
 	if err != nil {
 		return 0
@@ -173,23 +178,23 @@ func (wt *watcher) currentChecksum() uint32 {
 	return crc32.ChecksumIEEE(file)
 }
 
-func (wt *watcher) listen() {
+func (wt *textWatcher) listen() {
 	for wt.KeepPolling() {
 		wt.scan()
 		time.Sleep(wt.pollSleep)
 	}
 }
 
-func (wt *watcher) Contents() ([]byte, error) {
+func (wt *textWatcher) Contents() ([]byte, error) {
 	return wt.contents()
 }
 
-func (wt *watcher) FileContents() ([]byte, error) {
+func (wt *textWatcher) FileContents() ([]byte, error) {
 	// log.Debug("####### file contents for %s!", wt.Path())
 	return ioutil.ReadFile(wt.Path())
 }
 
-func (wt *watcher) ProcessContents() ([]byte, error) {
+func (wt *textWatcher) ProcessContents() ([]byte, error) {
 	// log.Debug("####### process contents!")
 	cmd := exec.Command(wt.CmdName, wt.CmdArgs...)
 	out, err := cmd.Output()

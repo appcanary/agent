@@ -107,7 +107,7 @@ func (t *ClientTestSuite) TestSendFile() {
 
 	env.BaseUrl = ts.URL
 
-	contents, _ := t.files[0].Contents()
+	contents, _ := t.files[0].(TextWatcher).Contents()
 	t.client.SendFile(test_file_path, "gemfile", contents)
 
 	ts.Close()

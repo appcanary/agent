@@ -50,7 +50,9 @@ func (agent *Agent) BuildAndSyncWatchers() {
 
 }
 
-func (agent *Agent) OnChange(file Watcher) {
+func (agent *Agent) OnChange(w Watcher) {
+	file := w.(TextWatcher)
+
 	log.Infof("File change: %s", file.Path())
 
 	// should probably be in the actual hook code
