@@ -14,7 +14,18 @@ type UpgradeCommand struct {
 
 type UpgradeSequence []UpgradeCommand
 
-func buildDebianUpgrade(package_list map[string]string) UpgradeSequence {
+func buildCentOSUpgrade(packageList map[string]string) UpgradeSequence {
+	installCmd := "yum"
+	installArg := []string{"update-to", "--assumeyes"}
+
+	for name, _ := range packageList {
+		installArg = append(installArg, strings.TrimSuffix(packageList[name], ".rpm"))
+	}
+
+	return UpgradeSequence{UpgradeCommand{installCmd, installArg}}
+}
+
+func buildDebianUpgrade(packageList map[string]string) UpgradeSequence {
 	updateCmd := "apt-get"
 	updateArg := []string{"update", "-q"}
 
@@ -29,7 +40,7 @@ func buildDebianUpgrade(package_list map[string]string) UpgradeSequence {
 		installArg = append(installArg, "-o Dpkg::Options::=\"--force-confdef\"", "-o Dpkg::Options::=\"--force-confold\"")
 	}
 
-	for name, _ := range package_list {
+	for name, _ := range packageList {
 		// for now let's just stick to blanket updates
 		// to the packages. At a glance, it seems in ubuntu land you only
 		// get access to the most recent version anyways.
