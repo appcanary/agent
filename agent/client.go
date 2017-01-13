@@ -25,6 +25,7 @@ var (
 type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
+	SendProcessState(string, *watchedState) error
 	CreateServer(*Server) (string, error)
 	FetchUpgradeablePackages() (map[string]string, error)
 }
@@ -95,6 +96,10 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 
 	return err
 
+}
+
+func (client *CanaryClient) SendProcessState(match string, state *watchedState) error {
+	return nil
 }
 
 func (c *CanaryClient) CreateServer(srv *Server) (string, error) {

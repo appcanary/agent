@@ -40,10 +40,12 @@ func (agent *Agent) BuildAndSyncWatchers() {
 	for _, f := range agent.conf.Files {
 		var watcher Watcher
 
-		if f.Process == "" {
+		if f.Process != "" {
+			watcher = NewProcessWatcher(f.Process, agent.OnChange)
+		} else if f.Command != "" {
+			watcher = NewCommandOutputWatcher(f.Command, agent.OnChange)
+		} else if f.Path != "" {
 			watcher = NewFileWatcher(f.Path, agent.OnChange)
-		} else {
-			watcher = NewCommandOutputWatcher(f.Process, agent.OnChange)
 		}
 		agent.files = append(agent.files, watcher)
 	}
@@ -51,12 +53,26 @@ func (agent *Agent) BuildAndSyncWatchers() {
 }
 
 func (agent *Agent) OnChange(w Watcher) {
-	file := w.(TextWatcher)
+	switch wt := w.(type) {
+	default:
+		log.Errorf("Don't know what to do with %T", wt)
+	case TextWatcher:
+		agent.handleTextChange(wt)
+	case ProcessWatcher:
+		agent.handleProcessChange(wt)
+	}
+}
 
-	log.Infof("File change: %s", file.Path())
+func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
+	log.Infof("Process lib change: %s", pw.Match())
+	agent.client.SendProcessState(pw.Match(), pw.State())
+}
+
+func (agent *Agent) handleTextChange(tw TextWatcher) {
+	log.Infof("File change: %s", tw.Path())
 
 	// should probably be in the actual hook code
-	contents, err := file.Contents()
+	contents, err := tw.Contents()
 	if err != nil {
 		// we couldn't read it; something weird is happening let's just wait
 		// until this callback gets issued again when the file reappears.
@@ -64,7 +80,7 @@ func (agent *Agent) OnChange(w Watcher) {
 		return
 	}
 
-	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
+	err = agent.client.SendFile(tw.Path(), tw.Kind(), contents)
 	if err != nil {
 		// TODO: some kind of queuing mechanism to keep trying beyond the
 		// exponential backoff in the client. What if the connection fails for
