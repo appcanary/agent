@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -43,7 +44,6 @@ func (t *ClientTestSuite) SetupTest() {
 }
 
 func (t *ClientTestSuite) TestHeartbeat() {
-
 	serverInvoked := false
 	time.Sleep(TEST_POLL_SLEEP)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
@@ -85,6 +85,49 @@ func (t *ClientTestSuite) TestHeartbeat() {
 	ts.Close()
 	t.files[0].Stop()
 	t.True(serverInvoked)
+}
+
+func (t *ClientTestSuite) TestSendProcessState() {
+	serverInvoked := false
+	ts := testServer(t, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
+		serverInvoked = true
+
+		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+
+		// TODO Test what was received
+	})
+
+	env.BaseUrl = ts.URL
+	script := DEV_CONF_PATH + "/pointless"
+
+	cmd := exec.Command(script)
+	err := cmd.Start()
+	t.Nil(err)
+
+	defer cmd.Process.Kill()
+
+	done := make(chan bool)
+
+	watcher := NewProcessWatcher("pointless", func(w Watcher) {
+		wt := w.(ProcessWatcher)
+		state := *wt.State()
+		t.NotNil(state)
+		t.NotNil(state[cmd.Process.Pid])
+
+		watchedProc := state[cmd.Process.Pid]
+		t.Equal(false, watchedProc.Outdated)
+		t.NotNil(watchedProc.Libraries)
+		t.NotNil(watchedProc.ProcessStarted)
+
+		if len(watchedProc.Libraries) == 0 {
+			t.Fail("No libraries were found")
+		}
+		done <- true
+	})
+
+	t.NotNil(watcher.(ProcessWatcher))
+
+	<-done // wait
 }
 
 func (t *ClientTestSuite) TestSendFile() {

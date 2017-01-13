@@ -27,7 +27,7 @@ func TestConf(t *testing.T) {
 	assert.Equal("/path/to/Gemfile.lock", gemfile.Path, "file path")
 
 	tar_h := conf.Files[2]
-	assert.Equal("fakecmdhere", tar_h.Process, "process path")
+	assert.Equal("fakecmdhere", tar_h.Command, "command path")
 
 	assert.Equal("123456", conf.ServerConf.UUID)
 }

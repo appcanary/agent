@@ -29,9 +29,9 @@ type processWatcher struct {
 type watchedState map[int]watchedProcess
 
 type watchedProcess struct {
-	processStarted time.Time
-	libraries      []libspector.Library
-	outdated       bool
+	ProcessStarted time.Time
+	Libraries      []libspector.Library
+	Outdated       bool
 }
 
 func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
@@ -44,6 +44,10 @@ func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
 
 	watcher.scan()
 	return watcher
+}
+
+func NewAllProcessWatcher(callback ChangeHandler) Watcher {
+	return NewProcessWatcher("", callback)
 }
 
 func (wt *processWatcher) Start() {
@@ -71,13 +75,29 @@ func (wt *processWatcher) KeepPolling() bool {
 	return wt.keepPolling
 }
 
-func (wt *processWatcher) scan() {
-	procs, err := libspector.FindProcess(wt.match) // or AllProcesses?
+func (wt *processWatcher) processes() []libspector.Process {
+	var procs []libspector.Process
+	var err error
+
+	if wt.match == "" {
+		procs, err = libspector.AllProcesses()
+		fmt.Printf("all processes error: %v", err)
+	} else {
+		procs, err = libspector.FindProcess(wt.match)
+		fmt.Printf("find processes error: %v", err)
+	}
+
 	if err != nil {
 		panic(err)
 	}
 
-	var state watchedState
+	return procs
+}
+
+func (wt *processWatcher) acquireState() *watchedState {
+	procs := wt.processes()
+
+	state := make(watchedState)
 	for _, proc := range procs {
 		started, err := proc.Started()
 		if err != nil {
@@ -85,28 +105,35 @@ func (wt *processWatcher) scan() {
 			continue
 		}
 
-		if libs, err := proc.Libraries(); err != nil {
+		libs, err := proc.Libraries()
+		if err != nil {
 			panic(fmt.Errorf("Couldn't load libs for process %v: %s", proc, err))
-		} else {
-			process := watchedProcess{
-				libraries:      libs,
-				processStarted: started,
-			}
-
-			for _, lib := range libs {
-				if lib.Outdated(proc) {
-					process.outdated = true
-					break
-				}
-			}
-
-			state[proc.PID()] = process
 		}
+
+		wp := watchedProcess{
+			Libraries:      libs,
+			ProcessStarted: started,
+		}
+
+		for _, lib := range libs {
+			if lib.Outdated(proc) {
+				wp.Outdated = true
+				break
+			}
+		}
+
+		state[proc.PID()] = wp
 	}
 
-	// TODO so the big question is, the whole list, or just the partial list,
-	// and do we ship all of it. Anyway, "OnChange" seems like a misnomer here.
+	return &state
+}
+
+func (wt *processWatcher) scan() {
+	wt.Lock()
+	wt.state = wt.acquireState()
+	// "OnChange" seems like a misnomer here.
 	go wt.OnChange(wt)
+	wt.Unlock()
 }
 
 func (wt *processWatcher) State() *watchedState {
