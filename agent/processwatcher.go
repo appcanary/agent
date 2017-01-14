@@ -75,27 +75,20 @@ func (wt *processWatcher) KeepPolling() bool {
 	return wt.keepPolling
 }
 
-func (wt *processWatcher) processes() []libspector.Process {
-	var procs []libspector.Process
-	var err error
-
+func (wt *processWatcher) processes() (procs []libspector.Process, err error) {
 	if wt.match == "" {
 		procs, err = libspector.AllProcesses()
-		fmt.Printf("all processes error: %v", err)
 	} else {
 		procs, err = libspector.FindProcess(wt.match)
-		fmt.Printf("find processes error: %v", err)
 	}
-
-	if err != nil {
-		panic(err)
-	}
-
-	return procs
+	return
 }
 
 func (wt *processWatcher) acquireState() *watchedState {
-	procs := wt.processes()
+	procs, err := wt.processes()
+	if err != nil {
+		panic(fmt.Errorf("Couldn't load processes: %s", err))
+	}
 
 	state := make(watchedState)
 	for _, proc := range procs {
