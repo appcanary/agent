@@ -98,7 +98,28 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 
 }
 
+func values(state *watchedState) []watchedProcess {
+	i := 0
+	vals := make([]watchedProcess, len(*state))
+	for _, proc := range *state {
+		vals[i] = proc
+		i++
+	}
+	return vals
+}
+
 func (client *CanaryClient) SendProcessState(match string, state *watchedState) error {
+	body, err := json.Marshal(values(state))
+	if err != nil {
+		return err
+	}
+
+	_, err = client.put(ApiServerProcsPath(client.server.UUID), body)
+	if err != nil {
+		return err
+	}
+
+	// Now we know the status is good
 	return nil
 }
 
@@ -176,8 +197,7 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 		}
 
 		return err
-	},
-		backoff.NewExponentialBackOff())
+	}, backoff.NewExponentialBackOff())
 
 	if err != nil {
 		log.Debug("Do err: ", err.Error())

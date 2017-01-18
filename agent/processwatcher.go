@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -32,6 +33,39 @@ type watchedProcess struct {
 	ProcessStarted time.Time
 	Libraries      []libspector.Library
 	Outdated       bool
+	Pid            int
+}
+
+func (wp *watchedProcess) MarshalJSON() ([]byte, error) {
+	libs := make([]map[string]interface{}, len(wp.Libraries))
+
+	for i, lib := range wp.Libraries {
+		path := lib.Path()
+
+		modified, err := lib.Modified()
+		if err != nil {
+			log.Warningf("error retrieving modification date for lib %s, %v", path, err)
+			continue
+		}
+
+		pkg, err := lib.Package()
+		if err != nil {
+			log.Warningf("error retrieving package name for lib %s, %v", path, err)
+		}
+
+		libs[i] = map[string]interface{}{
+			"path":     path,
+			"modified": modified,
+			"package":  pkg,
+		}
+	}
+
+	return json.Marshal(map[string]interface{}{
+		"started":   wp.ProcessStarted,
+		"libraries": libs,
+		"outdated":  wp.Outdated,
+		"pid":       wp.Pid,
+	})
 }
 
 func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
@@ -106,6 +140,7 @@ func (wt *processWatcher) acquireState() *watchedState {
 		wp := watchedProcess{
 			Libraries:      libs,
 			ProcessStarted: started,
+			Pid:            proc.PID(),
 		}
 
 		for _, lib := range libs {

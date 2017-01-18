@@ -132,6 +132,10 @@ func ApiServerPath(ident string) string {
 	return ApiServersPath() + "/" + ident
 }
 
+func ApiServerProcsPath(ident string) string {
+	return ApiServerPath(ident) + "/procs"
+}
+
 func ApiPath(resource string) string {
 	return env.BaseUrl + resource
 }
