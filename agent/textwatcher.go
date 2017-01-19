@@ -85,15 +85,15 @@ func NewCommandOutputWatcher(process string, callback ChangeHandler) Watcher {
 	return watcher
 }
 
-func (wf *textWatcher) MarshalJSON() ([]byte, error) {
-	wf.Lock()
-	defer wf.Unlock()
+func (tw *textWatcher) MarshalJSON() ([]byte, error) {
+	tw.Lock()
+	defer tw.Unlock()
 	ret, err := json.Marshal(map[string]interface{}{
-		"path":          wf.Path(),
-		"kind":          wf.Kind(),
-		"updated-at":    wf.UpdatedAt,
-		"being-watched": wf.BeingWatched,
-		"crc":           wf.Checksum})
+		"path":          tw.Path(),
+		"kind":          tw.Kind(),
+		"updated-at":    tw.UpdatedAt,
+		"being-watched": tw.BeingWatched,
+		"crc":           tw.Checksum})
 	return ret, err
 }
 

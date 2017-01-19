@@ -20,6 +20,7 @@ const (
 	PerformUpgrade
 	PerformDisplayVersion
 	PerformDetectOS
+	PerformProcessDump
 )
 
 func usage() {
@@ -70,6 +71,8 @@ func parseArguments(env *agent.Env) CommandToPerform {
 		performCmd = PerformUpgrade
 	case "detect-os":
 		performCmd = PerformDetectOS
+	case "dump":
+		performCmd = PerformProcessDump
 	case "-version":
 		performCmd = PerformDisplayVersion
 	case "--version":
@@ -144,6 +147,13 @@ func initialize(env *agent.Env) *agent.Agent {
 	return a
 }
 
+func runProcessDump() {
+	log := agent.FetchLog()
+	log.Info("Dumping process map...")
+	agent.DumpProcessMap()
+	os.Exit(0)
+}
+
 func runUpgrade(a *agent.Agent) {
 	log := agent.FetchLog()
 	log.Info("Running upgrade...")
@@ -200,6 +210,9 @@ func main() {
 
 	case PerformDetectOS:
 		runDetectOS()
+
+	case PerformProcessDump:
+		runProcessDump()
 
 	case PerformUpgrade:
 		a := initialize(env)

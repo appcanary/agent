@@ -49,7 +49,7 @@ func (agent *Agent) BuildAndSyncWatchers() {
 		}
 		agent.files = append(agent.files, watcher)
 	}
-
+	agent.files = append(agent.files, NewAllProcessWatcher(agent.OnChange))
 }
 
 func (agent *Agent) OnChange(w Watcher) {
@@ -64,7 +64,11 @@ func (agent *Agent) OnChange(w Watcher) {
 }
 
 func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
-	log.Infof("Process lib change: %s", pw.Match())
+	if pw.Match() == "" {
+		log.Infof("Shipping process map")
+	} else {
+		log.Infof("Shipping process map for %s", pw.Match())
+	}
 	agent.client.SendProcessState(pw.Match(), pw.State())
 }
 

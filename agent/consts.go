@@ -30,9 +30,10 @@ const (
 
 // api endpoints
 const (
-	API_VERSION   = "/api/v1/agent/"
-	API_HEARTBEAT = API_VERSION + "heartbeat"
-	API_SERVERS   = API_VERSION + "servers"
+	API_VERSION    = "/api/v1/agent/"
+	API_HEARTBEAT  = API_VERSION + "heartbeat"
+	API_SERVERS    = API_VERSION + "servers"
+	API_V3_SERVERS = "/api/v3/servers"
 )
 
 // file polling

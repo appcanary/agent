@@ -109,7 +109,10 @@ func values(state *watchedState) []watchedProcess {
 }
 
 func (client *CanaryClient) SendProcessState(match string, state *watchedState) error {
-	body, err := json.Marshal(values(state))
+	body, err := json.Marshal(map[string]interface{}{
+		"server": map[string]interface{}{"procs": values(state)},
+	})
+
 	if err != nil {
 		return err
 	}

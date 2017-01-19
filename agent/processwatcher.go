@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -29,34 +31,82 @@ type processWatcher struct {
 
 type watchedState map[int]watchedProcess
 
+func (w watchedState) String() string {
+	buffer := bytes.NewBufferString("Watched Processes:\n\n")
+	for _, proc := range w {
+		buffer.WriteString(fmt.Sprintf("%v\n", proc.String()))
+	}
+	return buffer.String()
+}
+
 type watchedProcess struct {
 	ProcessStarted time.Time
-	Libraries      []libspector.Library
+	Libraries      []library
 	Outdated       bool
 	Pid            int
+}
+
+func (w *watchedProcess) String() string {
+	buffer := bytes.NewBufferString(fmt.Sprintf("PID: %d", w.Pid))
+	if w.Outdated {
+		buffer.WriteString(", is running outdated lib(s)")
+	}
+	for _, lib := range w.Libraries {
+		buffer.WriteString(fmt.Sprintf("\n%v", lib.String()))
+	}
+	return buffer.String()
+}
+
+type library struct {
+	SpectorLib libspector.Library
+	Outdated   bool
+}
+
+func (l *library) String() string {
+	buffer := bytes.NewBufferString("")
+	if l.Outdated {
+		buffer.WriteString("Outdated: yes")
+	} else {
+		buffer.WriteString("Outdated:  no")
+	}
+	buffer.WriteString(fmt.Sprintf(", Path: %v, ", l.SpectorLib.Path()))
+	if pkg, err := l.SpectorLib.Package(); err != nil {
+		buffer.WriteString(fmt.Sprintf("Package error: %v", err))
+	} else {
+		buffer.WriteString(fmt.Sprintf("Package: %v, ", pkg))
+	}
+	if modified, err := l.SpectorLib.Modified(); err != nil {
+		buffer.WriteString(fmt.Sprintf("Modified error: %v", err))
+	} else {
+		buffer.WriteString(fmt.Sprintf("Modified: %v", modified))
+	}
+	return buffer.String()
 }
 
 func (wp *watchedProcess) MarshalJSON() ([]byte, error) {
 	libs := make([]map[string]interface{}, len(wp.Libraries))
 
 	for i, lib := range wp.Libraries {
-		path := lib.Path()
+		path := lib.SpectorLib.Path()
 
-		modified, err := lib.Modified()
+		modified, err := lib.SpectorLib.Modified()
 		if err != nil {
 			log.Warningf("error retrieving modification date for lib %s, %v", path, err)
 			continue
 		}
 
-		pkg, err := lib.Package()
-		if err != nil {
+		var fullPackage string
+		if pkg, err := lib.SpectorLib.Package(); err != nil {
 			log.Warningf("error retrieving package name for lib %s, %v", path, err)
+		} else {
+			fullPackage = fmt.Sprintf("%s-%s", pkg.Name(), pkg.Version())
 		}
 
 		libs[i] = map[string]interface{}{
 			"path":     path,
 			"modified": modified,
-			"package":  pkg,
+			"package":  fullPackage,
+			"outdated": lib.Outdated, // in relation to this process
 		}
 	}
 
@@ -76,8 +126,18 @@ func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
 		pollSleep: env.PollSleep,
 	}
 
-	watcher.scan()
+	// Don't scan from here, we just end up with two running at once
 	return watcher
+}
+
+func (pw *processWatcher) MarshalJSON() ([]byte, error) {
+	pw.Lock()
+	defer pw.Unlock()
+	return json.Marshal(map[string]interface{}{
+		"match":         pw.Match(),
+		"updated-at":    pw.UpdatedAt,
+		"being-watched": pw.BeingWatched,
+	})
 }
 
 func NewAllProcessWatcher(callback ChangeHandler) Watcher {
@@ -87,8 +147,8 @@ func NewAllProcessWatcher(callback ChangeHandler) Watcher {
 func (wt *processWatcher) Start() {
 	wt.Lock()
 	wt.keepPolling = true
-	go wt.listen()
 	wt.Unlock()
+	go wt.listen()
 }
 
 func (wt *processWatcher) Stop() {
@@ -98,8 +158,6 @@ func (wt *processWatcher) Stop() {
 }
 
 func (wt *processWatcher) Match() string {
-	wt.Lock()
-	defer wt.Unlock()
 	return wt.match
 }
 
@@ -132,22 +190,27 @@ func (wt *processWatcher) acquireState() *watchedState {
 			continue
 		}
 
-		libs, err := proc.Libraries()
+		spectorLibs, err := proc.Libraries()
 		if err != nil {
 			panic(fmt.Errorf("Couldn't load libs for process %v: %s", proc, err))
 		}
 
 		wp := watchedProcess{
-			Libraries:      libs,
 			ProcessStarted: started,
 			Pid:            proc.PID(),
+			Libraries:      make([]library, len(spectorLibs)),
+			Outdated:       false,
 		}
 
-		for _, lib := range libs {
-			if lib.Outdated(proc) {
-				wp.Outdated = true
-				break
+		for i, spectorLib := range spectorLibs {
+			lib := library{
+				SpectorLib: spectorLib,
+				Outdated:   spectorLib.Outdated(proc),
 			}
+			if lib.Outdated && !wp.Outdated {
+				wp.Outdated = true
+			}
+			wp.Libraries[i] = lib
 		}
 
 		state[proc.PID()] = wp
@@ -159,14 +222,17 @@ func (wt *processWatcher) acquireState() *watchedState {
 func (wt *processWatcher) scan() {
 	wt.Lock()
 	wt.state = wt.acquireState()
+	wt.Unlock()
 	// "OnChange" seems like a misnomer here.
 	go wt.OnChange(wt)
-	wt.Unlock()
 }
 
 func (wt *processWatcher) State() *watchedState {
 	wt.Lock()
 	defer wt.Unlock()
+	if wt.state == nil {
+		wt.state = wt.acquireState()
+	}
 	return wt.state
 }
 
@@ -175,4 +241,15 @@ func (wt *processWatcher) listen() {
 		wt.scan()
 		time.Sleep(wt.pollSleep)
 	}
+}
+
+func DumpProcessMap() {
+	watcher := &processWatcher{
+		match:     "",
+		OnChange:  func(w Watcher) { return },
+		UpdatedAt: time.Now(),
+		pollSleep: env.PollSleep,
+	}
+
+	fmt.Fprintf(os.Stderr, "%s\n", watcher.State().String())
 }
