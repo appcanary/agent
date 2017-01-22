@@ -21,6 +21,7 @@ func TestAgent(t *testing.T) {
 	client.On("CreateServer").Return(server_uuid)
 	client.On("SendFile").Return(nil).Twice()
 	client.On("Heartbeat").Return(nil).Once()
+	client.On("SendProcessState").Return(nil).Twice()
 
 	agent := NewAgent("test", conf, client)
 
