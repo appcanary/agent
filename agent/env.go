@@ -132,12 +132,8 @@ func ApiServerPath(ident string) string {
 	return ApiServersPath() + "/" + ident
 }
 
-func ApiV3ServersPath() string {
-	return ApiPath(API_V3_SERVERS)
-}
-
 func ApiServerProcsPath(ident string) string {
-	return ApiV3ServersPath() + "/" + ident + "/procs"
+	return ApiServerPath(ident) + "/processes"
 }
 
 func ApiPath(resource string) string {

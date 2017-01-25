@@ -192,6 +192,13 @@ func (wt *processWatcher) acquireState() *watchedState {
 
 		spectorLibs, err := proc.Libraries()
 		if err != nil {
+			if os.Getuid() != 0 && os.Geteuid() != 0 {
+				log.Infof("Cannot examine libs for PID %d, with UID:%d, EUID:%d",
+					proc.PID(), os.Getuid(), os.Geteuid())
+				continue
+			}
+
+			// otherwise barf
 			panic(fmt.Errorf("Couldn't load libs for process %v: %s", proc, err))
 		}
 

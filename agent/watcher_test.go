@@ -125,6 +125,8 @@ func TestWatchFileFailure(t *testing.T) {
 
 	wfile := NewFileWatcher(tf.Name(), testcb).(*textWatcher)
 	wfile.Start()
+	<-cbInvoked
+
 	// File is being watched
 	time.Sleep(TEST_POLL_SLEEP)
 	assert.True(wfile.GetBeingWatched())

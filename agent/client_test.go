@@ -127,6 +127,10 @@ func (t *ClientTestSuite) TestSendProcessState() {
 
 	t.NotNil(watcher.(ProcessWatcher))
 
+	// kick things off
+	watcher.Start()
+	defer watcher.Stop()
+
 	<-done // wait
 }
 
