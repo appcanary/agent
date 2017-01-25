@@ -39,13 +39,13 @@ task :build do
 end
 
 desc "Build and run all go tests"
-task :test => :build_all do 
-  sh "go test -v ./... -race -timeout 20s"
+task :test => :build_all do
+  sh "go test -v ./... -race -timeout 30s"
 end
 
 desc "Build and run a specific go test"
 task :testr => :build_all do
-  sh "go test -v ./... -race -timeout 20s -run #{ENV["t"]}"
+  sh "go test -v ./... -race -timeout 30s -run #{ENV["t"]}"
 end
 
 desc "Generate release version from date"
