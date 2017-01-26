@@ -52,6 +52,7 @@ func (w *watchedProcess) String() string {
 	if w.Outdated {
 		buffer.WriteString(", is running outdated lib(s)")
 	}
+	buffer.WriteString(fmt.Sprintf("\nCommand: %s", w.Command))
 	for _, lib := range w.Libraries {
 		buffer.WriteString(fmt.Sprintf("\n%v", lib.String()))
 	}
@@ -74,7 +75,7 @@ func (l *library) String() string {
 	if pkg, err := l.SpectorLib.Package(); err != nil {
 		buffer.WriteString(fmt.Sprintf("Package error: %v", err))
 	} else {
-		buffer.WriteString(fmt.Sprintf("Package: %v, ", pkg))
+		buffer.WriteString(fmt.Sprintf("Package: %s-%s, ", pkg.Name(), pkg.Version()))
 	}
 	if modified, err := l.SpectorLib.Modified(); err != nil {
 		buffer.WriteString(fmt.Sprintf("Modified error: %v", err))
