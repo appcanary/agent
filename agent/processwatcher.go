@@ -44,6 +44,7 @@ type watchedProcess struct {
 	Libraries      []library
 	Outdated       bool
 	Pid            int
+	Command        string
 }
 
 func (w *watchedProcess) String() string {
@@ -95,18 +96,21 @@ func (wp *watchedProcess) MarshalJSON() ([]byte, error) {
 			continue
 		}
 
-		var fullPackage string
+		pkgName := ""
+		pkgVersion := ""
 		if pkg, err := lib.SpectorLib.Package(); err != nil {
 			log.Warningf("error retrieving package name for lib %s, %v", path, err)
 		} else {
-			fullPackage = fmt.Sprintf("%s-%s", pkg.Name(), pkg.Version())
+			pkgName = pkg.Name()
+			pkgVersion = pkg.Version()
 		}
 
 		libs[i] = map[string]interface{}{
-			"path":     path,
-			"modified": modified,
-			"package":  fullPackage,
-			"outdated": lib.Outdated, // in relation to this process
+			"path":            path,
+			"modified":        modified,
+			"package_name":    pkgName,
+			"package_version": pkgVersion,
+			"outdated":        lib.Outdated, // in relation to this process
 		}
 	}
 
@@ -115,6 +119,7 @@ func (wp *watchedProcess) MarshalJSON() ([]byte, error) {
 		"libraries": libs,
 		"outdated":  wp.Outdated,
 		"pid":       wp.Pid,
+		"name":      wp.Command,
 	})
 }
 
@@ -190,6 +195,12 @@ func (wt *processWatcher) acquireState() *watchedState {
 			continue
 		}
 
+		command, err := proc.Command()
+		if err != nil {
+			log.Infof("Can't read command line for PID %d: %v", proc.PID(), err)
+			// fall through, we can live without this (?)
+		}
+
 		spectorLibs, err := proc.Libraries()
 		if err != nil {
 			if os.Getuid() != 0 && os.Geteuid() != 0 {
@@ -207,6 +218,7 @@ func (wt *processWatcher) acquireState() *watchedState {
 			Pid:            proc.PID(),
 			Libraries:      make([]library, len(spectorLibs)),
 			Outdated:       false,
+			Command:        command,
 		}
 
 		for i, spectorLib := range spectorLibs {
