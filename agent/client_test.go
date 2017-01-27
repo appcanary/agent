@@ -110,11 +110,17 @@ func (t *ClientTestSuite) TestSendProcessState() {
 
 	watcher := NewProcessWatcher("pointless", func(w Watcher) {
 		wt := w.(ProcessWatcher)
-		state := *wt.State()
-		t.NotNil(state)
-		t.NotNil(state[cmd.Process.Pid])
+		pm := *wt.State()
+		t.NotNil(pm)
+		t.NotNil(pm.processes[0])
 
-		watchedProc := state[cmd.Process.Pid]
+		var watchedProc watchedProcess
+		for _, proc := range pm.processes {
+			if proc.Pid == cmd.Process.Pid {
+				watchedProc = proc
+			}
+		}
+		t.NotNil(watchedProc)
 		t.Equal(false, watchedProc.Outdated)
 		t.NotNil(watchedProc.Libraries)
 		t.NotNil(watchedProc.ProcessStarted)

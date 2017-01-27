@@ -203,15 +203,26 @@ func libToMap(lib libspector.Library) map[string]interface{} {
 	}
 }
 
-func (pm *processMap) maybeAddLibrary(lib libspector.Library) int {
+func (pm *processMap) findLibraryIndex(path string) int {
 	for i, library := range pm.libraries {
-		if library.Path() == lib.Path() {
+		if library.Path() == path {
 			return i
 		}
 	}
 
-	pm.libraries = append(pm.libraries, lib)
-	return len(pm.libraries) - 1
+	return -1
+}
+
+func (pm *processMap) maybeAddLibrary(lib libspector.Library) int {
+	path := lib.Path()
+	index := pm.findLibraryIndex(path)
+
+	if index < 0 {
+		pm.libraries = append(pm.libraries, lib)
+		index = pm.findLibraryIndex(path)
+	}
+
+	return index
 }
 
 func (wt *processWatcher) acquireState() *processMap {

@@ -41,8 +41,12 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 }
 
 func (client *CanaryClient) Heartbeat(uuid string, files Watchers) error {
-
-	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion, "distro": client.server.Distro, "release": client.server.Release})
+	body, err := json.Marshal(map[string]interface{}{
+		"files":         files,
+		"agent-version": CanaryVersion,
+		"distro":        client.server.Distro,
+		"release":       client.server.Release,
+	})
 
 	if err != nil {
 		return err
