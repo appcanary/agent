@@ -100,7 +100,11 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 
 func (client *CanaryClient) SendProcessState(match string, pm *processMap) error {
 	body, err := json.Marshal(map[string]interface{}{
-		"server": map[string]interface{}{"process_map": pm},
+		"server": map[string]interface{}{
+			"process_map": pm,
+			"distro":      client.server.Distro,
+			"release":     client.server.Release,
+		},
 	})
 
 	if err != nil {
