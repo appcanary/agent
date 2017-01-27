@@ -25,7 +25,7 @@ var (
 type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
-	SendProcessState(string, *watchedState) error
+	SendProcessState(string, *processMap) error
 	CreateServer(*Server) (string, error)
 	FetchUpgradeablePackages() (map[string]string, error)
 }
@@ -98,19 +98,9 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 
 }
 
-func values(state *watchedState) []watchedProcess {
-	i := 0
-	vals := make([]watchedProcess, len(*state))
-	for _, proc := range *state {
-		vals[i] = proc
-		i++
-	}
-	return vals
-}
-
-func (client *CanaryClient) SendProcessState(match string, state *watchedState) error {
+func (client *CanaryClient) SendProcessState(match string, pm *processMap) error {
 	body, err := json.Marshal(map[string]interface{}{
-		"server": map[string]interface{}{"procs": values(state)},
+		"server": map[string]interface{}{"procs": pm},
 	})
 
 	if err != nil {
