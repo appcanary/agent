@@ -112,16 +112,14 @@ func (pm *processMap) String() string {
 		buffer.WriteString(fmt.Sprintf("\nCommand: %s", proc.Command))
 
 		for _, lib := range proc.Libraries {
-			realLib := pm.libraries[lib.libraryIndex]
 			buffer.WriteString("\n")
-			buffer.WriteString(libraryToString(lib.Outdated, realLib))
+			libraryToString(buffer, lib.Outdated, pm.libraries[lib.libraryIndex])
 		}
 	}
 	return buffer.String()
 }
 
-func libraryToString(outdated bool, lib libspector.Library) string {
-	buffer := bytes.NewBufferString("")
+func libraryToString(buffer *bytes.Buffer, outdated bool, lib libspector.Library) {
 	if outdated {
 		buffer.WriteString("Outdated: yes")
 	} else {
@@ -138,7 +136,7 @@ func libraryToString(outdated bool, lib libspector.Library) string {
 	} else {
 		buffer.WriteString(fmt.Sprintf("Modified: %v", modified))
 	}
-	return buffer.String()
+	return
 }
 
 func (pm *processMap) MarshalJSON() ([]byte, error) {
@@ -369,13 +367,25 @@ func (wt *processWatcher) listen() {
 	}
 }
 
-func DumpProcessMap() {
-	watcher := &processWatcher{
+func singleServingWatcher() *processWatcher {
+	return &processWatcher{
 		match:     "",
 		OnChange:  func(w Watcher) { return },
 		UpdatedAt: time.Now(),
 		pollSleep: env.PollSleep,
 	}
+}
 
-	fmt.Fprintf(os.Stderr, "%s\n", watcher.State().String())
+func DumpProcessMap() {
+	watcher := singleServingWatcher()
+	fmt.Printf("%s\n", watcher.State().String())
+}
+
+func DumpJsonProcessMap() {
+	watcher := singleServingWatcher()
+	json, err := watcher.State().MarshalJSON()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%s\n", string(json))
 }

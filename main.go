@@ -21,6 +21,7 @@ const (
 	PerformDisplayVersion
 	PerformDetectOS
 	PerformProcessDump
+	PerformJsonProcessDump
 )
 
 func usage() {
@@ -73,6 +74,8 @@ func parseArguments(env *agent.Env) CommandToPerform {
 		performCmd = PerformDetectOS
 	case "dump":
 		performCmd = PerformProcessDump
+	case "dump-json":
+		performCmd = PerformJsonProcessDump
 	case "-version":
 		performCmd = PerformDisplayVersion
 	case "--version":
@@ -154,6 +157,13 @@ func runProcessDump() {
 	os.Exit(0)
 }
 
+func runJsonProcessDump() {
+	log := agent.FetchLog()
+	log.Info("Dumping json process map...")
+	agent.DumpJsonProcessMap()
+	os.Exit(0)
+}
+
 func runUpgrade(a *agent.Agent) {
 	log := agent.FetchLog()
 	log.Info("Running upgrade...")
@@ -213,6 +223,9 @@ func main() {
 
 	case PerformProcessDump:
 		runProcessDump()
+
+	case PerformJsonProcessDump:
+		runJsonProcessDump()
 
 	case PerformUpgrade:
 		a := initialize(env)
