@@ -106,8 +106,6 @@ func (client *CanaryClient) SendProcessState(match string, pm *processMap) error
 	body, err := json.Marshal(map[string]interface{}{
 		"server": map[string]interface{}{
 			"process_map": pm,
-			"distro":      client.server.Distro,
-			"release":     client.server.Release,
 		},
 	})
 
