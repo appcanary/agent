@@ -17,7 +17,6 @@ type ProcessWatcher interface {
 	Start()
 	Stop()
 	Match() string
-	State() *processMap
 	StateJson() []byte
 }
 
@@ -32,7 +31,6 @@ type processWatcher struct {
 	pollSleep    time.Duration
 	BeingWatched bool
 	match        string
-	state        *processMap
 	stateJson    []byte
 	Checksum     uint32
 }
@@ -235,7 +233,7 @@ func (wt *processWatcher) acquireState() *processMap {
 	}
 
 	pm := processMap{
-		processes: make(systemProcesses, len(procs)),
+		processes: make(systemProcesses, 0, len(procs)),
 		libraries: make(systemLibraries, 0), // ¯\_(ツ)_/¯
 	}
 
@@ -343,37 +341,28 @@ func (wt *processWatcher) KeepPolling() bool {
 	return wt.keepPolling
 }
 
-func (wt *processWatcher) maybeSetStateAttributes() {
-	if wt.state == nil {
-		wt.state = wt.acquireState()
+func (wt *processWatcher) setStateAttribute() {
+	state := wt.acquireState()
+
+	json, err := json.Marshal(map[string]interface{}{
+		"server": map[string]interface{}{
+			"process_map": state,
+		},
+	})
+
+	if err != nil {
+		panic(err) // really shouldn't happen
 	}
 
-	if wt.stateJson == nil {
-		json, err := json.Marshal(map[string]interface{}{
-			"server": map[string]interface{}{
-				"process_map": wt.state,
-			},
-		})
-
-		if err != nil {
-			panic(err) // really shouldn't happen
-		}
-
-		wt.stateJson = json
-	}
-}
-
-func (wt *processWatcher) State() *processMap {
-	wt.Lock()
-	defer wt.Unlock()
-	wt.maybeSetStateAttributes()
-	return wt.state
+	wt.stateJson = json
 }
 
 func (wt *processWatcher) StateJson() []byte {
 	wt.Lock()
 	defer wt.Unlock()
-	wt.maybeSetStateAttributes()
+	if wt.stateJson == nil {
+		wt.setStateAttribute()
+	}
 	return wt.stateJson
 }
 
@@ -389,7 +378,7 @@ func (wt *processWatcher) processes() (procs []libspector.Process, err error) {
 func (wt *processWatcher) scan() {
 	wt.Lock()
 
-	wt.maybeSetStateAttributes()
+	wt.setStateAttribute()
 
 	newChecksum := crc32.ChecksumIEEE(wt.stateJson)
 	changed := newChecksum != wt.Checksum
@@ -420,7 +409,7 @@ func singleServingWatcher() *processWatcher {
 
 func DumpProcessMap() {
 	watcher := singleServingWatcher()
-	fmt.Printf("%s\n", watcher.State().String())
+	fmt.Printf("%s\n", watcher.acquireState().String())
 }
 
 func DumpJsonProcessMap() {

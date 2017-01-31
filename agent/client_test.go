@@ -110,22 +110,41 @@ func (t *ClientTestSuite) TestSendProcessState() {
 
 	watcher := NewProcessWatcher("pointless", func(w Watcher) {
 		wt := w.(ProcessWatcher)
-		pm := *wt.State()
-		t.NotNil(pm)
-		t.NotNil(pm.processes[0])
+		jsonBytes := wt.StateJson()
+		t.NotNil(jsonBytes)
 
-		var watchedProc watchedProcess
-		for _, proc := range pm.processes {
-			if proc.Pid == cmd.Process.Pid {
-				watchedProc = proc
+		var pm map[string]interface{}
+		json.Unmarshal(jsonBytes, &pm)
+
+		server := pm["server"]
+		t.NotNil(server)
+
+		serverM := server.(map[string]interface{})
+
+		processMap := serverM["process_map"]
+		t.NotNil(processMap)
+
+		processMapM := processMap.(map[string]interface{})
+
+		processes := processMapM["processes"]
+		t.NotNil(processes)
+
+		processesS := processes.([]interface{})
+
+		var watchedProc map[string]interface{}
+		for _, proc := range processesS {
+			procM := proc.(map[string]interface{})
+			if int(procM["pid"].(float64)) == cmd.Process.Pid {
+				watchedProc = procM
 			}
 		}
-		t.NotNil(watchedProc)
-		t.Equal(false, watchedProc.Outdated)
-		t.NotNil(watchedProc.Libraries)
-		t.NotNil(watchedProc.ProcessStartedAt)
 
-		if len(watchedProc.Libraries) == 0 {
+		t.NotNil(watchedProc)
+		t.Equal(false, watchedProc["outdated"])
+		t.NotNil(watchedProc["libraries"])
+		t.NotNil(watchedProc["started"])
+
+		if len(watchedProc["libraries"].([]interface{})) == 0 {
 			t.Fail("No libraries were found")
 		}
 		done <- true
