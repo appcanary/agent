@@ -123,7 +123,7 @@ func (t *ClientTestSuite) TestSendProcessState() {
 		t.NotNil(watchedProc)
 		t.Equal(false, watchedProc.Outdated)
 		t.NotNil(watchedProc.Libraries)
-		t.NotNil(watchedProc.ProcessStarted)
+		t.NotNil(watchedProc.ProcessStartedAt)
 
 		if len(watchedProc.Libraries) == 0 {
 			t.Fail("No libraries were found")

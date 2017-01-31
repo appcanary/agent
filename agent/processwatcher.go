@@ -55,7 +55,7 @@ type systemLibraries []libspector.Library
 // 	state: &processMap{
 // 		processes: &systemProcesses{
 // 			watchedProcess{
-// 				ProcessStarted: processStartTime,
+// 				ProcessStartedAt: processStartTime,
 // 				Libraries: []library{
 // 					processLibrary{
 // 						Outdated:     true,
@@ -83,11 +83,11 @@ type processMap struct {
 }
 
 type watchedProcess struct {
-	ProcessStarted time.Time
-	Libraries      []processLibrary
-	Outdated       bool
-	Pid            int
-	Command        string
+	ProcessStartedAt time.Time
+	Libraries        []processLibrary
+	Outdated         bool
+	Pid              int
+	Command          string
 }
 
 type processLibrary struct {
@@ -148,7 +148,7 @@ func (pm *processMap) MarshalJSON() ([]byte, error) {
 	processes := make([]map[string]interface{}, len(pm.processes))
 	for i, proc := range pm.processes {
 		processes[i] = map[string]interface{}{
-			"started":   proc.ProcessStarted,
+			"started":   proc.ProcessStartedAt,
 			"libraries": procLibsToMapArray(proc.Libraries),
 			"outdated":  proc.Outdated,
 			"pid":       proc.Pid,
@@ -260,11 +260,11 @@ func (wt *processWatcher) acquireState() *processMap {
 		}
 
 		wp := watchedProcess{
-			ProcessStarted: started,
-			Pid:            proc.PID(),
-			Libraries:      make([]processLibrary, len(spectorLibs)),
-			Outdated:       false,
-			Command:        command,
+			ProcessStartedAt: started,
+			Pid:              proc.PID(),
+			Libraries:        make([]processLibrary, len(spectorLibs)),
+			Outdated:         false,
+			Command:          command,
 		}
 
 		for i, spectorLib := range spectorLibs {
