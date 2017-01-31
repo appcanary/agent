@@ -25,7 +25,7 @@ var (
 type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
-	SendProcessState(string, *processMap) error
+	SendProcessState(string, []byte) error
 	CreateServer(*Server) (string, error)
 	FetchUpgradeablePackages() (map[string]string, error)
 }
@@ -99,27 +99,11 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 	_, err = client.put(ApiServerPath(client.server.UUID), file_json)
 
 	return err
-
 }
 
-func (client *CanaryClient) SendProcessState(match string, pm *processMap) error {
-	body, err := json.Marshal(map[string]interface{}{
-		"server": map[string]interface{}{
-			"process_map": pm,
-		},
-	})
-
-	if err != nil {
-		return err
-	}
-
-	_, err = client.put(ApiServerProcsPath(client.server.UUID), body)
-	if err != nil {
-		return err
-	}
-
-	// Now we know the status is good
-	return nil
+func (client *CanaryClient) SendProcessState(match string, body []byte) error {
+	_, err := client.put(ApiServerProcsPath(client.server.UUID), body)
+	return err
 }
 
 func (c *CanaryClient) CreateServer(srv *Server) (string, error) {

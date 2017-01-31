@@ -69,7 +69,7 @@ func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
 	} else {
 		log.Infof("Shipping process map for %s", pw.Match())
 	}
-	agent.client.SendProcessState(pw.Match(), pw.State())
+	agent.client.SendProcessState(pw.Match(), pw.StateJson())
 }
 
 func (agent *Agent) handleTextChange(tw TextWatcher) {

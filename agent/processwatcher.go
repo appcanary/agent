@@ -18,6 +18,7 @@ type ProcessWatcher interface {
 	Stop()
 	Match() string
 	State() *processMap
+	StateJson() []byte
 }
 
 // Types
@@ -32,6 +33,7 @@ type processWatcher struct {
 	BeingWatched bool
 	match        string
 	state        *processMap
+	stateJson    []byte
 	Checksum     uint32
 }
 
@@ -341,20 +343,38 @@ func (wt *processWatcher) KeepPolling() bool {
 	return wt.keepPolling
 }
 
+func (wt *processWatcher) maybeSetStateAttributes() {
+	if wt.state == nil {
+		wt.state = wt.acquireState()
+	}
+
+	if wt.stateJson == nil {
+		json, err := json.Marshal(map[string]interface{}{
+			"server": map[string]interface{}{
+				"process_map": wt.state,
+			},
+		})
+
+		if err != nil {
+			panic(err) // really shouldn't happen
+		}
+
+		wt.stateJson = json
+	}
+}
+
 func (wt *processWatcher) State() *processMap {
 	wt.Lock()
 	defer wt.Unlock()
-
-	if wt.state == nil {
-		wt.state = wt.acquireState()
-		blob, err := wt.state.MarshalJSON()
-		if err != nil {
-			panic(err)
-		}
-		wt.Checksum = crc32.ChecksumIEEE(blob)
-	}
-
+	wt.maybeSetStateAttributes()
 	return wt.state
+}
+
+func (wt *processWatcher) StateJson() []byte {
+	wt.Lock()
+	defer wt.Unlock()
+	wt.maybeSetStateAttributes()
+	return wt.stateJson
 }
 
 func (wt *processWatcher) processes() (procs []libspector.Process, err error) {
@@ -369,12 +389,9 @@ func (wt *processWatcher) processes() (procs []libspector.Process, err error) {
 func (wt *processWatcher) scan() {
 	wt.Lock()
 
-	wt.state = wt.acquireState()
-	jsonBlob, err := wt.state.MarshalJSON()
-	if err != nil {
-		panic(err)
-	}
-	newChecksum := crc32.ChecksumIEEE(jsonBlob)
+	wt.maybeSetStateAttributes()
+
+	newChecksum := crc32.ChecksumIEEE(wt.stateJson)
 	changed := newChecksum != wt.Checksum
 	wt.Checksum = newChecksum
 
@@ -408,11 +425,7 @@ func DumpProcessMap() {
 
 func DumpJsonProcessMap() {
 	watcher := singleServingWatcher()
-	json, err := watcher.State().MarshalJSON()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%s\n", string(json))
+	fmt.Printf("%s\n", string(watcher.StateJson()))
 }
 
 func (s systemProcesses) Len() int           { return len(s) }
