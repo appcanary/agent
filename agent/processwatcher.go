@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"os"
+	"sort"
 	"sync"
 	"time"
 
@@ -284,6 +285,10 @@ func (wt *processWatcher) acquireState() *processMap {
 		pm.processes = append(pm.processes, wp)
 	}
 
+	// to make the crc check more meaningful
+	sort.Sort(pm.processes)
+	sort.Sort(pm.libraries)
+
 	return &pm
 }
 
@@ -409,3 +414,11 @@ func DumpJsonProcessMap() {
 	}
 	fmt.Printf("%s\n", string(json))
 }
+
+func (s systemProcesses) Len() int           { return len(s) }
+func (s systemProcesses) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s systemProcesses) Less(i, j int) bool { return s[i].Pid < s[j].Pid }
+
+func (s systemLibraries) Len() int           { return len(s) }
+func (s systemLibraries) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s systemLibraries) Less(i, j int) bool { return s[i].Path() < s[j].Path() }
