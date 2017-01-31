@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
 	"os"
 	"sync"
 	"time"
@@ -30,6 +31,7 @@ type processWatcher struct {
 	BeingWatched bool
 	match        string
 	state        *processMap
+	Checksum     uint32
 }
 
 // process objects with references to systemLibraries
@@ -337,9 +339,16 @@ func (wt *processWatcher) KeepPolling() bool {
 func (wt *processWatcher) State() *processMap {
 	wt.Lock()
 	defer wt.Unlock()
+
 	if wt.state == nil {
 		wt.state = wt.acquireState()
+		blob, err := wt.state.MarshalJSON()
+		if err != nil {
+			panic(err)
+		}
+		wt.Checksum = crc32.ChecksumIEEE(blob)
 	}
+
 	return wt.state
 }
 
@@ -354,10 +363,21 @@ func (wt *processWatcher) processes() (procs []libspector.Process, err error) {
 
 func (wt *processWatcher) scan() {
 	wt.Lock()
+
 	wt.state = wt.acquireState()
-	wt.Unlock()
-	// "OnChange" seems like a misnomer here.
-	go wt.OnChange(wt)
+	jsonBlob, err := wt.state.MarshalJSON()
+	if err != nil {
+		panic(err)
+	}
+	newChecksum := crc32.ChecksumIEEE(jsonBlob)
+	changed := newChecksum != wt.Checksum
+	wt.Checksum = newChecksum
+
+	wt.Unlock() // ¯\_(ツ)_/¯
+
+	if changed {
+		go wt.OnChange(wt)
+	}
 }
 
 func (wt *processWatcher) listen() {
