@@ -114,16 +114,16 @@ func (wt *textWatcher) KeepPolling() bool {
 func (wt *textWatcher) Start() {
 	// log.Debug("Listening to: %s", wt.Path())
 	wt.Lock()
-	defer wt.Unlock()
 	wt.keepPolling = true
+	wt.Unlock()
 	go wt.listen()
 }
 
 func (wt *textWatcher) Stop() {
 	// log.Debug("No longer listening to: %s", wt.Path())
 	wt.Lock()
-	defer wt.Unlock()
 	wt.keepPolling = false
+	wt.Unlock()
 }
 
 func (wt *textWatcher) GetBeingWatched() bool {

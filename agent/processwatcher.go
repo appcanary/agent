@@ -32,7 +32,7 @@ type processWatcher struct {
 	BeingWatched bool
 	match        string
 	stateJson    []byte
-	Checksum     uint32
+	checksum     uint32
 }
 
 // process objects with references to systemLibraries
@@ -55,6 +55,8 @@ type systemLibraries []libspector.Library
 // 	OnChange:    callback,
 // 	pollSleep:   env.PollSleep,
 // 	match:       "",
+//  // this is no longer true, instead we just keep the marshaled json, but this
+//  // a helpful structure doc
 // 	state: &processMap{
 // 		processes: &systemProcesses{
 // 			watchedProcess{
@@ -381,8 +383,8 @@ func (wt *processWatcher) scan() {
 	wt.setStateAttribute()
 
 	newChecksum := crc32.ChecksumIEEE(wt.stateJson)
-	changed := newChecksum != wt.Checksum
-	wt.Checksum = newChecksum
+	changed := newChecksum != wt.checksum
+	wt.checksum = newChecksum
 
 	wt.Unlock() // ¯\_(ツ)_/¯
 

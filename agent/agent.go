@@ -64,12 +64,13 @@ func (agent *Agent) OnChange(w Watcher) {
 }
 
 func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
-	if pw.Match() == "" {
+	match := pw.Match()
+	if match == "" {
 		log.Infof("Shipping process map")
 	} else {
-		log.Infof("Shipping process map for %s", pw.Match())
+		log.Infof("Shipping process map for %s", match)
 	}
-	agent.client.SendProcessState(pw.Match(), pw.StateJson())
+	agent.client.SendProcessState(match, pw.StateJson())
 }
 
 func (agent *Agent) handleTextChange(tw TextWatcher) {
