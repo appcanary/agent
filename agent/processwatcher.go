@@ -130,17 +130,23 @@ func libraryToString(buffer *bytes.Buffer, outdated bool, lib libspector.Library
 	} else {
 		buffer.WriteString("Outdated:  no")
 	}
+
 	buffer.WriteString(fmt.Sprintf(", Path: %v, ", lib.Path()))
+
 	if pkg, err := lib.Package(); err != nil {
-		buffer.WriteString(fmt.Sprintf("Package error: %v", err))
+		log.Warningf("Error reading package info for %s: %v", lib.Path(), err)
+		buffer.WriteString("Package: unknown, ")
 	} else {
 		buffer.WriteString(fmt.Sprintf("Package: %s-%s, ", pkg.Name(), pkg.Version()))
 	}
+
 	if modified, err := lib.Modified(); err != nil {
-		buffer.WriteString(fmt.Sprintf("Modified error: %v", err))
+		log.Warningf("Error reading modification date: %v", err)
+		buffer.WriteString("Modified: unknown")
 	} else {
 		buffer.WriteString(fmt.Sprintf("Modified: %v", modified))
 	}
+
 	return
 }
 
