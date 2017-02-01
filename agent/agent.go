@@ -65,7 +65,7 @@ func (agent *Agent) OnChange(w Watcher) {
 
 func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
 	match := pw.Match()
-	if match == "" {
+	if match == "*" {
 		log.Infof("Shipping process map")
 	} else {
 		log.Infof("Shipping process map for %s", match)

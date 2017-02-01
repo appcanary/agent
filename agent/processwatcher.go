@@ -54,14 +54,14 @@ type systemLibraries []libspector.Library
 // 	UpdatedAt:   updatedAt,
 // 	OnChange:    callback,
 // 	pollSleep:   env.PollSleep,
-// 	match:       "",
+// 	match:       "*",
 //  // this is no longer true, instead we just keep the marshaled json, but this
 //  // a helpful structure doc
-// 	state: &processMap{
+// 	state: &systemState{
 // 		processes: &systemProcesses{
 // 			watchedProcess{
 // 				ProcessStartedAt: processStartTime,
-// 				Libraries: []library{
+// 				ProcessLibraries: []processLibrary{
 // 					processLibrary{
 // 						Outdated:     true,
 // 						libraryIndex: 2, // somelib2
@@ -82,14 +82,14 @@ type systemLibraries []libspector.Library
 // }
 
 // "map" in the colloquial sense
-type processMap struct {
+type systemState struct {
 	processes systemProcesses
 	libraries systemLibraries
 }
 
 type watchedProcess struct {
 	ProcessStartedAt time.Time
-	Libraries        []processLibrary
+	ProcessLibraries []processLibrary
 	Outdated         bool
 	Pid              int
 	Command          string
@@ -100,14 +100,10 @@ type processLibrary struct {
 	Outdated     bool
 }
 
-// Methods
-
-// processMap
-
-func (pm *processMap) String() string {
+func (ss *systemState) String() string {
 	buffer := bytes.NewBufferString("Watched Processes:\n\n")
 
-	for _, proc := range pm.processes {
+	for _, proc := range ss.processes {
 		buffer.WriteString(fmt.Sprintf("PID: %d", proc.Pid))
 
 		if proc.Outdated {
@@ -116,9 +112,9 @@ func (pm *processMap) String() string {
 
 		buffer.WriteString(fmt.Sprintf("\nCommand: %s", proc.Command))
 
-		for _, lib := range proc.Libraries {
+		for _, lib := range proc.ProcessLibraries {
 			buffer.WriteString("\n")
-			libraryToString(buffer, lib.Outdated, pm.libraries[lib.libraryIndex])
+			libraryToString(buffer, lib.Outdated, ss.libraries[lib.libraryIndex])
 		}
 	}
 	return buffer.String()
@@ -150,17 +146,17 @@ func libraryToString(buffer *bytes.Buffer, outdated bool, lib libspector.Library
 	return
 }
 
-func (pm *processMap) MarshalJSON() ([]byte, error) {
-	libraries := make([]map[string]interface{}, len(pm.libraries))
-	for i, lib := range pm.libraries {
+func (ss *systemState) MarshalJSON() ([]byte, error) {
+	libraries := make([]map[string]interface{}, len(ss.libraries))
+	for i, lib := range ss.libraries {
 		libraries[i] = libToMap(lib)
 	}
 
-	processes := make([]map[string]interface{}, len(pm.processes))
-	for i, proc := range pm.processes {
+	processes := make([]map[string]interface{}, len(ss.processes))
+	for i, proc := range ss.processes {
 		processes[i] = map[string]interface{}{
 			"started":   proc.ProcessStartedAt,
-			"libraries": procLibsToMapArray(proc.Libraries),
+			"libraries": procLibsToMapArray(proc.ProcessLibraries),
 			"outdated":  proc.Outdated,
 			"pid":       proc.Pid,
 			"name":      proc.Command,
@@ -212,8 +208,8 @@ func libToMap(lib libspector.Library) map[string]interface{} {
 	}
 }
 
-func (pm *processMap) findLibraryIndex(path string) int {
-	for i, library := range pm.libraries {
+func (sl *systemLibraries) findLibraryIndex(path string) int {
+	for i, library := range *sl {
 		if library.Path() == path {
 			return i
 		}
@@ -222,82 +218,103 @@ func (pm *processMap) findLibraryIndex(path string) int {
 	return -1
 }
 
-func (pm *processMap) maybeAddLibrary(lib libspector.Library) int {
+func (ss *systemState) findLibraryIndex(path string) int {
+	return ss.libraries.findLibraryIndex(path)
+}
+
+func (ss *systemState) addLibrary(lib libspector.Library) int {
 	path := lib.Path()
-	index := pm.findLibraryIndex(path)
+	index := ss.findLibraryIndex(path)
 
 	if index < 0 {
-		pm.libraries = append(pm.libraries, lib)
-		index = pm.findLibraryIndex(path)
+		ss.libraries = append(ss.libraries, lib)
+		index = len(ss.libraries) - 1
 	}
 
 	return index
 }
 
-func (wt *processWatcher) acquireState() *processMap {
-	procs, err := wt.processes()
+func (pw *processWatcher) acquireState() *systemState {
+	lsProcs, err := pw.processes()
 	if err != nil {
 		panic(fmt.Errorf("Couldn't load processes: %s", err))
 	}
 
-	pm := processMap{
-		processes: make(systemProcesses, 0, len(procs)),
+	ss := systemState{
+		processes: make(systemProcesses, 0, len(lsProcs)),
 		libraries: make(systemLibraries, 0), // ¯\_(ツ)_/¯
 	}
 
-	for _, proc := range procs {
-		started, err := proc.Started()
+	for _, lsProc := range lsProcs {
+		started, err := lsProc.Started()
 		if err != nil {
-			log.Infof("PID %d is not running, skipping", proc.PID())
+			log.Infof("PID %d is not running, skipping", lsProc.PID())
 			continue
 		}
 
-		command, err := proc.Command()
+		command, err := lsProc.Command()
 		if err != nil {
-			log.Infof("Can't read command line for PID %d: %v", proc.PID(), err)
+			log.Infof("Can't read command line for PID %d: %v", lsProc.PID(), err)
 			// fall through, we can live without this (?)
 		}
 
-		spectorLibs, err := proc.Libraries()
+		spectorLibs, err := lsProc.Libraries()
 		if err != nil {
 			if os.Getuid() != 0 && os.Geteuid() != 0 {
 				log.Infof("Cannot examine libs for PID %d, with UID:%d, EUID:%d",
-					proc.PID(), os.Getuid(), os.Geteuid())
+					lsProc.PID(), os.Getuid(), os.Geteuid())
 				continue
 			}
 
 			// otherwise barf
-			panic(fmt.Errorf("Couldn't load libs for process %v: %s", proc, err))
+			panic(fmt.Errorf("Couldn't load libs for process %v: %s", lsProc, err))
 		}
 
 		wp := watchedProcess{
 			ProcessStartedAt: started,
-			Pid:              proc.PID(),
-			Libraries:        make([]processLibrary, len(spectorLibs)),
+			Pid:              lsProc.PID(),
+			ProcessLibraries: make([]processLibrary, len(spectorLibs)),
 			Outdated:         false,
 			Command:          command,
 		}
 
 		for i, spectorLib := range spectorLibs {
-			libraryIndex := pm.maybeAddLibrary(spectorLib)
+			libraryIndex := ss.addLibrary(spectorLib)
 			lib := processLibrary{
 				libraryIndex: libraryIndex,
-				Outdated:     spectorLib.Outdated(proc),
+				Outdated:     spectorLib.Outdated(lsProc),
 			}
 			if lib.Outdated && !wp.Outdated {
 				wp.Outdated = true
 			}
-			wp.Libraries[i] = lib
+			wp.ProcessLibraries[i] = lib
 		}
 
-		pm.processes = append(pm.processes, wp)
+		ss.processes = append(ss.processes, wp)
 	}
 
 	// to make the crc check more meaningful
-	sort.Sort(pm.processes)
-	sort.Sort(pm.libraries)
+	ss.sortSystemState()
 
-	return &pm
+	return &ss
+}
+
+func (ss *systemState) sortSystemState() {
+	// make a copy in the original order
+	oldSLs := make(systemLibraries, len(ss.libraries))
+	copy(oldSLs, ss.libraries)
+
+	// sort everything
+	sort.Sort(ss.processes)
+	sort.Sort(ss.libraries)
+
+	for _, proc := range ss.processes {
+		for _, procLib := range proc.ProcessLibraries {
+			path := oldSLs[procLib.libraryIndex].Path()
+			// find the new index
+			procLib.libraryIndex = ss.findLibraryIndex(path)
+		}
+	}
 }
 
 func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
@@ -313,7 +330,7 @@ func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
 }
 
 func NewAllProcessWatcher(callback ChangeHandler) Watcher {
-	return NewProcessWatcher("", callback)
+	return NewProcessWatcher("*", callback)
 }
 
 func (pw *processWatcher) MarshalJSON() ([]byte, error) {
@@ -326,31 +343,31 @@ func (pw *processWatcher) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (wt *processWatcher) Start() {
-	wt.Lock()
-	wt.keepPolling = true
-	wt.Unlock()
-	go wt.listen()
+func (pw *processWatcher) Start() {
+	pw.Lock()
+	pw.keepPolling = true
+	pw.Unlock()
+	go pw.listen()
 }
 
-func (wt *processWatcher) Stop() {
-	wt.Lock()
-	wt.keepPolling = false
-	wt.Unlock()
+func (pw *processWatcher) Stop() {
+	pw.Lock()
+	pw.keepPolling = false
+	pw.Unlock()
 }
 
-func (wt *processWatcher) Match() string {
-	return wt.match
+func (pw *processWatcher) Match() string {
+	return pw.match
 }
 
-func (wt *processWatcher) KeepPolling() bool {
-	wt.Lock()
-	defer wt.Unlock()
-	return wt.keepPolling
+func (pw *processWatcher) KeepPolling() bool {
+	pw.Lock()
+	defer pw.Unlock()
+	return pw.keepPolling
 }
 
-func (wt *processWatcher) setStateAttribute() {
-	state := wt.acquireState()
+func (pw *processWatcher) setStateAttribute() {
+	state := pw.acquireState()
 
 	json, err := json.Marshal(map[string]interface{}{
 		"server": map[string]interface{}{
@@ -362,53 +379,53 @@ func (wt *processWatcher) setStateAttribute() {
 		panic(err) // really shouldn't happen
 	}
 
-	wt.stateJson = json
+	pw.stateJson = json
 }
 
-func (wt *processWatcher) StateJson() []byte {
-	wt.Lock()
-	defer wt.Unlock()
-	if wt.stateJson == nil {
-		wt.setStateAttribute()
+func (pw *processWatcher) StateJson() []byte {
+	pw.Lock()
+	defer pw.Unlock()
+	if pw.stateJson == nil {
+		pw.setStateAttribute()
 	}
-	return wt.stateJson
+	return pw.stateJson
 }
 
-func (wt *processWatcher) processes() (procs []libspector.Process, err error) {
-	if wt.match == "" {
+func (pw *processWatcher) processes() (procs []libspector.Process, err error) {
+	if pw.match == "*" {
 		procs, err = libspector.AllProcesses()
 	} else {
-		procs, err = libspector.FindProcess(wt.match)
+		procs, err = libspector.FindProcess(pw.match)
 	}
 	return
 }
 
-func (wt *processWatcher) scan() {
-	wt.Lock()
+func (pw *processWatcher) scan() {
+	pw.Lock()
 
-	wt.setStateAttribute()
+	pw.setStateAttribute()
 
-	newChecksum := crc32.ChecksumIEEE(wt.stateJson)
-	changed := newChecksum != wt.checksum
-	wt.checksum = newChecksum
+	newChecksum := crc32.ChecksumIEEE(pw.stateJson)
+	changed := newChecksum != pw.checksum
+	pw.checksum = newChecksum
 
-	wt.Unlock() // ¯\_(ツ)_/¯
+	pw.Unlock() // ¯\_(ツ)_/¯
 
 	if changed {
-		go wt.OnChange(wt)
+		go pw.OnChange(pw)
 	}
 }
 
-func (wt *processWatcher) listen() {
-	for wt.KeepPolling() {
-		wt.scan()
-		time.Sleep(wt.pollSleep)
+func (pw *processWatcher) listen() {
+	for pw.KeepPolling() {
+		pw.scan()
+		time.Sleep(pw.pollSleep)
 	}
 }
 
 func singleServingWatcher() *processWatcher {
 	return &processWatcher{
-		match:     "",
+		match:     "*",
 		OnChange:  func(w Watcher) { return },
 		UpdatedAt: time.Now(),
 		pollSleep: env.PollSleep,

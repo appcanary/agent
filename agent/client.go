@@ -102,6 +102,7 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 }
 
 func (client *CanaryClient) SendProcessState(match string, body []byte) error {
+	// match is unused for now - should it get shipped?
 	_, err := client.put(ApiServerProcsPath(client.server.UUID), body)
 	return err
 }

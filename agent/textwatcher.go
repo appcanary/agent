@@ -38,6 +38,10 @@ type textWatcher struct {
 
 // File watchers track changes in the contents of a file
 func NewFileWatcher(path string, callback ChangeHandler) Watcher {
+	// TODO the kind attribute we receive in this payload is kind of useless. If
+	// the agent just looks at the file name in order to set the kind, we can do
+	// that just fine in the server also. It'd make more sense to set kind to be
+	// the kind of watcher.
 	var kind string
 	filename := filepath.Base(path)
 	switch filename {
