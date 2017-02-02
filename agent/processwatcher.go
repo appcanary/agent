@@ -83,9 +83,12 @@ type systemLibraries []libspector.Library
 
 // "map" in the colloquial sense
 type systemState struct {
-	processes systemProcesses
-	libraries systemLibraries
+	processes         systemProcesses
+	libraries         systemLibraries
+	processLibraryMap processLibraryMap
 }
+
+type processLibraryMap map[string]int
 
 type watchedProcess struct {
 	ProcessStartedAt time.Time
@@ -208,18 +211,16 @@ func libToMap(lib libspector.Library) map[string]interface{} {
 	}
 }
 
-func (sl *systemLibraries) findLibraryIndex(path string) int {
-	for i, library := range *sl {
-		if library.Path() == path {
-			return i
-		}
+func (sl processLibraryMap) findLibraryIndex(path string) int {
+	if index, ok := sl[path]; ok {
+		return index
 	}
 
 	return -1
 }
 
 func (ss *systemState) findLibraryIndex(path string) int {
-	return ss.libraries.findLibraryIndex(path)
+	return ss.processLibraryMap.findLibraryIndex(path)
 }
 
 func (ss *systemState) addLibrary(lib libspector.Library) int {
@@ -229,6 +230,7 @@ func (ss *systemState) addLibrary(lib libspector.Library) int {
 	if index < 0 {
 		ss.libraries = append(ss.libraries, lib)
 		index = len(ss.libraries) - 1
+		ss.processLibraryMap[path] = index
 	}
 
 	return index
@@ -241,8 +243,9 @@ func (pw *processWatcher) acquireState() *systemState {
 	}
 
 	ss := systemState{
-		processes: make(systemProcesses, 0, len(lsProcs)),
-		libraries: make(systemLibraries, 0), // ¯\_(ツ)_/¯
+		processes:         make(systemProcesses, 0, len(lsProcs)),
+		libraries:         make(systemLibraries, 0), // ¯\_(ツ)_/¯
+		processLibraryMap: make(map[string]int, 0),
 	}
 
 	for _, lsProc := range lsProcs {
