@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"hash/crc32"
 	"os"
-	"sort"
 	"sync"
 	"time"
 
@@ -152,7 +151,7 @@ func libraryToString(buffer *bytes.Buffer, outdated bool, lib libspector.Library
 func (ss *systemState) MarshalJSON() ([]byte, error) {
 	libraries := make([]map[string]interface{}, len(ss.libraries))
 	for i, lib := range ss.libraries {
-		libraries[i] = libToMap(lib)
+		libraries[i] = libToMap(lib, i)
 	}
 
 	processes := make([]map[string]interface{}, len(ss.processes))
@@ -185,7 +184,7 @@ func procLibsToMapArray(libs []processLibrary) []map[string]interface{} {
 	return procLibs
 }
 
-func libToMap(lib libspector.Library) map[string]interface{} {
+func libToMap(lib libspector.Library, index int) map[string]interface{} {
 	path := lib.Path()
 
 	modified, err := lib.Modified()
@@ -208,6 +207,7 @@ func libToMap(lib libspector.Library) map[string]interface{} {
 		"modified":        modified,
 		"package_name":    pkgName,
 		"package_version": pkgVersion,
+		"id":              index,
 	}
 }
 
@@ -231,8 +231,8 @@ func (ss *systemState) addLibrary(lib libspector.Library) int {
 		ss.libraries = append(ss.libraries, lib)
 		index = len(ss.libraries) - 1
 		ss.processLibraryMap[path] = index
-	}
 
+	}
 	return index
 }
 
@@ -296,28 +296,7 @@ func (pw *processWatcher) acquireState() *systemState {
 		ss.processes = append(ss.processes, wp)
 	}
 
-	// to make the crc check more meaningful
-	ss.sortSystemState()
-
 	return &ss
-}
-
-func (ss *systemState) sortSystemState() {
-	// make a copy in the original order
-	oldSLs := make(systemLibraries, len(ss.libraries))
-	copy(oldSLs, ss.libraries)
-
-	// sort everything
-	sort.Sort(ss.processes)
-	sort.Sort(ss.libraries)
-
-	for _, proc := range ss.processes {
-		for _, procLib := range proc.ProcessLibraries {
-			path := oldSLs[procLib.libraryIndex].Path()
-			// find the new index
-			procLib.libraryIndex = ss.findLibraryIndex(path)
-		}
-	}
 }
 
 func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
@@ -444,11 +423,3 @@ func DumpJsonProcessMap() {
 	watcher := singleServingWatcher()
 	fmt.Printf("%s\n", string(watcher.StateJson()))
 }
-
-func (s systemProcesses) Len() int           { return len(s) }
-func (s systemProcesses) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s systemProcesses) Less(i, j int) bool { return s[i].Pid < s[j].Pid }
-
-func (s systemLibraries) Len() int           { return len(s) }
-func (s systemLibraries) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s systemLibraries) Less(i, j int) bool { return s[i].Path() < s[j].Path() }
