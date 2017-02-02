@@ -353,7 +353,7 @@ func (pw *processWatcher) setStateAttribute() {
 
 	json, err := json.Marshal(map[string]interface{}{
 		"server": map[string]interface{}{
-			"process_map": state,
+			"system_state": state,
 		},
 	})
 
