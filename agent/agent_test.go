@@ -1,6 +1,8 @@
 package agent
 
 import (
+	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -46,6 +48,10 @@ func TestAgent(t *testing.T) {
 	agent.BuildAndSyncWatchers()
 	agent.StartPolling()
 
+	// force a change in the process table
+	proc := startProcess(assert)
+	defer proc.Kill()
+
 	agent.Heartbeat()
 
 	// after a period of time, we sync all files
@@ -60,4 +66,14 @@ func TestAgent(t *testing.T) {
 	// since the SendFiles happen in a go routine
 	defer agent.CloseWatches()
 	defer client.AssertExpectations(t)
+}
+
+func startProcess(assert *assert.Assertions) *os.Process {
+	script := DEV_CONF_PATH + "/pointless"
+
+	cmd := exec.Command(script)
+	err := cmd.Start()
+	assert.Nil(err)
+
+	return cmd.Process
 }

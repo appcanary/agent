@@ -121,7 +121,7 @@ func (t *ClientTestSuite) TestSendProcessState() {
 
 		serverM := server.(map[string]interface{})
 
-		processMap := serverM["process_map"]
+		processMap := serverM["system_state"]
 		t.NotNil(processMap)
 
 		processMapM := processMap.(map[string]interface{})
@@ -136,6 +136,7 @@ func (t *ClientTestSuite) TestSendProcessState() {
 			procM := proc.(map[string]interface{})
 			if int(procM["pid"].(float64)) == cmd.Process.Pid {
 				watchedProc = procM
+				break
 			}
 		}
 
@@ -144,6 +145,7 @@ func (t *ClientTestSuite) TestSendProcessState() {
 		t.NotNil(watchedProc["libraries"])
 		t.NotNil(watchedProc["started"])
 
+		// Note this will fail if `dpkg` is unavailable
 		if len(watchedProc["libraries"].([]interface{})) == 0 {
 			t.Fail("No libraries were found")
 		}
