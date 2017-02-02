@@ -49,7 +49,6 @@ func (agent *Agent) BuildAndSyncWatchers() {
 		}
 		agent.files = append(agent.files, watcher)
 	}
-	agent.files = append(agent.files, NewAllProcessWatcher(agent.OnChange))
 }
 
 func (agent *Agent) OnChange(w Watcher) {
