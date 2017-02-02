@@ -38,56 +38,20 @@ type processWatcher struct {
 type systemProcesses []watchedProcess
 
 // indexed list of libraries
-type systemLibraries []libspector.Library
-
-// This is how the data structure should look
-
-// var someLib1 libspector.Library
-// var someLib2 libspector.Library
-// var processStartTime time.Time
-// var updatedAt time.Time
-// var callback = func(w Watcher) { return }
-
-// var watcher = processWatcher{
-// 	keepPolling: true,
-// 	UpdatedAt:   updatedAt,
-// 	OnChange:    callback,
-// 	pollSleep:   env.PollSleep,
-// 	match:       "*",
-//  // this is no longer true, instead we just keep the marshaled json, but this
-//  // a helpful structure doc
-// 	state: &systemState{
-// 		processes: &systemProcesses{
-// 			watchedProcess{
-// 				ProcessStartedAt: processStartTime,
-// 				ProcessLibraries: []processLibrary{
-// 					processLibrary{
-// 						Outdated:     true,
-// 						libraryIndex: 2, // somelib2
-// 					},
-// 				},
-// 				Outdated: true,
-// 				Pid:      5,
-// 				Command:  "test_script.sh 1 2 3",
-// 			},
-// 			// ...
-// 		},
-// 		libraries: &systemLibraries{
-// 			someLib1,
-// 			someLib2,
-// 			// ...
-// 		},
-// 	},
-// }
+type systemLibrary struct {
+	Path           string
+	PackageName    string
+	PackageVersion string
+	Modified       time.Time
+}
 
 // "map" in the colloquial sense
 type systemState struct {
-	processes         systemProcesses
-	libraries         systemLibraries
-	processLibraryMap processLibraryMap
+	processes systemProcesses
+	libraries processLibraryMap
 }
 
-type processLibraryMap map[string]int
+type processLibraryMap map[string]systemLibrary
 
 type watchedProcess struct {
 	ProcessStartedAt time.Time
@@ -98,8 +62,8 @@ type watchedProcess struct {
 }
 
 type processLibrary struct {
-	libraryIndex int // point to a systemLibrary
-	Outdated     bool
+	libraryPath string // point to a systemLibrary
+	Outdated    bool
 }
 
 func (ss *systemState) String() string {
@@ -116,42 +80,30 @@ func (ss *systemState) String() string {
 
 		for _, lib := range proc.ProcessLibraries {
 			buffer.WriteString("\n")
-			libraryToString(buffer, lib.Outdated, ss.libraries[lib.libraryIndex])
+			libraryToString(buffer, lib.Outdated, ss.libraries[lib.libraryPath])
 		}
 	}
 	return buffer.String()
 }
 
-func libraryToString(buffer *bytes.Buffer, outdated bool, lib libspector.Library) {
+func libraryToString(buffer *bytes.Buffer, outdated bool, lib systemLibrary) {
 	if outdated {
 		buffer.WriteString("Outdated: yes")
 	} else {
 		buffer.WriteString("Outdated:  no")
 	}
 
-	buffer.WriteString(fmt.Sprintf(", Path: %v, ", lib.Path()))
-
-	if pkg, err := lib.Package(); err != nil {
-		log.Warningf("Error reading package info for %s: %v", lib.Path(), err)
-		buffer.WriteString("Package: unknown, ")
-	} else {
-		buffer.WriteString(fmt.Sprintf("Package: %s-%s, ", pkg.Name(), pkg.Version()))
-	}
-
-	if modified, err := lib.Modified(); err != nil {
-		log.Warningf("Error reading modification date: %v", err)
-		buffer.WriteString("Modified: unknown")
-	} else {
-		buffer.WriteString(fmt.Sprintf("Modified: %v", modified))
-	}
+	buffer.WriteString(fmt.Sprintf(", Path: %v, ", lib.Path))
+	buffer.WriteString(fmt.Sprintf("Package: %s-%s, ", lib.PackageName, lib.PackageVersion))
+	buffer.WriteString(fmt.Sprintf("Modified: %v", lib.Modified))
 
 	return
 }
 
 func (ss *systemState) MarshalJSON() ([]byte, error) {
-	libraries := make([]map[string]interface{}, len(ss.libraries))
-	for i, lib := range ss.libraries {
-		libraries[i] = libToMap(lib, i)
+	libraries := make(map[string]interface{}, len(ss.libraries))
+	for path, lib := range ss.libraries {
+		libraries[path] = libToMap(lib)
 	}
 
 	processes := make([]map[string]interface{}, len(ss.processes))
@@ -176,64 +128,26 @@ func procLibsToMapArray(libs []processLibrary) []map[string]interface{} {
 
 	for i, lib := range libs {
 		procLibs[i] = map[string]interface{}{
-			"outdated":      lib.Outdated,
-			"library_index": lib.libraryIndex,
+			"outdated":     lib.Outdated,
+			"library_path": lib.libraryPath,
 		}
 	}
 
 	return procLibs
 }
 
-func libToMap(lib libspector.Library, index int) map[string]interface{} {
-	path := lib.Path()
-
-	modified, err := lib.Modified()
-	if err != nil {
-		log.Warningf("error retrieving modification date for lib %s, %v", path, err)
-		return nil
-	}
-
-	pkgName := ""
-	pkgVersion := ""
-	if pkg, err := lib.Package(); err != nil {
-		log.Warningf("error retrieving package name for lib %s, %v", path, err)
-	} else {
-		pkgName = pkg.Name()
-		pkgVersion = pkg.Version()
-	}
-
+func libToMap(lib systemLibrary) map[string]interface{} {
 	return map[string]interface{}{
-		"path":            path,
-		"modified":        modified,
-		"package_name":    pkgName,
-		"package_version": pkgVersion,
-		"id":              index,
+		"path":            lib.Path,
+		"modified":        lib.Modified,
+		"package_name":    lib.PackageName,
+		"package_version": lib.PackageVersion,
 	}
 }
 
-func (sl processLibraryMap) findLibraryIndex(path string) int {
-	if index, ok := sl[path]; ok {
-		return index
-	}
-
-	return -1
-}
-
-func (ss *systemState) findLibraryIndex(path string) int {
-	return ss.processLibraryMap.findLibraryIndex(path)
-}
-
-func (ss *systemState) addLibrary(lib libspector.Library) int {
-	path := lib.Path()
-	index := ss.findLibraryIndex(path)
-
-	if index < 0 {
-		ss.libraries = append(ss.libraries, lib)
-		index = len(ss.libraries) - 1
-		ss.processLibraryMap[path] = index
-
-	}
-	return index
+func remove(s []libspector.Library, i int) []libspector.Library {
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	return s[:len(s)-1]
 }
 
 func (pw *processWatcher) acquireState() *systemState {
@@ -243,10 +157,11 @@ func (pw *processWatcher) acquireState() *systemState {
 	}
 
 	ss := systemState{
-		processes:         make(systemProcesses, 0, len(lsProcs)),
-		libraries:         make(systemLibraries, 0), // ¯\_(ツ)_/¯
-		processLibraryMap: make(map[string]int, 0),
+		processes: make(systemProcesses, 0, len(lsProcs)),
+		libraries: make(processLibraryMap, 0), // ¯\_(ツ)_/¯
 	}
+
+	rejects := map[string]bool{}
 
 	for _, lsProc := range lsProcs {
 		started, err := lsProc.Started()
@@ -276,27 +191,71 @@ func (pw *processWatcher) acquireState() *systemState {
 		wp := watchedProcess{
 			ProcessStartedAt: started,
 			Pid:              lsProc.PID(),
-			ProcessLibraries: make([]processLibrary, len(spectorLibs)),
+			ProcessLibraries: make([]processLibrary, 0, len(spectorLibs)),
 			Outdated:         false,
 			Command:          command,
 		}
 
-		for i, spectorLib := range spectorLibs {
-			libraryIndex := ss.addLibrary(spectorLib)
-			lib := processLibrary{
-				libraryIndex: libraryIndex,
-				Outdated:     spectorLib.Outdated(lsProc),
+		for _, spectorLib := range spectorLibs {
+			path := spectorLib.Path()
+			if rejects[path] {
+				log.Debugf("Already rejected %v", path)
+				continue
 			}
+
+			if _, ok := ss.libraries[path]; !ok {
+				sysLib, err := NewSystemLibrary(spectorLib)
+				if err != nil {
+					log.Debugf("error introspecting system lib %s, %v; removing...", path, err)
+					rejects[path] = true
+					continue
+				}
+
+				ss.libraries[path] = sysLib
+			}
+
+			lib := processLibrary{
+				libraryPath: path,
+				Outdated:    spectorLib.Outdated(lsProc),
+			}
+
 			if lib.Outdated && !wp.Outdated {
 				wp.Outdated = true
 			}
-			wp.ProcessLibraries[i] = lib
+
+			wp.ProcessLibraries = append(wp.ProcessLibraries, lib)
 		}
 
 		ss.processes = append(ss.processes, wp)
 	}
 
 	return &ss
+}
+
+func NewSystemLibrary(lib libspector.Library) (sysLib systemLibrary, err error) {
+	path := lib.Path()
+
+	modified, err := lib.Modified()
+	if err != nil {
+		return
+	}
+
+	pkg, err := lib.Package()
+	if err != nil {
+		return
+	}
+
+	pkgName := pkg.Name()
+	pkgVersion := pkg.Version()
+
+	sysLib = systemLibrary{
+		Path:           path,
+		Modified:       modified,
+		PackageName:    pkgName,
+		PackageVersion: pkgVersion,
+	}
+
+	return
 }
 
 func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
