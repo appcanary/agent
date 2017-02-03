@@ -372,21 +372,12 @@ func (pw *processWatcher) listen() {
 	}
 }
 
-func singleServingWatcher() *processWatcher {
-	return &processWatcher{
-		match:     "*",
-		OnChange:  func(w Watcher) { return },
-		UpdatedAt: time.Now(),
-		pollSleep: env.PollSleep,
-	}
+func ShipProcessMap(a *Agent) {
+	watcher := NewProcessWatcher("*", a.OnChange).(*processWatcher)
+	watcher.scan()
 }
 
 func DumpProcessMap() {
-	watcher := singleServingWatcher()
-	fmt.Printf("%s\n", watcher.acquireState().String())
-}
-
-func DumpJsonProcessMap() {
-	watcher := singleServingWatcher()
+	watcher := NewProcessWatcher("*", func(w Watcher) {}).(*processWatcher)
 	fmt.Printf("%s\n", string(watcher.StateJson()))
 }

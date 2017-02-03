@@ -20,8 +20,8 @@ const (
 	PerformUpgrade
 	PerformDisplayVersion
 	PerformDetectOS
-	PerformProcessDump
-	PerformJsonProcessDump
+	PerformProcessInspection
+	PerformProcessInspectionJsonDump
 )
 
 func usage() {
@@ -29,9 +29,10 @@ func usage() {
 
 	defaultFlags.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\nCommands:\n"+
-		"\t[none]\t\tStart the agent\n"+
-		"\tupgrade\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
-		"\tdetect-os\tDetect current operating system\n")
+		"\t[none]\t\t\tStart the agent\n"+
+		"\tupgrade\t\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
+		"\tinspect-processes\tSend your process library information to Appcanary\n"+
+		"\tdetect-os\t\tDetect current operating system\n")
 }
 
 func parseFlags(argRange int, env *agent.Env) {
@@ -72,10 +73,10 @@ func parseArguments(env *agent.Env) CommandToPerform {
 		performCmd = PerformUpgrade
 	case "detect-os":
 		performCmd = PerformDetectOS
-	case "dump":
-		performCmd = PerformProcessDump
-	case "dump-json":
-		performCmd = PerformJsonProcessDump
+	case "inspect-processes":
+		performCmd = PerformProcessInspection
+	case "inspect-processes-json":
+		performCmd = PerformProcessInspectionJsonDump
 	case "-version":
 		performCmd = PerformDisplayVersion
 	case "--version":
@@ -150,17 +151,14 @@ func initialize(env *agent.Env) *agent.Agent {
 	return a
 }
 
-func runProcessDump() {
-	log := agent.FetchLog()
-	log.Info("Dumping process map...")
-	agent.DumpProcessMap()
+func runProcessInspection(a *agent.Agent) {
+	agent.ShipProcessMap(a)
+	fmt.Println("Done! Check https://appcanary.com/")
 	os.Exit(0)
 }
 
-func runJsonProcessDump() {
-	log := agent.FetchLog()
-	log.Info("Dumping json process map...")
-	agent.DumpJsonProcessMap()
+func runProcessInspectionDump() {
+	agent.DumpProcessMap()
 	os.Exit(0)
 }
 
@@ -221,11 +219,12 @@ func main() {
 	case PerformDetectOS:
 		runDetectOS()
 
-	case PerformProcessDump:
-		runProcessDump()
+	case PerformProcessInspection:
+		a := initialize(env)
+		runProcessInspection(a)
 
-	case PerformJsonProcessDump:
-		runJsonProcessDump()
+	case PerformProcessInspectionJsonDump:
+		runProcessInspectionDump()
 
 	case PerformUpgrade:
 		a := initialize(env)
