@@ -206,6 +206,13 @@ func runAgentLoop(env *agent.Env, a *agent.Agent) {
 	<-a.DoneChannel
 }
 
+func checkYourPrivilege() {
+	if os.Getuid() != 0 && os.Geteuid() != 0 {
+		fmt.Println("Cannot run unprivileged - must be root (UID=0)")
+		os.Exit(13)
+	}
+}
+
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
@@ -220,10 +227,12 @@ func main() {
 		runDetectOS()
 
 	case PerformProcessInspection:
+		checkYourPrivilege()
 		a := initialize(env)
 		runProcessInspection(a)
 
 	case PerformProcessInspectionJsonDump:
+		checkYourPrivilege()
 		runProcessInspectionDump()
 
 	case PerformUpgrade:
