@@ -167,27 +167,27 @@ func (pw *processWatcher) acquireState() *systemState {
 	for _, lsProc := range lsProcs {
 		started, err := lsProc.Started()
 		if err != nil {
-			log.Infof("PID %d is not running, skipping", lsProc.PID())
+			log.Debugf("PID %d is not running, skipping", lsProc.PID())
 			continue
 		}
 
 		command, err := lsProc.Command()
 		if err != nil {
-			log.Infof("Can't read command line for PID %d: %v", lsProc.PID(), err)
+			log.Debugf("Can't read command line for PID %d: %v", lsProc.PID(), err)
 			// fall through, we can live without this (?)
 		}
 
 		spectorLibs, err := lsProc.Libraries()
 		if err != nil {
 			if os.Getuid() != 0 && os.Geteuid() != 0 {
-				log.Infof("Cannot examine libs for PID %d, with UID:%d, EUID:%d",
+				log.Debugf("Cannot examine libs for PID %d, with UID:%d, EUID:%d",
 					lsProc.PID(), os.Getuid(), os.Geteuid())
 				continue
 			}
 
 			if strings.Contains(err.Error(), "42") {
 				// process went away
-				log.Infof("Cannot examine libs for PID %d, process disappeared",
+				log.Debugf("Cannot examine libs for PID %d, process disappeared",
 					lsProc.PID())
 				continue
 			}
