@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -181,6 +182,13 @@ func (pw *processWatcher) acquireState() *systemState {
 			if os.Getuid() != 0 && os.Geteuid() != 0 {
 				log.Infof("Cannot examine libs for PID %d, with UID:%d, EUID:%d",
 					lsProc.PID(), os.Getuid(), os.Geteuid())
+				continue
+			}
+
+			if strings.Contains(err.Error(), "42") {
+				// process went away
+				log.Infof("Cannot examine libs for PID %d, process disappeared",
+					lsProc.PID())
 				continue
 			}
 
