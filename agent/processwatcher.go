@@ -368,6 +368,8 @@ func (pw *processWatcher) scan() {
 func (pw *processWatcher) listen() {
 	for pw.KeepPolling() {
 		pw.scan()
+		// TODO: make a new var for this, it shouldn't be bound to the other
+		// watchers' schedules.
 		time.Sleep(pw.pollSleep)
 	}
 }
