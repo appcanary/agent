@@ -91,6 +91,7 @@ func InitEnv(env_str string) {
 }
 
 func InitLogging() {
+	// TODO: SetLevel must come before SetBackend
 	format := logging.MustStringFormatter("%{time} %{pid} %{shortfile}] %{message}")
 	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), format)
 	var err error

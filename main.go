@@ -233,6 +233,7 @@ func main() {
 
 	case PerformProcessInspectionJsonDump:
 		checkYourPrivilege()
+		agent.InitLogging()
 		runProcessInspectionDump()
 
 	case PerformUpgrade:

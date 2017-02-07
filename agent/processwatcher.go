@@ -59,7 +59,8 @@ type watchedProcess struct {
 	ProcessLibraries []processLibrary
 	Outdated         bool
 	Pid              int
-	Command          string
+	CommandName      string
+	CommandArgs      string
 }
 
 type processLibrary struct {
@@ -77,7 +78,7 @@ func (ss *systemState) String() string {
 			buffer.WriteString(", is running outdated lib(s)")
 		}
 
-		buffer.WriteString(fmt.Sprintf("\nCommand: %s", proc.Command))
+		buffer.WriteString(fmt.Sprintf("\nCommand: %s", proc.CommandArgs))
 
 		for _, lib := range proc.ProcessLibraries {
 			buffer.WriteString("\n")
@@ -114,7 +115,8 @@ func (ss *systemState) MarshalJSON() ([]byte, error) {
 			"libraries": procLibsToMapArray(proc.ProcessLibraries),
 			"outdated":  proc.Outdated,
 			"pid":       proc.Pid,
-			"name":      proc.Command,
+			"name":      proc.CommandName,
+			"args":      proc.CommandArgs,
 		}
 	}
 
@@ -171,7 +173,13 @@ func (pw *processWatcher) acquireState() *systemState {
 			continue
 		}
 
-		command, err := lsProc.Command()
+		commandArgs, err := lsProc.CommandArgs()
+		if err != nil {
+			log.Debugf("Can't read command line for PID %d: %v", lsProc.PID(), err)
+			// fall through, we can live without this (?)
+		}
+
+		commandName, err := lsProc.CommandName()
 		if err != nil {
 			log.Debugf("Can't read command line for PID %d: %v", lsProc.PID(), err)
 			// fall through, we can live without this (?)
@@ -201,20 +209,21 @@ func (pw *processWatcher) acquireState() *systemState {
 			Pid:              lsProc.PID(),
 			ProcessLibraries: make([]processLibrary, 0, len(spectorLibs)),
 			Outdated:         false,
-			Command:          command,
+			CommandName:      commandName,
+			CommandArgs:      commandArgs,
 		}
 
 		for _, spectorLib := range spectorLibs {
 			path := spectorLib.Path()
 			if rejects[path] {
-				log.Debugf("Already rejected %v", path)
+				// logSDebugf("Already rejected %v", path)
 				continue
 			}
 
 			if _, ok := ss.libraries[path]; !ok {
 				sysLib, err := NewSystemLibrary(spectorLib)
 				if err != nil {
-					log.Debugf("error introspecting system lib %s, %v; removing...", path, err)
+					// log.Debugf("error introspecting system lib %s, %v; removing...", path, err)
 					rejects[path] = true
 					continue
 				}
@@ -243,7 +252,7 @@ func (pw *processWatcher) acquireState() *systemState {
 func NewSystemLibrary(lib libspector.Library) (sysLib systemLibrary, err error) {
 	path := lib.Path()
 
-	modified, err := lib.Modified()
+	modified, err := lib.Ctime()
 	if err != nil {
 		return
 	}
