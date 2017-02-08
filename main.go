@@ -152,8 +152,9 @@ func initialize(env *agent.Env) *agent.Agent {
 }
 
 func runProcessInspection(a *agent.Agent) {
+	log := agent.FetchLog()
 	agent.ShipProcessMap(a)
-	fmt.Println("Done! Check https://appcanary.com/")
+	log.Info("Process inspection sent. Check https://appcanary.com")
 	os.Exit(0)
 }
 

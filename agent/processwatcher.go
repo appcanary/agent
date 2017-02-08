@@ -384,8 +384,8 @@ func (pw *processWatcher) listen() {
 }
 
 func ShipProcessMap(a *Agent) {
-	watcher := NewProcessWatcher("*", a.OnChange).(*processWatcher)
-	watcher.scan()
+	watcher := NewProcessWatcher("*", func(w Watcher) {}).(*processWatcher)
+	a.OnChange(watcher)
 }
 
 func DumpProcessMap() {
