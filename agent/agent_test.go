@@ -16,9 +16,9 @@ func TestAgent(t *testing.T) {
 	// setup
 	serverUUID := "123456"
 	conf.InitEnv("test")
-	config := conf.NewConfFromEnv()
+	config := conf.NewTomlConfFromEnv()
 
-	config.Files[0].Path = conf.DEV_CONF_PATH + "/dpkg/available"
+	config.Watchers[0].Path = conf.DEV_CONF_PATH + "/dpkg/available"
 
 	client := &MockClient{}
 	client.On("CreateServer").Return(serverUUID)
@@ -70,7 +70,7 @@ func TestAgent(t *testing.T) {
 }
 
 func startProcess(assert *assert.Assertions) *os.Process {
-	script := DEV_CONF_PATH + "/pointless"
+	script := conf.DEV_CONF_PATH + "/pointless"
 
 	cmd := exec.Command(script)
 	err := cmd.Start()

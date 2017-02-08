@@ -98,7 +98,7 @@ func InitLogging() {
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
 
-		conf := NewConfFromEnv()
+		conf := NewTomlConfFromEnv()
 		var logPath string
 		if conf.LogPath != "" {
 			logPath = conf.LogPath

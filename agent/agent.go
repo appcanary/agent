@@ -9,14 +9,14 @@ import (
 var CanaryVersion string
 
 type Agent struct {
-	conf        *conf.TomlConf
+	conf        *conf.Conf
 	client      Client
 	server      *Server
 	files       Watchers
 	DoneChannel chan os.Signal
 }
 
-func NewAgent(version string, conf *conf.TomlConf, clients ...Client) *Agent {
+func NewAgent(version string, conf *conf.Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: Watchers{}}
 
 	// Find out what we need about machine
@@ -41,21 +41,23 @@ func (agent *Agent) StartPolling() {
 }
 
 func (agent *Agent) BuildAndSyncWatchers() {
-	for _, f := range agent.conf.Files {
+	for _, w := range agent.conf.Watchers {
 		var watcher Watcher
 
-		if f.Process != "" {
-			watcher = NewProcessWatcher(f.Process, agent.OnChange)
-		} else if f.Command != "" {
-			watcher = NewCommandOutputWatcher(f.Command, agent.OnChange)
-		} else if f.Path != "" {
-			watcher = NewFileWatcher(f.Path, agent.OnChange)
+		if w.Process != "" {
+			watcher = NewProcessWatcher(w.Process, agent.OnChange)
+		} else if w.Command != "" {
+			watcher = NewCommandOutputWatcher(w.Command, agent.OnChange)
+		} else if w.Path != "" {
+			watcher = NewFileWatcher(w.Path, agent.OnChange)
 		}
 		agent.files = append(agent.files, watcher)
 	}
 }
 
 func (agent *Agent) OnChange(w Watcher) {
+	log := conf.FetchLog()
+
 	switch wt := w.(type) {
 	default:
 		log.Errorf("Don't know what to do with %T", wt)
@@ -67,6 +69,8 @@ func (agent *Agent) OnChange(w Watcher) {
 }
 
 func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
+	log := conf.FetchLog()
+
 	match := pw.Match()
 	if match == "*" {
 		log.Infof("Shipping process map")

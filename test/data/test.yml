@@ -1,0 +1,12 @@
+server_name: deployment1
+
+api_key: APIKEY
+log_level: info
+
+distro: testDistro
+release: testRelease
+
+watchers:
+  - path: /var/lib/dpkg/available
+  - path: /path/to/Gemfile.lock
+  - command: fakecmdhere

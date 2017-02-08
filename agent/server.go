@@ -20,7 +20,7 @@ type Server struct {
 }
 
 // Creates a new server and syncs conf if needed
-func NewServer(agentConf *conf.TomlConf, serverConf *conf.ServerConf) *Server {
+func NewServer(agentConf *conf.Conf, serverConf *conf.ServerConf) *Server {
 	log := conf.FetchLog()
 
 	var err error
@@ -31,9 +31,12 @@ func NewServer(agentConf *conf.TomlConf, serverConf *conf.ServerConf) *Server {
 		hostname = "unknown"
 	}
 
-	// syscall.Uname is only available in linux because in Darwin it's not a syscall (who knew)
-	// furthermore, syscall.Uname returns a struct (syscall.Utsname) of [65]int8 -- which are *signed* integers
-	// instead of convering the signed integers into bytes and processing the whole thing into a string, we're just going to call uname -a for now and upload the returned string
+	// syscall.Uname is only available in linux because in Darwin it's not a
+	// syscall (who knew) furthermore, syscall.Uname returns a struct
+	// (syscall.Utsname) of [65]int8 -- which are *signed* integers instead of
+	// convering the signed integers into bytes and processing the whole thing
+	// into a string, we're just going to call uname -a for now and upload the
+	// returned string
 	cmdUname, err := exec.Command("uname", "-a").Output()
 	if err != nil {
 		uname = "unknown"
@@ -72,7 +75,15 @@ func NewServer(agentConf *conf.TomlConf, serverConf *conf.ServerConf) *Server {
 		}
 	}
 
-	return &Server{Name: agentConf.ServerName, Hostname: hostname, Uname: uname, Ip: thisIP, UUID: serverConf.UUID, Distro: distro, Release: release}
+	return &Server{
+		Name:     agentConf.ServerName,
+		Hostname: hostname,
+		Uname:    uname,
+		Ip:       thisIP,
+		UUID:     serverConf.UUID,
+		Distro:   distro,
+		Release:  release,
+	}
 }
 
 func (server *Server) IsNew() bool {

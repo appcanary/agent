@@ -115,7 +115,7 @@ func initialize(env *conf.Env) *agent.Agent {
 	fmt.Println(env.Logo)
 
 	// slurp env, instantiate agent
-	config := conf.NewConfFromEnv()
+	config := conf.NewTomlConfFromEnv()
 
 	if config.ApiKey == "" {
 		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")
@@ -153,7 +153,7 @@ func initialize(env *conf.Env) *agent.Agent {
 }
 
 func runProcessInspection(a *agent.Agent) {
-	log := agent.FetchLog()
+	log := conf.FetchLog()
 	agent.ShipProcessMap(a)
 	log.Info("Process inspection sent. Check https://appcanary.com")
 	os.Exit(0)
@@ -235,7 +235,7 @@ func main() {
 
 	case PerformProcessInspectionJsonDump:
 		checkYourPrivilege()
-		agent.InitLogging()
+		conf.InitLogging()
 		runProcessInspectionDump()
 
 	case PerformUpgrade:

@@ -11,14 +11,14 @@ import (
 func TestServerConf(t *testing.T) {
 	assert := assert.New(t)
 
-	aconf := &conf.TomlConf{LinuxOSInfo: detect.LinuxOSInfo{Distro: "testDistro", Release: "testRelease"}, ServerName: "TestName"}
+	aconf := &conf.Conf{LinuxOSInfo: detect.LinuxOSInfo{Distro: "testDistro", Release: "testRelease"}, ServerName: "TestName"}
 	server := NewServer(aconf, &conf.ServerConf{})
 
 	assert.Equal("testDistro", server.Distro)
 	assert.Equal("testRelease", server.Release)
 	assert.Equal("TestName", server.Name)
 
-	aconf = &conf.TomlConf{}
+	aconf = &conf.Conf{}
 	server = NewServer(aconf, &conf.ServerConf{})
 
 	// amusingly, can't test generated values reliably

@@ -90,17 +90,19 @@ func (t *ClientTestSuite) TestHeartbeat() {
 }
 
 func (t *ClientTestSuite) TestSendProcessState() {
+	env := conf.FetchEnv()
+
 	serverInvoked := false
 	ts := testServer(t, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+		t.Equal("Token "+t.apiKey, r.Header.Get("Authorization"), "heartbeat api key")
 
 		// TODO Test what was received
 	})
 
 	env.BaseUrl = ts.URL
-	script := DEV_CONF_PATH + "/pointless"
+	script := conf.DEV_CONF_PATH + "/pointless"
 
 	cmd := exec.Command(script)
 	err := cmd.Start()
@@ -149,7 +151,7 @@ func (t *ClientTestSuite) TestSendProcessState() {
 
 		// Note this will fail if `dpkg` is unavailable
 		if len(watchedProc["libraries"].([]interface{})) == 0 {
-			t.Fail("No libraries were found")
+			t.Fail("No libraries were found - could be dpkg is not installed?")
 		}
 		done <- true
 	})
@@ -194,7 +196,7 @@ func (t *ClientTestSuite) TestSendFile() {
 func (t *ClientTestSuite) TestCreateServer() {
 	env := conf.FetchEnv()
 
-	server := NewServer(&conf.TomlConf{}, &conf.ServerConf{})
+	server := NewServer(&conf.Conf{}, &conf.ServerConf{})
 
 	testUUID := "12345"
 	jsonResponse := "{\"uuid\":\"" + testUUID + "\"}"

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/appcanary/agent/agent/conf"
+
 	"hash/crc32"
 )
 
@@ -42,6 +44,7 @@ func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 	// the agent just looks at the file name in order to set the kind, we can do
 	// that just fine in the server also. It'd make more sense to set kind to be
 	// the kind of watcher.
+	env := conf.FetchEnv()
 	var kind string
 	filename := filepath.Base(path)
 	switch filename {
@@ -70,6 +73,7 @@ func NewFileWatcher(path string, callback ChangeHandler) Watcher {
 
 // Process watchers track changes in the output of a command
 func NewCommandOutputWatcher(process string, callback ChangeHandler) Watcher {
+	env := conf.FetchEnv()
 	splat := strings.Split(process, " ")
 	name := splat[0]
 	args := splat[1:]
