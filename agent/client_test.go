@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/appcanary/agent/agent/conf"
 	"github.com/appcanary/testify/suite"
 )
 
@@ -16,10 +17,10 @@ type TestJsonRequest map[string]interface{}
 
 type ClientTestSuite struct {
 	suite.Suite
-	api_key     string
-	server_uuid string
-	files       Watchers
-	client      Client
+	apiKey     string
+	serverUUID string
+	files      Watchers
+	client     Client
 }
 
 func TestClient(t *testing.T) {
@@ -27,60 +28,61 @@ func TestClient(t *testing.T) {
 }
 
 func (t *ClientTestSuite) SetupTest() {
-	InitEnv("test")
-	t.api_key = "my api key"
-	t.server_uuid = "server uuid"
+	conf.InitEnv("test")
+	t.apiKey = "my api key"
+	t.serverUUID = "server uuid"
 
-	dpkgPath := DEV_CONF_PATH + "/dpkg/available"
+	dpkgPath := conf.DEV_CONF_PATH + "/dpkg/available"
 	dpkgFile := NewFileWatcher(dpkgPath, testCallbackNOP)
 
-	gemfilePath := DEV_CONF_PATH + "/Gemfile.lock"
+	gemfilePath := conf.DEV_CONF_PATH + "/Gemfile.lock"
 	gemfile := NewFileWatcher(gemfilePath, testCallbackNOP)
 
 	t.files = Watchers{dpkgFile, gemfile}
 
-	t.client = NewClient(t.api_key, &Server{UUID: t.server_uuid})
+	t.client = NewClient(t.apiKey, &Server{UUID: t.serverUUID})
 
 }
 
 func (t *ClientTestSuite) TestHeartbeat() {
+	env := conf.FetchEnv()
 	serverInvoked := false
-	time.Sleep(TEST_POLL_SLEEP)
+	time.Sleep(conf.TEST_POLL_SLEEP)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+		t.Equal("Token "+t.apiKey, r.Header.Get("Authorization"), "heartbeat api key")
 
-		json_files := rBody["files"].([]interface{})
+		jsonFiles := rBody["files"].([]interface{})
 
 		// does the json we send look roughly like
 		// it's supposed to?
-		t.NotNil(json_files)
-		t.Equal(2, len(json_files))
-		monitored_file := json_files[0].(map[string]interface{})
+		t.NotNil(jsonFiles)
+		t.Equal(2, len(jsonFiles))
+		monitoredFile := jsonFiles[0].(map[string]interface{})
 
-		t.Equal("ubuntu", monitored_file["kind"])
-		t.NotNil(monitored_file["path"])
-		t.NotEqual("", monitored_file["path"])
-		t.NotNil(monitored_file["updated-at"])
-		t.NotEqual("", monitored_file["updated-at"])
-		t.Equal(true, monitored_file["being-watched"])
+		t.Equal("ubuntu", monitoredFile["kind"])
+		t.NotNil(monitoredFile["path"])
+		t.NotEqual("", monitoredFile["path"])
+		t.NotNil(monitoredFile["updated-at"])
+		t.NotEqual("", monitoredFile["updated-at"])
+		t.Equal(true, monitoredFile["being-watched"])
 
-		monitored_file2 := json_files[1].(map[string]interface{})
+		monitoredFile2 := jsonFiles[1].(map[string]interface{})
 
-		t.Equal("gemfile", monitored_file2["kind"])
-		t.NotNil(monitored_file2["path"])
-		t.NotEqual("", monitored_file2["path"])
-		t.NotNil(monitored_file2["updated-at"])
-		t.NotEqual("", monitored_file2["updated-at"])
-		t.Equal(true, monitored_file2["being-watched"])
+		t.Equal("gemfile", monitoredFile2["kind"])
+		t.NotNil(monitoredFile2["path"])
+		t.NotEqual("", monitoredFile2["path"])
+		t.NotNil(monitoredFile2["updated-at"])
+		t.NotEqual("", monitoredFile2["updated-at"])
+		t.Equal(true, monitoredFile2["being-watched"])
 	})
 
 	// the client uses BaseUrl to set up queries.
 	env.BaseUrl = ts.URL
 
 	// actual test execution
-	t.client.Heartbeat(t.server_uuid, t.files)
+	t.client.Heartbeat(t.serverUUID, t.files)
 
 	ts.Close()
 	t.files[0].Stop()
@@ -162,18 +164,19 @@ func (t *ClientTestSuite) TestSendProcessState() {
 }
 
 func (t *ClientTestSuite) TestSendFile() {
-	test_file_path := "/var/foo/whatever"
+	env := conf.FetchEnv()
+	testFilePath := "/var/foo/whatever"
 
 	serverInvoked := false
 	ts := testServer(t, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+		t.Equal("Token "+t.apiKey, r.Header.Get("Authorization"), "heartbeat api key")
 
 		json := rBody
 
 		t.Equal("", json["name"])
-		t.Equal(test_file_path, json["path"])
+		t.Equal(testFilePath, json["path"])
 		t.Equal("gemfile", json["kind"])
 		t.NotEqual("", json["contents"])
 
@@ -182,23 +185,25 @@ func (t *ClientTestSuite) TestSendFile() {
 	env.BaseUrl = ts.URL
 
 	contents, _ := t.files[0].(TextWatcher).Contents()
-	t.client.SendFile(test_file_path, "gemfile", contents)
+	t.client.SendFile(testFilePath, "gemfile", contents)
 
 	ts.Close()
 	t.True(serverInvoked)
 }
 
 func (t *ClientTestSuite) TestCreateServer() {
-	server := NewServer(&Conf{}, &ServerConf{})
+	env := conf.FetchEnv()
 
-	test_uuid := "12345"
-	json_response := "{\"uuid\":\"" + test_uuid + "\"}"
+	server := NewServer(&conf.TomlConf{}, &conf.ServerConf{})
+
+	testUUID := "12345"
+	jsonResponse := "{\"uuid\":\"" + testUUID + "\"}"
 	serverInvoked := false
 
-	ts := testServer(t, "POST", json_response, func(r *http.Request, rBody TestJsonRequest) {
+	ts := testServer(t, "POST", jsonResponse, func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+		t.Equal("Token "+t.apiKey, r.Header.Get("Authorization"), "heartbeat api key")
 
 		json := rBody
 
@@ -209,27 +214,28 @@ func (t *ClientTestSuite) TestCreateServer() {
 	})
 
 	env.BaseUrl = ts.URL
-	response_uuid, _ := t.client.CreateServer(server)
+	responseUUID, _ := t.client.CreateServer(server)
 	ts.Close()
 	t.True(serverInvoked)
-	t.Equal(test_uuid, response_uuid)
+	t.Equal(testUUID, responseUUID)
 }
 
 func (t *ClientTestSuite) TestFetchUpgradeablePackages() {
+	env := conf.FetchEnv()
 
-	json_response := "{\"libkrb5-3\":\"1.12+dfsg-2ubuntu5.2\",\"isc-dhcp-client\":\"4.2.4-7ubuntu12.4\"}"
+	jsonResponse := "{\"libkrb5-3\":\"1.12+dfsg-2ubuntu5.2\",\"isc-dhcp-client\":\"4.2.4-7ubuntu12.4\"}"
 	serverInvoked := false
-	ts := testServerSansInput(t, "GET", json_response, func(r *http.Request, rBody TestJsonRequest) {
+	ts := testServerSansInput(t, "GET", jsonResponse, func(r *http.Request, rBody TestJsonRequest) {
 		serverInvoked = true
 
-		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+		t.Equal("Token "+t.apiKey, r.Header.Get("Authorization"), "heartbeat api key")
 	})
 
 	env.BaseUrl = ts.URL
-	package_list, _ := t.client.FetchUpgradeablePackages()
+	packageList, _ := t.client.FetchUpgradeablePackages()
 	ts.Close()
 
-	t.Equal("1.12+dfsg-2ubuntu5.2", package_list["libkrb5-3"])
+	t.Equal("1.12+dfsg-2ubuntu5.2", packageList["libkrb5-3"])
 	t.True(serverInvoked)
 }
 

@@ -1,4 +1,4 @@
-package agent
+package conf
 
 import (
 	"os"
@@ -7,11 +7,11 @@ import (
 	"github.com/appcanary/agent/agent/detect"
 )
 
-type Conf struct {
-	ApiKey     string `toml:"api_key"`
-	LogPath    string `toml:"log_path"`
-	ServerName string `toml:"server_name"`
+type TomlConf struct {
 	detect.LinuxOSInfo
+	ApiKey       string      `toml:"api_key"`
+	LogPath      string      `toml:"log_path"`
+	ServerName   string      `toml:"server_name"`
 	Files        []*FileConf `toml:"files"`
 	StartupDelay int         `toml:"startup_delay"`
 	ServerConf   *ServerConf `toml:"-"`
@@ -27,12 +27,13 @@ type ServerConf struct {
 	UUID string `toml:"uuid"`
 }
 
-func NewConf() *Conf {
-	return &Conf{ServerConf: &ServerConf{}}
+func NewConf() *TomlConf {
+	return &TomlConf{ServerConf: &ServerConf{}}
 }
 
-func NewConfFromEnv() *Conf {
+func NewConfFromEnv() *TomlConf {
 	conf := NewConf()
+	log := FetchLog()
 
 	_, err := toml.DecodeFile(env.ConfFile, &conf)
 	if err != nil {
@@ -54,7 +55,7 @@ func NewConfFromEnv() *Conf {
 	return conf
 }
 
-func (c *Conf) OSInfo() *detect.LinuxOSInfo {
+func (c *TomlConf) OSInfo() *detect.LinuxOSInfo {
 	if c.Distro != "" && c.Release != "" {
 		return &c.LinuxOSInfo
 	} else {
@@ -62,7 +63,8 @@ func (c *Conf) OSInfo() *detect.LinuxOSInfo {
 	}
 }
 
-func (c *Conf) Save() {
+func (c *TomlConf) Save() {
+	log := FetchLog()
 	//We actually only save the server conf
 	sc := c.ServerConf
 	file, err := os.Create(env.VarFile)

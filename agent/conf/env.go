@@ -1,11 +1,11 @@
-package agent
+package conf
 
 import (
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 )
 
 var log = logging.MustGetLogger("canary-agent")
@@ -47,9 +47,9 @@ func FetchLog() *logging.Logger {
 	return log
 }
 
-func InitEnv(env_str string) {
-	env.Env = env_str
-	if env_str == "test" || env_str == "debug" {
+func InitEnv(envStr string) {
+	env.Env = envStr
+	if envStr == "test" || envStr == "debug" {
 		env.Prod = false
 	}
 

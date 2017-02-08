@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/appcanary/agent/agent/conf"
 	"github.com/appcanary/agent/agent/detect"
 )
 
@@ -19,9 +20,11 @@ type Server struct {
 }
 
 // Creates a new server and syncs conf if needed
-func NewServer(agentConf *Conf, conf *ServerConf) *Server {
+func NewServer(agentConf *conf.TomlConf, serverConf *conf.ServerConf) *Server {
+	log := conf.FetchLog()
+
 	var err error
-	var hostname, uname, this_ip, distro, release string
+	var hostname, uname, thisIP, distro, release string
 
 	hostname, err = os.Hostname()
 	if err != nil {
@@ -45,7 +48,7 @@ func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 		for _, a := range addrs {
 			//If we can't find a valid ipv4 ip, it will remain "unknown"
 			if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				this_ip = ipnet.IP.String()
+				thisIP = ipnet.IP.String()
 				break
 			}
 		}
@@ -69,7 +72,7 @@ func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 		}
 	}
 
-	return &Server{Name: agentConf.ServerName, Hostname: hostname, Uname: uname, Ip: this_ip, UUID: conf.UUID, Distro: distro, Release: release}
+	return &Server{Name: agentConf.ServerName, Hostname: hostname, Uname: uname, Ip: thisIP, UUID: serverConf.UUID, Distro: distro, Release: release}
 }
 
 func (server *Server) IsNew() bool {

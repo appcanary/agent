@@ -1,4 +1,4 @@
-package agent
+package conf
 
 import (
 	"testing"
@@ -9,8 +9,8 @@ import (
 func TestConf(t *testing.T) {
 	assert := assert.New(t)
 
-	env.ConfFile = "../test/data/test.conf"
-	env.VarFile = "../test/data/test_server.conf"
+	env.ConfFile = "../../test/data/test.conf"
+	env.VarFile = "../../test/data/test_server.conf"
 	conf := NewConfFromEnv()
 
 	assert.Equal("APIKEY", conf.ApiKey)

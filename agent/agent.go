@@ -1,18 +1,22 @@
 package agent
 
-import "os"
+import (
+	"os"
+
+	"github.com/appcanary/agent/agent/conf"
+)
 
 var CanaryVersion string
 
 type Agent struct {
-	conf        *Conf
+	conf        *conf.TomlConf
 	client      Client
 	server      *Server
 	files       Watchers
 	DoneChannel chan os.Signal
 }
 
-func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
+func NewAgent(version string, conf *conf.TomlConf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: Watchers{}}
 
 	// Find out what we need about machine
@@ -73,6 +77,7 @@ func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
 }
 
 func (agent *Agent) handleTextChange(tw TextWatcher) {
+	log := conf.FetchLog()
 	log.Infof("File change: %s", tw.Path())
 
 	// should probably be in the actual hook code
@@ -94,6 +99,7 @@ func (agent *Agent) handleTextChange(tw TextWatcher) {
 }
 
 func (agent *Agent) SyncAllFiles() {
+	log := conf.FetchLog()
 	log.Info("Synching all files.")
 
 	for _, f := range agent.files {
@@ -123,6 +129,8 @@ func (agent *Agent) RegisterServer() error {
 }
 
 func (agent *Agent) PerformUpgrade() {
+	log := conf.FetchLog()
+
 	var cmds UpgradeSequence
 	packageList, err := agent.client.FetchUpgradeablePackages()
 

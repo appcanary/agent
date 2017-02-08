@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/appcanary/agent/agent"
+	"github.com/appcanary/agent/agent/conf"
 	"github.com/appcanary/agent/agent/detect"
 )
 
@@ -35,7 +36,7 @@ func usage() {
 		"\tdetect-os\t\tDetect current operating system\n")
 }
 
-func parseFlags(argRange int, env *agent.Env) {
+func parseFlags(argRange int, env *conf.Env) {
 	var displayVersionFlagged bool
 	// httptest, used in client.test, sets a usage flag
 	// that leaks when you use the 'global' FlagSet.
@@ -57,7 +58,7 @@ func parseFlags(argRange int, env *agent.Env) {
 	defaultFlags.Parse(os.Args[argRange:])
 }
 
-func parseArguments(env *agent.Env) CommandToPerform {
+func parseArguments(env *conf.Env) CommandToPerform {
 	var performCmd CommandToPerform
 
 	if len(os.Args) < 2 {
@@ -105,29 +106,29 @@ func runDetectOS() {
 	os.Exit(0)
 }
 
-func initialize(env *agent.Env) *agent.Agent {
+func initialize(env *conf.Env) *agent.Agent {
 	// let's get started eh
 	// start the logger
-	agent.InitLogging()
-	log := agent.FetchLog()
+	conf.InitLogging()
+	log := conf.FetchLog()
 
 	fmt.Println(env.Logo)
 
 	// slurp env, instantiate agent
-	conf := agent.NewConfFromEnv()
+	config := conf.NewConfFromEnv()
 
-	if conf.ApiKey == "" {
+	if config.ApiKey == "" {
 		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")
 	}
 
 	// If the config sets a startup delay, we wait to boot up here
-	if conf.StartupDelay != 0 {
-		delay := time.Duration(conf.StartupDelay) * time.Second
+	if config.StartupDelay != 0 {
+		delay := time.Duration(config.StartupDelay) * time.Second
 		tick := time.Tick(delay)
 		<-tick
 	}
 
-	a := agent.NewAgent(CanaryVersion, conf)
+	a := agent.NewAgent(CanaryVersion, config)
 	a.DoneChannel = make(chan os.Signal, 1)
 
 	// we prob can't reliably fingerprint servers.
@@ -164,14 +165,14 @@ func runProcessInspectionDump() {
 }
 
 func runUpgrade(a *agent.Agent) {
-	log := agent.FetchLog()
+	log := conf.FetchLog()
 	log.Info("Running upgrade...")
 	a.PerformUpgrade()
 	os.Exit(0)
 }
 
-func runAgentLoop(env *agent.Env, a *agent.Agent) {
-	log := agent.FetchLog()
+func runAgentLoop(env *conf.Env, a *agent.Agent) {
+	log := conf.FetchLog()
 	// Add hooks to files, and push them over
 	// whenever they change
 	a.StartPolling()
@@ -215,8 +216,8 @@ func checkYourPrivilege() {
 }
 
 func main() {
-	agent.InitEnv(os.Getenv("CANARY_ENV"))
-	env := agent.FetchEnv()
+	conf.InitEnv(os.Getenv("CANARY_ENV"))
+	env := conf.FetchEnv()
 
 	// parse the args
 	switch parseArguments(env) {
