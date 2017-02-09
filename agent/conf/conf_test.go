@@ -41,8 +41,8 @@ func TestConf(t *testing.T) {
 	assert.Equal("123456", conf.ServerConf.UUID)
 
 	// rename the test files back again
-	assert.Nil(os.Rename(origConfFile+".obsolete", origConfFile))
-	assert.Nil(os.Rename(origVarFile+".obsolete", origVarFile))
+	assert.Nil(os.Rename(origConfFile+".deprecated", origConfFile))
+	assert.Nil(os.Rename(origVarFile+".deprecated", origVarFile))
 }
 
 func TestConfUpgrade(t *testing.T) {
@@ -85,8 +85,8 @@ func TestConfUpgrade(t *testing.T) {
 	// now remove the old configs and reload
 	rm := exec.Command(
 		"rm",
-		"../../test/data/tmptest.conf.obsolete",
-		"../../test/data/tmptest_server.conf.obsolete")
+		"../../test/data/tmptest.conf.deprecated",
+		"../../test/data/tmptest_server.conf.deprecated")
 	err = rm.Run()
 	assert.Nil(err)
 

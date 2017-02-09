@@ -56,7 +56,7 @@ func renameConf(path string) (err error) {
 		return
 	}
 
-	err = os.Rename(absPath, absPath+".obsolete")
+	err = os.Rename(absPath, absPath+".deprecated")
 	if err != nil {
 		return
 	}
