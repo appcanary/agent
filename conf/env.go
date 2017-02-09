@@ -64,7 +64,7 @@ func InitEnv(envStr string) {
 			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
 		}
 
-		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test.yml")
+		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test4.yml")
 
 		DEV_VAR_PATH, _ = filepath.Abs("test/var")
 		if _, err := os.Stat(DEV_VAR_PATH); err != nil {

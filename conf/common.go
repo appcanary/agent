@@ -2,6 +2,7 @@ package conf
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -39,11 +40,6 @@ func (c *Conf) OSInfo() *detect.LinuxOSInfo {
 	} else {
 		return nil
 	}
-}
-
-func yamlShaped(fname string) bool {
-	// the only time this is not true is when it's set via command line flag
-	return strings.HasSuffix(fname, ".yml")
 }
 
 func fileExists(fname string) bool {
@@ -120,23 +116,26 @@ func convertOldConf() (c *Conf) {
 }
 
 func shouldConvert(env *Env) bool {
+	areTomlFiles := strings.HasSuffix(env.ConfFile, ".conf") && strings.HasSuffix(env.VarFile, ".conf")
 	usingDefaults := env.ConfFile == DEFAULT_CONF_FILE && env.VarFile == DEFAULT_VAR_FILE
 	notInProduction := !env.Prod
-	return usingDefaults || notInProduction
+	return notInProduction || (areTomlFiles && usingDefaults)
 }
 
-func goodYAMLFiles(env *Env) bool {
-	goodConfFile := yamlShaped(env.ConfFile) && fileExists(env.ConfFile)
-	goodVarFile := yamlShaped(env.VarFile) && fileExists(env.VarFile)
-	return goodConfFile && goodVarFile
+func yamlFiles(env *Env) bool {
+	return strings.HasSuffix(env.ConfFile, ".yml") && strings.HasSuffix(env.VarFile, ".yml")
 }
 
 func NewConfFromEnv() (c *Conf, err error) {
 	env := FetchEnv()
 
-	// simplest case, it's already YAML, so load and continue
-	if goodYAMLFiles(env) {
-		c = NewYamlConfFromEnv()
+	// simplest case, it's already YAML, so load and return
+	if yamlFiles(env) {
+		if fileExists(env.ConfFile) {
+			c = NewYamlConfFromEnv()
+		} else {
+			err = errors.New(fmt.Sprintf("Couldn't find YAML conf files"))
+		}
 		return
 	}
 
