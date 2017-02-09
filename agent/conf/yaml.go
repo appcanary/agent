@@ -40,21 +40,23 @@ func (c *Conf) FullSave() {
 	log.Debug("Saved all the config files.")
 }
 
-func NewYamlConfFromEnv() *Conf {
-	conf := NewConf()
+func NewYamlConfFromEnv() (conf *Conf) {
+	conf = NewConf()
 	log := FetchLog()
 	env := FetchEnv()
 
 	// read file contents
 	data, err := ioutil.ReadFile(env.ConfFile)
 	if err != nil {
+		log.Error(err)
 		log.Fatalf("Can't seem to read %s. Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile)
 	}
 
 	// parse the YAML
 	err = yaml.Unmarshal(data, conf)
 	if err != nil {
-		log.Fatalf("Can't seem to parse %s (error: %v). Is this file valid YAML? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile, err)
+		log.Error(err)
+		log.Fatalf("Can't seem to parse %s. Is this file valid YAML? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile)
 	}
 
 	// bail if there's nothing configured
@@ -62,22 +64,32 @@ func NewYamlConfFromEnv() *Conf {
 		log.Fatal("No watchers configured! Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
-	// load the server conf from /var/db if there is one
-	if _, err := os.Stat(env.VarFile); err == nil {
-		data, err = ioutil.ReadFile(env.VarFile)
-		if err != nil {
-			log.Error(err)
-		}
-
-		err = yaml.Unmarshal(data, &conf.ServerConf)
-		if err != nil {
-			log.Error(err)
-		}
-
-		log.Debug("Found and read server configuration.")
-	} else {
-		log.Debugf("Couldn't open server configuration: %v", err)
-	}
+	// load the server conf (probably) from /var/db if there is one
+	tryLoadingVarFile(conf)
 
 	return conf
+}
+
+func tryLoadingVarFile(conf *Conf) {
+	env := FetchEnv()
+
+	_, err := os.Stat(env.VarFile)
+	if err != nil {
+		log.Debugf("Couldn't open server configuration: %v", err)
+		return
+	}
+
+	data, err := ioutil.ReadFile(env.VarFile)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	err = yaml.Unmarshal(data, &conf.ServerConf)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	log.Debug("Found and read server configuration.")
 }
