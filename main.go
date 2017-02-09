@@ -115,7 +115,7 @@ func initialize(env *conf.Env) *agent.Agent {
 	fmt.Println(env.Logo)
 
 	// slurp env, instantiate agent
-	config := conf.NewTomlConfFromEnv()
+	config := conf.NewConfFromEnv()
 
 	if config.ApiKey == "" {
 		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")

@@ -14,10 +14,14 @@ const (
 	PROD_URL = "https://www.appcanary.com"
 	DEV_URL  = "http://localhost:4000"
 
-	DEFAULT_CONF_PATH = "/etc/appcanary/"
-	DEFAULT_CONF_FILE = DEFAULT_CONF_PATH + "agent.conf"
-	DEFAULT_VAR_PATH  = "/var/db/appcanary/"
-	DEFAULT_VAR_FILE  = DEFAULT_VAR_PATH + "server.conf"
+	DEFAULT_CONF_PATH      = "/etc/appcanary/"
+	DEFAULT_CONF_FILE_BASE = DEFAULT_CONF_PATH + "agent"
+	DEFAULT_VAR_PATH       = "/var/db/appcanary/"
+	DEFAULT_VAR_FILE_BASE  = DEFAULT_VAR_PATH + "server"
+	DEFAULT_CONF_FILE      = DEFAULT_CONF_FILE_BASE + ".yml"
+	DEFAULT_VAR_FILE       = DEFAULT_VAR_FILE_BASE + ".yml"
+	OLD_DEFAULT_CONF_FILE  = DEFAULT_CONF_FILE_BASE + ".conf"
+	OLD_DEFAULT_VAR_FILE   = DEFAULT_VAR_FILE_BASE + ".conf"
 
 	DEFAULT_HEARTBEAT_DURATION = 1 * time.Hour
 	DEV_HEARTBEAT_DURATION     = 10 * time.Second

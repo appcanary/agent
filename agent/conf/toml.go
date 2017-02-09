@@ -9,10 +9,11 @@ import (
 func NewTomlConfFromEnv() *Conf {
 	conf := NewConf()
 	log := FetchLog()
+	env := FetchEnv()
 
 	_, err := toml.DecodeFile(env.ConfFile, &conf)
 	if err != nil {
-		log.Fatal("Can't seem to read ", env.ConfFile, ". Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.")
+		log.Fatalf("Can't seem to read %s. Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile)
 	}
 
 	if len(conf.Watchers) == 0 {
