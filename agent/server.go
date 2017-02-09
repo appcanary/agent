@@ -5,8 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/appcanary/agent/agent/conf"
 	"github.com/appcanary/agent/agent/detect"
+	"github.com/appcanary/agent/conf"
 )
 
 type Server struct {

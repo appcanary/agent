@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/appcanary/agent/agent"
-	"github.com/appcanary/agent/agent/conf"
 	"github.com/appcanary/agent/agent/detect"
+	"github.com/appcanary/agent/conf"
 )
 
 var CanaryVersion string
@@ -115,7 +115,10 @@ func initialize(env *conf.Env) *agent.Agent {
 	fmt.Println(env.Logo)
 
 	// slurp env, instantiate agent
-	config := conf.NewConfFromEnv()
+	config, err := conf.NewConfFromEnv()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if config.ApiKey == "" {
 		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")
@@ -141,7 +144,7 @@ func initialize(env *conf.Env) *agent.Agent {
 			// exponential decay library; by the time we hit this
 			// point we've been trying for about, what, an hour?
 			log.Infof("Register server error: %s", err)
-			err = a.RegisterServer()
+			err = a.RegisterServer() // WTF
 		}
 
 	}

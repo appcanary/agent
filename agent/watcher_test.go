@@ -9,7 +9,7 @@ import (
 
 	"io/ioutil"
 
-	"github.com/appcanary/agent/agent/conf"
+	"github.com/appcanary/agent/conf"
 	"github.com/appcanary/testify/assert"
 )
 

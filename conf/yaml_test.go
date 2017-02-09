@@ -10,8 +10,8 @@ import (
 func TestYamlConf(t *testing.T) {
 	assert := assert.New(t)
 
-	env.ConfFile = "../../test/data/test3.yml"
-	env.VarFile = "../../test/data/test_server3.yml"
+	env.ConfFile = "../test/data/test3.yml"
+	env.VarFile = "../test/data/test_server3.yml"
 	conf := NewYamlConfFromEnv()
 
 	assert.Equal("APIKEY", conf.ApiKey)
@@ -36,9 +36,9 @@ func TestYamlConf(t *testing.T) {
 func TestTomlYamlConversion(t *testing.T) {
 	assert := assert.New(t)
 
-	env.ConfFile = "../../test/data/test.conf"
-	env.VarFile = "../../test/data/test_server.conf"
-	conf := NewTomlConfFromEnv()
+	oldConfFile := "../test/data/test.conf"
+	oldVarFile := "../test/data/test_server.conf"
+	conf := NewTomlConfFromEnv(oldConfFile, oldVarFile)
 
 	// check a few bits
 	assert.Equal("APIKEY", conf.ApiKey)
@@ -46,10 +46,12 @@ func TestTomlYamlConversion(t *testing.T) {
 	assert.Equal("testDistro", conf.Distro)
 	assert.Equal("testRelease", conf.Release)
 
+	assert.Equal("123456", conf.ServerConf.UUID)
+
 	// now save it all as something yaml
-	env.ConfFile = "/tmp/newagentconf.yml"
-	env.VarFile = "/tmp/newserverconf.yml"
-	conf.FullSave()
+	newConfFile := "/tmp/newagentconf.yml"
+	newVarFile := "/tmp/newserverconf.yml"
+	conf.FullSave(newConfFile, newVarFile)
 
 	if _, err := os.Stat(env.ConfFile); err != nil {
 		assert.Error(err)
@@ -60,6 +62,8 @@ func TestTomlYamlConversion(t *testing.T) {
 	}
 
 	// let's see what's inside
+	env.ConfFile = newConfFile
+	env.VarFile = newVarFile
 	conf = NewYamlConfFromEnv()
 
 	assert.Equal("APIKEY", conf.ApiKey)

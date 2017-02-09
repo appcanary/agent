@@ -3,7 +3,7 @@ package agent
 import (
 	"os"
 
-	"github.com/appcanary/agent/agent/conf"
+	"github.com/appcanary/agent/conf"
 )
 
 var CanaryVersion string

@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,7 +10,7 @@ import (
 )
 
 type ServerConf struct {
-	UUID string `toml:"uuid"`
+	UUID string `toml:"uuid" yaml:"uuid"`
 }
 
 type Conf struct {
@@ -64,22 +65,28 @@ func renameConf(path string) (err error) {
 	return
 }
 
-func convertOldConf() *Conf {
+func transformFilename(path string) string {
+	log := FetchLog()
+
+	newPath, err := filepath.Abs(strings.TrimSuffix(path, ".conf") + ".yml")
+	if err != nil {
+		log.Error(err)
+	}
+
+	return newPath
+}
+
+func convertOldConf() (c *Conf) {
 	env := FetchEnv()
 	log := FetchLog()
 
-	// first, reset the environment
-
-	// TODO this is only necessary for testing, because we reach in and change
-	// the value of env.ConfFile. We really should have a better way to manage
-	// consts and environment fixtures. Maybe Go is just shit.
-	if !strings.HasSuffix(env.ConfFile, ".conf") {
-		env.ConfFile = OLD_DEFAULT_CONF_FILE
-		env.VarFile = OLD_DEFAULT_VAR_FILE
-	}
-
 	// load the TOML
-	c := NewTomlConfFromEnv()
+	if env.Prod { // we only get this far if locations are default
+		c = NewTomlConfFromEnv(OLD_DEFAULT_CONF_FILE, OLD_DEFAULT_VAR_FILE)
+	} else { // this should only happen in test
+		log.Error("conversion of non-default config files should only happen in test")
+		c = NewTomlConfFromEnv(env.ConfFile, env.VarFile)
+	}
 
 	// now move the old files out of the way and dump a new YAML version
 	log.Info("Old configuration detected, converting to new format")
@@ -94,36 +101,51 @@ func convertOldConf() *Conf {
 		log.Warningf("Couldn't rename old server config: %v", err)
 	}
 
-	// reset the new filenames
-	newConfFile, err := filepath.Abs(strings.TrimSuffix(env.ConfFile, ".conf") + ".yml")
-	if err != nil {
-		log.Error(err)
+	var newConfFile, newVarFile string
+	if env.Prod {
+		newConfFile = DEFAULT_CONF_FILE
+		newVarFile = DEFAULT_VAR_FILE
+	} else {
+		log.Error("conversion of non-default config files should only happen in test")
+		newConfFile = transformFilename(env.ConfFile)
+		newVarFile = transformFilename(env.VarFile)
 	}
-
-	newVarFile, err := filepath.Abs(strings.TrimSuffix(env.VarFile, ".conf") + ".yml")
-	if err != nil {
-		log.Error(err)
-	}
-
-	env.ConfFile = newConfFile
-	env.VarFile = newVarFile
 
 	// dump the new YAML files
-	c.FullSave()
+	c.FullSave(newConfFile, newVarFile)
 
-	log.Infof("New configuration file: %s", env.ConfFile)
+	log.Infof("New configuration file: %s", newConfFile)
 
-	return c
+	return
 }
 
-func NewConfFromEnv() *Conf {
+func shouldConvert(env *Env) bool {
+	usingDefaults := env.ConfFile == DEFAULT_CONF_FILE && env.VarFile == DEFAULT_VAR_FILE
+	notInProduction := !env.Prod
+	return usingDefaults || notInProduction
+}
+
+func goodYAMLFiles(env *Env) bool {
+	goodConfFile := yamlShaped(env.ConfFile) && fileExists(env.ConfFile)
+	goodVarFile := yamlShaped(env.VarFile) && fileExists(env.VarFile)
+	return goodConfFile && goodVarFile
+}
+
+func NewConfFromEnv() (c *Conf, err error) {
 	env := FetchEnv()
 
 	// simplest case, it's already YAML, so load and continue
-	if yamlShaped(env.ConfFile) && fileExists(env.ConfFile) {
-		return NewYamlConfFromEnv()
+	if goodYAMLFiles(env) {
+		c = NewYamlConfFromEnv()
+		return
 	}
 
-	// otherwise it's a bit more complicated
-	return convertOldConf()
+	// otherwise, if we're using default locations, attempt conversion
+	if shouldConvert(env) {
+		c = convertOldConf()
+		return
+	}
+
+	err = errors.New("couldn't parse configuration file(s) - please convert to YAML")
+	return
 }

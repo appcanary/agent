@@ -2,7 +2,6 @@ package conf
 
 import (
 	"io/ioutil"
-	"os"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -14,7 +13,7 @@ func save(fileName string, data []byte) {
 	}
 }
 
-func (c *Conf) Save() {
+func saveServerConf(c *Conf, varFile string) {
 	log := FetchLog()
 
 	yml, err := yaml.Marshal(c.ServerConf)
@@ -22,12 +21,16 @@ func (c *Conf) Save() {
 		log.Fatal(err)
 	}
 
-	save(env.VarFile, yml)
+	save(varFile, yml)
 	log.Debug("Saved server info.")
 }
 
+func (c *Conf) Save() {
+	saveServerConf(c, env.VarFile)
+}
+
 // Saves the whole structure in two files
-func (c *Conf) FullSave() {
+func (c *Conf) FullSave(confFile, varFile string) {
 	log := FetchLog()
 
 	yml, err := yaml.Marshal(c)
@@ -35,8 +38,8 @@ func (c *Conf) FullSave() {
 		log.Fatal(err)
 	}
 
-	save(env.ConfFile, yml)
-	c.Save() // save the var file
+	save(confFile, yml)
+	saveServerConf(c, varFile)
 	log.Debug("Saved all the config files.")
 }
 
@@ -72,10 +75,10 @@ func NewYamlConfFromEnv() (conf *Conf) {
 
 func tryLoadingVarFile(conf *Conf) {
 	env := FetchEnv()
+	log := FetchLog()
 
-	_, err := os.Stat(env.VarFile)
-	if err != nil {
-		log.Debugf("Couldn't open server configuration: %v", err)
+	if !fileExists(env.VarFile) {
+		log.Debugf("%s does not exist", env.VarFile)
 		return
 	}
 

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appcanary/agent/agent/conf"
+	"github.com/appcanary/agent/conf"
 	"github.com/appcanary/libspector"
 )
 

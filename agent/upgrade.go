@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/appcanary/agent/agent/conf"
+	"github.com/appcanary/agent/conf"
 )
 
 type UpgradeCommand struct {

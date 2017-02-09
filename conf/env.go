@@ -64,13 +64,13 @@ func InitEnv(envStr string) {
 			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
 		}
 
-		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test.conf")
+		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test.yml")
 
 		DEV_VAR_PATH, _ = filepath.Abs("test/var")
 		if _, err := os.Stat(DEV_VAR_PATH); err != nil {
 			DEV_VAR_PATH, _ = filepath.Abs("../test/var")
 		}
-		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")
+		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.yml")
 
 		// set dev vals
 
@@ -94,11 +94,15 @@ func InitLogging() {
 	// TODO: SetLevel must come before SetBackend
 	format := logging.MustStringFormatter("%{time} %{pid} %{shortfile}] %{message}")
 	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), format)
-	var err error
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
 
-		conf := NewTomlConfFromEnv()
+		conf, err := NewConfFromEnv()
+		if err != nil {
+			log.Errorf("Can't acquire configuration: %v", err)
+			os.Exit(1)
+		}
+
 		var logPath string
 		if conf.LogPath != "" {
 			logPath = conf.LogPath
@@ -115,7 +119,6 @@ func InitLogging() {
 			logging.SetBackend(fileBackend, stdoutBackend)
 		}
 	} else {
-
 		logging.SetLevel(logging.DEBUG, "canary-agent")
 		logging.SetBackend(stdoutBackend)
 	}
