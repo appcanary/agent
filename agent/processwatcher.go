@@ -116,7 +116,7 @@ func libToMap(lib systemLibrary) map[string]interface{} {
 func (pw *processWatcher) acquireState() *systemState {
 	lsProcs, err := pw.processes()
 	if err != nil {
-		panic(fmt.Errorf("Couldn't load processes: %s", err))
+		log.Fatalf("Couldn't load processes: %s", err)
 	}
 
 	ss := systemState{
@@ -161,7 +161,7 @@ func (pw *processWatcher) acquireState() *systemState {
 			}
 
 			// otherwise barf
-			panic(fmt.Errorf("Couldn't load libs for process %v: %s", lsProc, err))
+			log.Fatalf("Couldn't load libs for process %v: %s", lsProc, err)
 		}
 
 		wp := watchedProcess{
@@ -294,7 +294,7 @@ func (pw *processWatcher) setStateAttribute() {
 	})
 
 	if err != nil {
-		panic(err) // really shouldn't happen
+		log.Fatal(err) // really shouldn't happen
 	}
 
 	pw.stateJson = json
