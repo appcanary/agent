@@ -2,7 +2,6 @@ package conf
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -116,10 +115,9 @@ func convertOldConf() (c *Conf) {
 }
 
 func shouldConvert(env *Env) bool {
-	areTomlFiles := strings.HasSuffix(env.ConfFile, ".conf") && strings.HasSuffix(env.VarFile, ".conf")
 	usingDefaults := env.ConfFile == DEFAULT_CONF_FILE && env.VarFile == DEFAULT_VAR_FILE
 	notInProduction := !env.Prod
-	return notInProduction || (areTomlFiles && usingDefaults)
+	return notInProduction || usingDefaults
 }
 
 func yamlFiles(env *Env) bool {
@@ -130,12 +128,8 @@ func NewConfFromEnv() (c *Conf, err error) {
 	env := FetchEnv()
 
 	// simplest case, it's already YAML, so load and return
-	if yamlFiles(env) {
-		if fileExists(env.ConfFile) {
-			c = NewYamlConfFromEnv()
-		} else {
-			err = errors.New(fmt.Sprintf("Couldn't find YAML conf files"))
-		}
+	if yamlFiles(env) && fileExists(env.ConfFile) {
+		c = NewYamlConfFromEnv()
 		return
 	}
 
