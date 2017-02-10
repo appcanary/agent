@@ -19,7 +19,8 @@ type Conf struct {
 
 type FileConf struct {
 	Path    string `toml:"path"`
-	Process string `toml:"process"`
+	Command string `toml:"process"`
+	Process string `toml:"inspect_process"`
 }
 
 type ServerConf struct {

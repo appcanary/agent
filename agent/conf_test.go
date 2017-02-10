@@ -18,7 +18,7 @@ func TestConf(t *testing.T) {
 	assert.Equal("testDistro", conf.Distro)
 	assert.Equal("testRelease", conf.Release)
 
-	assert.Equal(3, len(conf.Files), "len of files")
+	assert.Equal(4, len(conf.Files), "len of files")
 
 	dpkg := conf.Files[0]
 	assert.Equal("/var/lib/dpkg/available", dpkg.Path, "file path")
@@ -27,7 +27,10 @@ func TestConf(t *testing.T) {
 	assert.Equal("/path/to/Gemfile.lock", gemfile.Path, "file path")
 
 	tar_h := conf.Files[2]
-	assert.Equal("fakecmdhere", tar_h.Process, "process path")
+	assert.Equal("fakecmdhere", tar_h.Command, "command path")
+
+	inspectProcess := conf.Files[3]
+	assert.Equal("*", inspectProcess.Process, "inspect process pattern")
 
 	assert.Equal("123456", conf.ServerConf.UUID)
 }

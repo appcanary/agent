@@ -20,6 +20,8 @@ const (
 	PerformUpgrade
 	PerformDisplayVersion
 	PerformDetectOS
+	PerformProcessInspection
+	PerformProcessInspectionJsonDump
 )
 
 func usage() {
@@ -27,9 +29,10 @@ func usage() {
 
 	defaultFlags.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\nCommands:\n"+
-		"\t[none]\t\tStart the agent\n"+
-		"\tupgrade\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
-		"\tdetect-os\tDetect current operating system\n")
+		"\t[none]\t\t\tStart the agent\n"+
+		"\tupgrade\t\t\tUpgrade system packages to nearest safe version (Ubuntu only)\n"+
+		"\tinspect-processes\tSend your process library information to Appcanary\n"+
+		"\tdetect-os\t\tDetect current operating system\n")
 }
 
 func parseFlags(argRange int, env *agent.Env) {
@@ -70,6 +73,10 @@ func parseArguments(env *agent.Env) CommandToPerform {
 		performCmd = PerformUpgrade
 	case "detect-os":
 		performCmd = PerformDetectOS
+	case "inspect-processes":
+		performCmd = PerformProcessInspection
+	case "inspect-processes-json":
+		performCmd = PerformProcessInspectionJsonDump
 	case "-version":
 		performCmd = PerformDisplayVersion
 	case "--version":
@@ -144,6 +151,18 @@ func initialize(env *agent.Env) *agent.Agent {
 	return a
 }
 
+func runProcessInspection(a *agent.Agent) {
+	log := agent.FetchLog()
+	agent.ShipProcessMap(a)
+	log.Info("Process inspection sent. Check https://appcanary.com")
+	os.Exit(0)
+}
+
+func runProcessInspectionDump() {
+	agent.DumpProcessMap()
+	os.Exit(0)
+}
+
 func runUpgrade(a *agent.Agent) {
 	log := agent.FetchLog()
 	log.Info("Running upgrade...")
@@ -188,6 +207,13 @@ func runAgentLoop(env *agent.Env, a *agent.Agent) {
 	<-a.DoneChannel
 }
 
+func checkYourPrivilege() {
+	if os.Getuid() != 0 && os.Geteuid() != 0 {
+		fmt.Println("Cannot run unprivileged - must be root (UID=0)")
+		os.Exit(13)
+	}
+}
+
 func main() {
 	agent.InitEnv(os.Getenv("CANARY_ENV"))
 	env := agent.FetchEnv()
@@ -200,6 +226,16 @@ func main() {
 
 	case PerformDetectOS:
 		runDetectOS()
+
+	case PerformProcessInspection:
+		checkYourPrivilege()
+		a := initialize(env)
+		runProcessInspection(a)
+
+	case PerformProcessInspectionJsonDump:
+		checkYourPrivilege()
+		agent.InitLogging()
+		runProcessInspectionDump()
 
 	case PerformUpgrade:
 		a := initialize(env)

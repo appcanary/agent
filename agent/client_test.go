@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -12,8 +13,6 @@ import (
 )
 
 type TestJsonRequest map[string]interface{}
-
-//[]map[string]string
 
 type ClientTestSuite struct {
 	suite.Suite
@@ -33,10 +32,10 @@ func (t *ClientTestSuite) SetupTest() {
 	t.server_uuid = "server uuid"
 
 	dpkgPath := DEV_CONF_PATH + "/dpkg/available"
-	dpkgFile := NewFileWatcherWithHook(dpkgPath, testCallbackNOP)
+	dpkgFile := NewFileWatcher(dpkgPath, testCallbackNOP)
 
 	gemfilePath := DEV_CONF_PATH + "/Gemfile.lock"
-	gemfile := NewFileWatcherWithHook(gemfilePath, testCallbackNOP)
+	gemfile := NewFileWatcher(gemfilePath, testCallbackNOP)
 
 	t.files = Watchers{dpkgFile, gemfile}
 
@@ -45,7 +44,6 @@ func (t *ClientTestSuite) SetupTest() {
 }
 
 func (t *ClientTestSuite) TestHeartbeat() {
-
 	serverInvoked := false
 	time.Sleep(TEST_POLL_SLEEP)
 	ts := testServer(t, "POST", "{\"success\": true}", func(r *http.Request, rBody TestJsonRequest) {
@@ -89,6 +87,80 @@ func (t *ClientTestSuite) TestHeartbeat() {
 	t.True(serverInvoked)
 }
 
+func (t *ClientTestSuite) TestSendProcessState() {
+	serverInvoked := false
+	ts := testServer(t, "PUT", "OK", func(r *http.Request, rBody TestJsonRequest) {
+		serverInvoked = true
+
+		t.Equal("Token "+t.api_key, r.Header.Get("Authorization"), "heartbeat api key")
+
+		// TODO Test what was received
+	})
+
+	env.BaseUrl = ts.URL
+	script := DEV_CONF_PATH + "/pointless"
+
+	cmd := exec.Command(script)
+	err := cmd.Start()
+	t.Nil(err)
+
+	defer cmd.Process.Kill()
+
+	done := make(chan bool)
+
+	watcher := NewProcessWatcher("pointless", func(w Watcher) {
+		wt := w.(ProcessWatcher)
+		jsonBytes := wt.StateJson()
+		t.NotNil(jsonBytes)
+
+		var pm map[string]interface{}
+		json.Unmarshal(jsonBytes, &pm)
+
+		server := pm["server"]
+		t.NotNil(server)
+
+		serverM := server.(map[string]interface{})
+
+		processMap := serverM["system_state"]
+		t.NotNil(processMap)
+
+		processMapM := processMap.(map[string]interface{})
+
+		processes := processMapM["processes"]
+		t.NotNil(processes)
+
+		processesS := processes.([]interface{})
+
+		var watchedProc map[string]interface{}
+		for _, proc := range processesS {
+			procM := proc.(map[string]interface{})
+			if int(procM["pid"].(float64)) == cmd.Process.Pid {
+				watchedProc = procM
+				break
+			}
+		}
+
+		t.NotNil(watchedProc)
+		t.Equal(false, watchedProc["outdated"])
+		t.NotNil(watchedProc["libraries"])
+		t.NotNil(watchedProc["started"])
+
+		// Note this will fail if `dpkg` is unavailable
+		if len(watchedProc["libraries"].([]interface{})) == 0 {
+			t.Fail("No libraries were found")
+		}
+		done <- true
+	})
+
+	t.NotNil(watcher.(ProcessWatcher))
+
+	// kick things off
+	watcher.Start()
+	defer watcher.Stop()
+
+	<-done // wait
+}
+
 func (t *ClientTestSuite) TestSendFile() {
 	test_file_path := "/var/foo/whatever"
 
@@ -109,7 +181,7 @@ func (t *ClientTestSuite) TestSendFile() {
 
 	env.BaseUrl = ts.URL
 
-	contents, _ := t.files[0].Contents()
+	contents, _ := t.files[0].(TextWatcher).Contents()
 	t.client.SendFile(test_file_path, "gemfile", contents)
 
 	ts.Close()

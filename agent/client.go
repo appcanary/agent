@@ -25,6 +25,7 @@ var (
 type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
+	SendProcessState(string, []byte) error
 	CreateServer(*Server) (string, error)
 	FetchUpgradeablePackages() (map[string]string, error)
 }
@@ -40,8 +41,12 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 }
 
 func (client *CanaryClient) Heartbeat(uuid string, files Watchers) error {
-
-	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion, "distro": client.server.Distro, "release": client.server.Release})
+	body, err := json.Marshal(map[string]interface{}{
+		"files":         files,
+		"agent-version": CanaryVersion,
+		"distro":        client.server.Distro,
+		"release":       client.server.Release,
+	})
 
 	if err != nil {
 		return err
@@ -94,7 +99,12 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 	_, err = client.put(ApiServerPath(client.server.UUID), file_json)
 
 	return err
+}
 
+func (client *CanaryClient) SendProcessState(match string, body []byte) error {
+	// match is unused for now - should it get shipped?
+	_, err := client.put(ApiServerProcsPath(client.server.UUID), body)
+	return err
 }
 
 func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
@@ -171,8 +181,7 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 		}
 
 		return err
-	},
-		backoff.NewExponentialBackOff())
+	}, backoff.NewExponentialBackOff())
 
 	if err != nil {
 		log.Debug("Do err: ", err.Error())

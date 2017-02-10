@@ -40,34 +40,55 @@ func (agent *Agent) BuildAndSyncWatchers() {
 	for _, f := range agent.conf.Files {
 		var watcher Watcher
 
-		if f.Process == "" {
-			watcher = NewFileWatcherWithHook(f.Path, agent.OnChange)
-		} else {
-			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
+		if f.Process != "" {
+			watcher = NewProcessWatcher(f.Process, agent.OnChange)
+		} else if f.Command != "" {
+			watcher = NewCommandOutputWatcher(f.Command, agent.OnChange)
+		} else if f.Path != "" {
+			watcher = NewFileWatcher(f.Path, agent.OnChange)
 		}
 		agent.files = append(agent.files, watcher)
 	}
-
 }
 
-func (agent *Agent) OnChange(file Watcher) {
-	log.Infof("File change: %s", file.Path())
+func (agent *Agent) OnChange(w Watcher) {
+	switch wt := w.(type) {
+	default:
+		log.Errorf("Don't know what to do with %T", wt)
+	case TextWatcher:
+		agent.handleTextChange(wt)
+	case ProcessWatcher:
+		agent.handleProcessChange(wt)
+	}
+}
+
+func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
+	match := pw.Match()
+	if match == "*" {
+		log.Infof("Shipping process map")
+	} else {
+		log.Infof("Shipping process map for %s", match)
+	}
+	agent.client.SendProcessState(match, pw.StateJson())
+}
+
+func (agent *Agent) handleTextChange(tw TextWatcher) {
+	log.Infof("File change: %s", tw.Path())
 
 	// should probably be in the actual hook code
-	contents, err := file.Contents()
-
+	contents, err := tw.Contents()
 	if err != nil {
-		// we couldn't read it; something weird is happening
-		// let's just wait until this callback gets issued
-		// again when the file reappears.
+		// we couldn't read it; something weird is happening let's just wait
+		// until this callback gets issued again when the file reappears.
 		log.Infof("File contents error: %s", err)
 		return
 	}
-	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
+
+	err = agent.client.SendFile(tw.Path(), tw.Kind(), contents)
 	if err != nil {
-		// TODO: some kind of queuing mechanism to keep trying
-		// beyond the exponential backoff in the client.
-		// What if the connection fails for whatever reason?
+		// TODO: some kind of queuing mechanism to keep trying beyond the
+		// exponential backoff in the client. What if the connection fails for
+		// whatever reason?
 		log.Infof("Sendfile error: %s", err)
 	}
 }
