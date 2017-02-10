@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
@@ -68,40 +67,6 @@ type processLibrary struct {
 	Outdated    bool
 }
 
-func (ss *systemState) String() string {
-	buffer := bytes.NewBufferString("Watched Processes:\n\n")
-
-	for _, proc := range ss.processes {
-		buffer.WriteString(fmt.Sprintf("PID: %d", proc.Pid))
-
-		if proc.Outdated {
-			buffer.WriteString(", is running outdated lib(s)")
-		}
-
-		buffer.WriteString(fmt.Sprintf("\nCommand: %s", proc.CommandArgs))
-
-		for _, lib := range proc.ProcessLibraries {
-			buffer.WriteString("\n")
-			libraryToString(buffer, lib.Outdated, ss.libraries[lib.libraryPath])
-		}
-	}
-	return buffer.String()
-}
-
-func libraryToString(buffer *bytes.Buffer, outdated bool, lib systemLibrary) {
-	if outdated {
-		buffer.WriteString("Outdated: yes")
-	} else {
-		buffer.WriteString("Outdated:  no")
-	}
-
-	buffer.WriteString(fmt.Sprintf(", Path: %v, ", lib.Path))
-	buffer.WriteString(fmt.Sprintf("Package: %s-%s, ", lib.PackageName, lib.PackageVersion))
-	buffer.WriteString(fmt.Sprintf("Modified: %v", lib.Modified))
-
-	return
-}
-
 func (ss *systemState) MarshalJSON() ([]byte, error) {
 	libraries := make(map[string]interface{}, len(ss.libraries))
 	for path, lib := range ss.libraries {
@@ -146,11 +111,6 @@ func libToMap(lib systemLibrary) map[string]interface{} {
 		"package_name":    lib.PackageName,
 		"package_version": lib.PackageVersion,
 	}
-}
-
-func remove(s []libspector.Library, i int) []libspector.Library {
-	s[len(s)-1], s[i] = s[i], s[len(s)-1]
-	return s[:len(s)-1]
 }
 
 func (pw *processWatcher) acquireState() *systemState {
