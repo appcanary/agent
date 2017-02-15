@@ -44,11 +44,12 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 func (client *CanaryClient) Heartbeat(uuid string, files Watchers) error {
 	log := conf.FetchLog()
 
+	server := client.server.WithOSInfo()
 	body, err := json.Marshal(map[string]interface{}{
 		"files":         files,
 		"agent-version": CanaryVersion,
-		"distro":        client.server.Distro,
-		"release":       client.server.Release,
+		"distro":        server.Distro,
+		"release":       server.Release,
 	})
 
 	if err != nil {
@@ -111,7 +112,7 @@ func (client *CanaryClient) SendProcessState(match string, body []byte) error {
 }
 
 func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
-	body, err := json.Marshal(*srv)
+	body, err := json.Marshal(*srv.WithOSInfo())
 
 	if err != nil {
 		return "", err

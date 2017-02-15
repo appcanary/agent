@@ -126,6 +126,7 @@ func (agent *Agent) RegisterServer() error {
 	if err != nil {
 		return err
 	}
+
 	agent.server.UUID = uuid
 	agent.conf.ServerConf.UUID = uuid
 	agent.conf.Save()
