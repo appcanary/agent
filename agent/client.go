@@ -49,6 +49,7 @@ func (client *CanaryClient) Heartbeat(uuid string, files Watchers) error {
 		"agent-version": CanaryVersion,
 		"distro":        client.server.Distro,
 		"release":       client.server.Release,
+		"tags":          client.server.Tags,
 	})
 
 	if err != nil {

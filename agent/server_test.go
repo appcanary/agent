@@ -11,12 +11,23 @@ import (
 func TestServerConf(t *testing.T) {
 	assert := assert.New(t)
 
-	aconf := &conf.Conf{LinuxOSInfo: detect.LinuxOSInfo{Distro: "testDistro", Release: "testRelease"}, ServerName: "TestName"}
+	aconf := &conf.Conf{
+		LinuxOSInfo: detect.LinuxOSInfo{
+			Distro:  "testDistro",
+			Release: "testRelease",
+		},
+		ServerName: "TestName",
+		Tags: []string{
+			"simon",
+			"dogs",
+		},
+	}
 	server := NewServer(aconf, &conf.ServerConf{})
 
 	assert.Equal("testDistro", server.Distro)
 	assert.Equal("testRelease", server.Release)
 	assert.Equal("TestName", server.Name)
+	assert.Equal([]string{"simon", "dogs"}, server.Tags)
 
 	aconf = &conf.Conf{}
 	server = NewServer(aconf, &conf.ServerConf{})

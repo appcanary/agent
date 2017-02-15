@@ -10,13 +10,14 @@ import (
 )
 
 type Server struct {
-	Hostname string `json:"hostname"`
-	Uname    string `json:"uname"`
-	Ip       string `json:"ip"`
-	Name     string `json:"name"`
-	UUID     string `json:"uuid,omitempty"`
-	Distro   string `json:"distro,omitempty"`
-	Release  string `json:"release,omitempty"`
+	Hostname string   `json:"hostname"`
+	Uname    string   `json:"uname"`
+	Ip       string   `json:"ip"`
+	Name     string   `json:"name"`
+	UUID     string   `json:"uuid,omitempty"`
+	Distro   string   `json:"distro,omitempty"`
+	Release  string   `json:"release,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
 }
 
 // Creates a new server and syncs conf if needed
@@ -83,6 +84,7 @@ func NewServer(agentConf *conf.Conf, serverConf *conf.ServerConf) *Server {
 		UUID:     serverConf.UUID,
 		Distro:   distro,
 		Release:  release,
+		Tags:     agentConf.Tags,
 	}
 }
 
