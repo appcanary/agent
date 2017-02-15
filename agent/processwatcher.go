@@ -290,6 +290,7 @@ func (pw *processWatcher) KeepPolling() bool {
 }
 
 func (pw *processWatcher) setStateAttribute() {
+	log := conf.FetchLog()
 	state := pw.acquireState()
 
 	json, err := json.Marshal(map[string]interface{}{

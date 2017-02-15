@@ -64,13 +64,11 @@ func InitEnv(envStr string) {
 			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
 		}
 
-		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test4.yml")
+		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "agent.yml")
+		OLD_DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "old_toml_test.conf")
 
-		DEV_VAR_PATH, _ = filepath.Abs("test/var")
-		if _, err := os.Stat(DEV_VAR_PATH); err != nil {
-			DEV_VAR_PATH, _ = filepath.Abs("../test/var")
-		}
-		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.yml")
+		DEV_VAR_FILE = filepath.Join(DEV_CONF_PATH, "server.yml")
+		OLD_DEV_VAR_FILE = filepath.Join(DEV_CONF_PATH, "old_toml_server.conf")
 
 		// set dev vals
 
@@ -97,11 +95,7 @@ func InitLogging() {
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
 
-		conf, err := NewConfFromEnv()
-		if err != nil {
-			log.Errorf("Can't acquire configuration: %v", err)
-			os.Exit(1)
-		}
+		conf := NewConfFromEnv()
 
 		var logPath string
 		if conf.LogPath != "" {
@@ -110,6 +104,7 @@ func InitLogging() {
 			logPath = env.LogFile
 		}
 
+		var err error
 		env.LogFileHandle, err = os.OpenFile(logPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			log.Error("Can't open log file", err) //INCEPTION

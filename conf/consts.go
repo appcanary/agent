@@ -5,9 +5,11 @@ import "time"
 // consts can't be outputs of functions?
 var DEV_CONF_PATH string
 var DEV_CONF_FILE string
+var OLD_DEV_CONF_FILE string
 
 var DEV_VAR_PATH string
 var DEV_VAR_FILE string
+var OLD_DEV_VAR_FILE string
 
 // env vars
 const (

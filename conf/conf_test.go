@@ -2,8 +2,6 @@ package conf
 
 import (
 	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 
 	"github.com/appcanary/testify/assert"
@@ -13,13 +11,12 @@ func TestConf(t *testing.T) {
 	assert := assert.New(t)
 	InitEnv("test")
 
-	origConfFile := "../test/data/test.conf"
-	origVarFile := "../test/data/test_server.conf"
+	// origConfFile := "../test/data/test.conf"
+	// origVarFile := "../test/data/test_server.conf"
 
-	env.ConfFile = origConfFile
-	env.VarFile = origVarFile
-	conf, err := NewConfFromEnv()
-	assert.Nil(err)
+	// env.ConfFile = origConfFile
+	// env.VarFile = origVarFile
+	conf := NewConfFromEnv()
 
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal("deployment1", conf.ServerName)
@@ -43,41 +40,25 @@ func TestConf(t *testing.T) {
 	assert.Equal("123456", conf.ServerConf.UUID)
 
 	// rename the test files back again
-	assert.Nil(os.Rename(origConfFile+".deprecated", origConfFile))
-	assert.Nil(os.Rename(origVarFile+".deprecated", origVarFile))
+	// assert.Nil(os.Rename(origConfFile+".deprecated", origConfFile))
+	// assert.Nil(os.Rename(origVarFile+".deprecated", origVarFile))
 }
 
 func TestConfUpgrade(t *testing.T) {
 	assert := assert.New(t)
 	InitEnv("test")
 
-	env.ConfFile = "../test/data/tmptest.conf"
-	env.VarFile = "../test/data/tmptest_server.conf"
-	// confFile := "../test/data/tmptest.conf"
-	// varFile := "../test/data/tmptest_server.conf"
+	// everything is configured to default, but file is missing
+	assert.Nil(os.Rename(DEV_CONF_FILE, DEV_CONF_FILE+".bak"))
+	assert.Nil(os.Rename(DEV_VAR_FILE, DEV_VAR_FILE+".bak"))
+	assert.False(fileExists(DEV_CONF_FILE))
 
-	// set up disposable config
-	cp := exec.Command("cp", "../test/data/test.conf", env.ConfFile)
-	err := cp.Run()
-	assert.Nil(err)
-
-	cp = exec.Command("cp", "../test/data/test_server.conf", env.VarFile)
-	err = cp.Run()
-	assert.Nil(err)
+	// ensure we have the old dev conf file it'll fall back on,
+	// convert and rename
+	assert.True(fileExists(OLD_DEV_CONF_FILE))
 
 	// now do the conversion
-	conf, err := NewConfFromEnv()
-	assert.Nil(err)
-
-	// check the new settings
-	newConfFile, err := filepath.Abs("../test/data/tmptest.yml")
-	assert.Nil(err)
-
-	newVarFile, err := filepath.Abs("../test/data/tmptest_server.yml")
-	assert.Nil(err)
-
-	assert.True(fileExists(newConfFile))
-	assert.True(fileExists(newVarFile))
+	conf := NewConfFromEnv()
 
 	// check that the configuration is ok
 	assert.Equal("APIKEY", conf.ApiKey)
@@ -85,26 +66,28 @@ func TestConfUpgrade(t *testing.T) {
 	assert.Equal("testDistro", conf.Distro)
 	assert.Equal("testRelease", conf.Release)
 
-	// now remove the old configs and reload
-	rm := exec.Command(
-		"rm",
-		"../test/data/tmptest.conf.deprecated",
-		"../test/data/tmptest_server.conf.deprecated")
-	err = rm.Run()
-	assert.Nil(err)
+	// ensure old ones got copied to .deprecated and new yaml files exist
+	assert.False(fileExists(OLD_DEV_CONF_FILE))
+	assert.True(fileExists(OLD_DEV_CONF_FILE + ".deprecated"))
+	assert.True(fileExists(OLD_DEV_VAR_FILE + ".deprecated"))
 
-	// TODO some mocking so we can check that FullSave isn't called again, or
-	// whatever.
+	assert.True(fileExists(DEV_CONF_FILE))
 
-	env.ConfFile = newConfFile
-	env.VarFile = newVarFile
+	// great. Now let's ensure this new file is readable.
+	// let's make sure we're not reading the old file
+	assert.False(fileExists(OLD_DEV_CONF_FILE))
 
-	conf, err = NewConfFromEnv()
-	assert.Nil(err)
-
-	// check that the configuration is ok
+	conf = NewConfFromEnv()
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal("deployment1", conf.ServerName)
 	assert.Equal("testDistro", conf.Distro)
 	assert.Equal("testRelease", conf.Release)
+
+	// now we clean up the renamed test files
+
+	assert.Nil(os.Rename(DEV_CONF_FILE+".bak", DEV_CONF_FILE))
+	assert.Nil(os.Rename(DEV_VAR_FILE+".bak", DEV_VAR_FILE))
+
+	assert.Nil(os.Rename(OLD_DEV_CONF_FILE+".deprecated", OLD_DEV_CONF_FILE))
+	assert.Nil(os.Rename(OLD_DEV_VAR_FILE+".deprecated", OLD_DEV_VAR_FILE))
 }

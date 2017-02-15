@@ -35,9 +35,12 @@ func TestYamlConf(t *testing.T) {
 
 func TestTomlYamlConversion(t *testing.T) {
 	assert := assert.New(t)
+	// need to populate DEV_CONF vars
+	InitEnv("test")
 
-	oldConfFile := "../test/data/test.conf"
-	oldVarFile := "../test/data/test_server.conf"
+	oldConfFile := OLD_DEV_CONF_FILE
+	oldVarFile := OLD_DEV_VAR_FILE
+
 	conf := NewTomlConfFromEnv(oldConfFile, oldVarFile)
 
 	// check a few bits

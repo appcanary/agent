@@ -1,10 +1,8 @@
 package conf
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/appcanary/agent/agent/detect"
 )
@@ -46,54 +44,56 @@ func fileExists(fname string) bool {
 	return err == nil
 }
 
-func renameConf(path string) (err error) {
+func renameDeprecatedConf(path string) (err error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = os.Rename(absPath, absPath+".deprecated")
 	if err != nil {
-		return
+		return err
 	}
 
 	return
 }
 
-func transformFilename(path string) string {
-	log := FetchLog()
-
-	newPath, err := filepath.Abs(strings.TrimSuffix(path, ".conf") + ".yml")
-	if err != nil {
-		log.Error(err)
-	}
-
-	return newPath
-}
-
 func convertOldConf() (c *Conf) {
 	env := FetchEnv()
 	log := FetchLog()
+	var conf_file, var_file string
 
 	// load the TOML
 	if env.Prod { // we only get this far if locations are default
-		c = NewTomlConfFromEnv(OLD_DEFAULT_CONF_FILE, OLD_DEFAULT_VAR_FILE)
+		conf_file = OLD_DEFAULT_CONF_FILE
+		var_file = OLD_DEFAULT_VAR_FILE
 	} else { // this should only happen in test
-		log.Error("conversion of non-default config files should only happen in test")
-		c = NewTomlConfFromEnv(env.ConfFile, env.VarFile)
+		conf_file = OLD_DEV_CONF_FILE
+		var_file = OLD_DEV_VAR_FILE
 	}
+
+	if fileExists(conf_file) {
+		log.Info("Old configuration file detected, converting to new format")
+	} else {
+		// we know things are set to default AND the default yml file is missing
+		// AND the old file is missing... well there's nothing for us to do here
+		log.Fatal("We can't find any configuration files! Please consult https://appcanary.com/servers/new for more instructions.")
+	}
+
+	c = NewTomlConfFromEnv(conf_file, var_file)
 
 	// now move the old files out of the way and dump a new YAML version
-	log.Info("Old configuration detected, converting to new format")
 
-	// For now, the /etc file can be set on the command line but the /var/db
-	// file cannot. So we only have to check the ConfFile, not the VarFile
-	if err := renameConf(env.ConfFile); err != nil {
+	if err := renameDeprecatedConf(conf_file); err != nil {
 		log.Warningf("Couldn't rename old agent config: %v", err)
+	} else {
+		log.Infof("Renamed %s to %s.deprecated", conf_file, conf_file)
 	}
 
-	if err := renameConf(env.VarFile); err != nil {
+	if err := renameDeprecatedConf(var_file); err != nil {
 		log.Warningf("Couldn't rename old server config: %v", err)
+	} else {
+		log.Infof("Renamed %s to %s.deprecated", var_file, var_file)
 	}
 
 	var newConfFile, newVarFile string
@@ -101,44 +101,44 @@ func convertOldConf() (c *Conf) {
 		newConfFile = DEFAULT_CONF_FILE
 		newVarFile = DEFAULT_VAR_FILE
 	} else {
-		log.Error("conversion of non-default config files should only happen in test")
-		newConfFile = transformFilename(env.ConfFile)
-		newVarFile = transformFilename(env.VarFile)
+		newConfFile = DEV_CONF_FILE
+		newVarFile = DEV_VAR_FILE
 	}
 
 	// dump the new YAML files
 	c.FullSave(newConfFile, newVarFile)
 
-	log.Infof("New configuration file: %s", newConfFile)
+	log.Infof("New configuration file saved to: %s", newConfFile)
 
-	return
+	return c
 }
 
-func shouldConvert(env *Env) bool {
-	usingDefaults := env.ConfFile == DEFAULT_CONF_FILE && env.VarFile == DEFAULT_VAR_FILE
-	notInProduction := !env.Prod
-	return notInProduction || usingDefaults
+func confFilesSetToDefault(env *Env) bool {
+	if env.Prod {
+		return env.ConfFile == DEFAULT_CONF_FILE && env.VarFile == DEFAULT_VAR_FILE
+	} else {
+		return env.ConfFile == DEV_CONF_FILE && env.VarFile == DEV_VAR_FILE
+	}
 }
 
-func yamlFiles(env *Env) bool {
-	return strings.HasSuffix(env.ConfFile, ".yml") && strings.HasSuffix(env.VarFile, ".yml")
-}
-
-func NewConfFromEnv() (c *Conf, err error) {
+// we can't function without configuration
+// so at some point some substack callee of this method
+// will Fatal() if it can't find what it needs
+func NewConfFromEnv() (c *Conf) {
 	env := FetchEnv()
 
-	// simplest case, it's already YAML, so load and return
-	if yamlFiles(env) && fileExists(env.ConfFile) {
-		c = NewYamlConfFromEnv()
-		return
-	}
+	// if conf files were supplied via cli flags,
+	// i.e. not the default setting,
+	// they should be in yaml
 
-	// otherwise, if we're using default locations, attempt conversion
-	if shouldConvert(env) {
-		c = convertOldConf()
-		return
-	}
+	// therefore,
+	// if we have a default file location
+	// but the file does not exist,
+	// try looking for the old files and convert them
 
-	err = errors.New("couldn't parse configuration file(s) - please convert to YAML")
-	return
+	if confFilesSetToDefault(env) && !fileExists(env.ConfFile) {
+		return convertOldConf()
+	} else {
+		return NewYamlConfFromEnv()
+	}
 }
