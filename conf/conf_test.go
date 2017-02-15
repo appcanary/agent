@@ -11,11 +11,6 @@ func TestConf(t *testing.T) {
 	assert := assert.New(t)
 	InitEnv("test")
 
-	// origConfFile := "../test/data/test.conf"
-	// origVarFile := "../test/data/test_server.conf"
-
-	// env.ConfFile = origConfFile
-	// env.VarFile = origVarFile
 	conf := NewConfFromEnv()
 
 	assert.Equal("APIKEY", conf.ApiKey)
@@ -38,10 +33,6 @@ func TestConf(t *testing.T) {
 	assert.Equal("*", inspectProcess.Process, "inspect process pattern")
 
 	assert.Equal("123456", conf.ServerConf.UUID)
-
-	// rename the test files back again
-	// assert.Nil(os.Rename(origConfFile+".deprecated", origConfFile))
-	// assert.Nil(os.Rename(origVarFile+".deprecated", origVarFile))
 }
 
 func TestConfUpgrade(t *testing.T) {
