@@ -141,7 +141,7 @@ func initialize(env *conf.Env) *agent.Agent {
 			// exponential decay library; by the time we hit this
 			// point we've been trying for about, what, an hour?
 			log.Infof("Register server error: %s", err)
-			err = a.RegisterServer() // WTF
+			err = a.RegisterServer()
 		}
 
 	}
