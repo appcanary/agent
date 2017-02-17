@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
-	"log"
 	"os"
 	"strings"
 	"sync"
