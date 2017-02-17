@@ -191,8 +191,8 @@ appcanary -version && echo OKAC VERSION
 echo '#########'
 echo Did we get the files in?
 cat /var/log/appcanary.log && echo OKAC LOG
-cat /var/db/appcanary/server.conf && echo OKAC SERVERCONF
-cat /etc/appcanary/agent.conf && echo OKAC CONFCONF
+cat /var/db/appcanary/server.yml && echo OKAC SERVERCONF
+cat /etc/appcanary/agent.yml && echo OKAC CONFCONF
 
 echo and logrotate?
 cat /etc/logrotate.d/appcanary && echo OKAC LOGROTATE
@@ -201,7 +201,7 @@ stat -c %U /var/log/appcanary.log | grep appcanary && echo OKAC LOGFILE
 echo '#########'
 echo What happens when we remove it?
 
-<%= remove_cmd %> && cat /etc/appcanary/agent.conf 2>&1 && echo OKAC kept
+<%= remove_cmd %> && cat /etc/appcanary/agent.yml 2>&1 && echo OKAC kept
   test
 
   attr_accessor :docker_name
@@ -215,7 +215,7 @@ echo What happens when we remove it?
       install_cmd = "rpm --nosignature -i latest.pkg"
       # only 80% sure this does what we need
       # to test that upgrades don't clobber files
-      remove_cmd = "echo foo > /etc/appcanary/agent.conf && rpm --nosignature -iv --replacepkgs latest.pkg && (if [ $(cat /etc/appcanary/agent.conf) = 'foo' ]; then exit 0; else exit 1; fi )"
+      remove_cmd = "echo foo > /etc/appcanary/agent.yml && rpm --nosignature -iv --replacepkgs latest.pkg && (if [ $(cat /etc/appcanary/agent.yml) = 'foo' ]; then exit 0; else exit 1; fi )"
     else
       install_cmd = "dpkg -i latest.pkg"
       remove_cmd = "apt-get -y remove appcanary"

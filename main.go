@@ -121,7 +121,7 @@ func initialize(env *conf.Env) *agent.Agent {
 	}
 
 	if config.ApiKey == "" {
-		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.conf")
+		log.Fatal("There's no API key set. Get yours from https://appcanary.com/settings and set it in /etc/appcanary/agent.yml")
 	}
 
 	// If the config sets a startup delay, we wait to boot up here
