@@ -95,7 +95,10 @@ func InitLogging() {
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
 
-		conf := NewConfFromEnv()
+		conf, err := NewConfFromEnv()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		var logPath string
 		if conf.LogPath != "" {
@@ -104,7 +107,6 @@ func InitLogging() {
 			logPath = env.LogFile
 		}
 
-		var err error
 		env.LogFileHandle, err = os.OpenFile(logPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 		if err != nil {
 			log.Error("Can't open log file", err) //INCEPTION

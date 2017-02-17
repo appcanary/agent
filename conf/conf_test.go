@@ -11,7 +11,8 @@ func TestConf(t *testing.T) {
 	assert := assert.New(t)
 	InitEnv("test")
 
-	conf := NewConfFromEnv()
+	conf, err := NewConfFromEnv()
+	assert.Nil(err)
 
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal("deployment1", conf.ServerName)
@@ -49,7 +50,8 @@ func TestConfUpgrade(t *testing.T) {
 	assert.True(fileExists(OLD_DEV_CONF_FILE))
 
 	// now do the conversion
-	conf := NewConfFromEnv()
+	conf, err := NewConfFromEnv()
+	assert.Nil(err)
 
 	// check that the configuration is ok
 	assert.Equal("APIKEY", conf.ApiKey)
@@ -68,7 +70,8 @@ func TestConfUpgrade(t *testing.T) {
 	// let's make sure we're not reading the old file
 	assert.False(fileExists(OLD_DEV_CONF_FILE))
 
-	conf = NewConfFromEnv()
+	conf, err = NewConfFromEnv()
+	assert.Nil(err)
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal("deployment1", conf.ServerName)
 	assert.Equal("testDistro", conf.Distro)

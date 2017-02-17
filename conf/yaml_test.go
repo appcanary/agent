@@ -12,7 +12,8 @@ func TestYamlConf(t *testing.T) {
 
 	env.ConfFile = "../test/data/test3.yml"
 	env.VarFile = "../test/data/test_server3.yml"
-	conf := NewYamlConfFromEnv()
+	conf, err := NewYamlConfFromEnv()
+	assert.Nil(err)
 
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal("deployment1", conf.ServerName)
@@ -41,7 +42,8 @@ func TestTomlYamlConversion(t *testing.T) {
 	oldConfFile := OLD_DEV_CONF_FILE
 	oldVarFile := OLD_DEV_VAR_FILE
 
-	conf := NewTomlConfFromEnv(oldConfFile, oldVarFile)
+	conf, err := NewTomlConfFromEnv(oldConfFile, oldVarFile)
+	assert.Nil(err)
 
 	// check a few bits
 	assert.Equal("APIKEY", conf.ApiKey)
@@ -67,7 +69,8 @@ func TestTomlYamlConversion(t *testing.T) {
 	// let's see what's inside
 	env.ConfFile = newConfFile
 	env.VarFile = newVarFile
-	conf = NewYamlConfFromEnv()
+	conf, err = NewYamlConfFromEnv()
+	assert.Nil(err)
 
 	assert.Equal("APIKEY", conf.ApiKey)
 	assert.Equal("deployment1", conf.ServerName)

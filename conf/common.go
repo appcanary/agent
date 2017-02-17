@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -58,42 +59,45 @@ func renameDeprecatedConf(path string) (err error) {
 	return
 }
 
-func convertOldConf() (c *Conf) {
+func convertOldConf() (*Conf, error) {
 	env := FetchEnv()
 	log := FetchLog()
-	var conf_file, var_file string
+	var confFile, varFile string
 
 	// load the TOML
 	if env.Prod { // we only get this far if locations are default
-		conf_file = OLD_DEFAULT_CONF_FILE
-		var_file = OLD_DEFAULT_VAR_FILE
+		confFile = OLD_DEFAULT_CONF_FILE
+		varFile = OLD_DEFAULT_VAR_FILE
 	} else { // this should only happen in test
-		conf_file = OLD_DEV_CONF_FILE
-		var_file = OLD_DEV_VAR_FILE
+		confFile = OLD_DEV_CONF_FILE
+		varFile = OLD_DEV_VAR_FILE
 	}
 
-	if fileExists(conf_file) {
+	if fileExists(confFile) {
 		log.Info("Old configuration file detected, converting to new format")
 	} else {
 		// we know things are set to default AND the default yml file is missing
 		// AND the old file is missing... well there's nothing for us to do here
-		log.Fatal("We can't find any configuration files! Please consult https://appcanary.com/servers/new for more instructions.")
+		return nil, errors.New("We can't find any configuration files! Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
-	c = NewTomlConfFromEnv(conf_file, var_file)
+	c, err := NewTomlConfFromEnv(confFile, varFile)
+	if err != nil {
+		return nil, err
+	}
 
 	// now move the old files out of the way and dump a new YAML version
 
-	if err := renameDeprecatedConf(conf_file); err != nil {
+	if err := renameDeprecatedConf(confFile); err != nil {
 		log.Warningf("Couldn't rename old agent config: %v", err)
 	} else {
-		log.Infof("Renamed %s to %s.deprecated", conf_file, conf_file)
+		log.Infof("Renamed %s to %s.deprecated", confFile, confFile)
 	}
 
-	if err := renameDeprecatedConf(var_file); err != nil {
+	if err := renameDeprecatedConf(varFile); err != nil {
 		log.Warningf("Couldn't rename old server config: %v", err)
 	} else {
-		log.Infof("Renamed %s to %s.deprecated", var_file, var_file)
+		log.Infof("Renamed %s to %s.deprecated", varFile, varFile)
 	}
 
 	var newConfFile, newVarFile string
@@ -110,7 +114,7 @@ func convertOldConf() (c *Conf) {
 
 	log.Infof("New configuration file saved to: %s", newConfFile)
 
-	return c
+	return c, nil
 }
 
 func confFilesSetToDefault(env *Env) bool {
@@ -124,7 +128,7 @@ func confFilesSetToDefault(env *Env) bool {
 // we can't function without configuration
 // so at some point some substack callee of this method
 // will Fatal() if it can't find what it needs
-func NewConfFromEnv() (c *Conf) {
+func NewConfFromEnv() (*Conf, error) {
 	env := FetchEnv()
 
 	// if conf files were supplied via cli flags,

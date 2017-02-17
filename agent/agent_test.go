@@ -16,7 +16,8 @@ func TestAgent(t *testing.T) {
 	// setup
 	serverUUID := "123456"
 	conf.InitEnv("test")
-	config := conf.NewConfFromEnv()
+	config, err := conf.NewConfFromEnv()
+	assert.Nil(err)
 
 	config.Watchers[0].Path = conf.DEV_CONF_PATH + "/dpkg/available"
 

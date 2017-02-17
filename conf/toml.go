@@ -1,12 +1,14 @@
 package conf
 
 import (
+	"errors"
+	"fmt"
 	"os"
 
 	"github.com/BurntSushi/toml"
 )
 
-func NewTomlConfFromEnv(confFile, varFile string) *Conf {
+func NewTomlConfFromEnv(confFile, varFile string) (*Conf, error) {
 	conf := NewConf()
 	log := FetchLog()
 	env := FetchEnv()
@@ -14,22 +16,21 @@ func NewTomlConfFromEnv(confFile, varFile string) *Conf {
 	_, err := toml.DecodeFile(confFile, &conf)
 	if err != nil {
 		log.Error(err)
-		log.Fatalf("Can't seem to read %s. Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile)
+		return nil, errors.New(fmt.Sprintf("Can't seem to read %s. Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile))
 	}
 
 	if len(conf.Watchers) == 0 {
-		log.Error(err)
-		log.Fatal("No files to monitor! Please consult https://appcanary.com/servers/new for more instructions.")
+		return nil, errors.New("No files to monitor! Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
 	if _, err := os.Stat(varFile); err == nil {
 		_, err := toml.DecodeFile(varFile, &conf.ServerConf)
 		if err != nil {
-			log.Errorf("%s", err)
-		} else {
-			log.Debug("Found and read TOML server configuration")
+			return nil, err
 		}
+
+		log.Debug("Found and read TOML server configuration")
 	}
 
-	return conf
+	return conf, nil
 }

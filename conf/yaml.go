@@ -1,6 +1,8 @@
 package conf
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 
 	yaml "gopkg.in/yaml.v2"
@@ -45,8 +47,8 @@ func (c *Conf) FullSave(confFile, varFile string) {
 	log.Debug("Saved all the config files.")
 }
 
-func NewYamlConfFromEnv() (conf *Conf) {
-	conf = NewConf()
+func NewYamlConfFromEnv() (*Conf, error) {
+	conf := NewConf()
 	log := FetchLog()
 	env := FetchEnv()
 
@@ -54,25 +56,25 @@ func NewYamlConfFromEnv() (conf *Conf) {
 	data, err := ioutil.ReadFile(env.ConfFile)
 	if err != nil {
 		log.Error(err)
-		log.Fatalf("Can't seem to read %s. Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile)
+		return nil, errors.New(fmt.Sprintf("Can't seem to read %s. Does the file exist? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile))
 	}
 
 	// parse the YAML
 	err = yaml.Unmarshal(data, conf)
 	if err != nil {
 		log.Error(err)
-		log.Fatalf("Can't seem to parse %s. Is this file valid YAML? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile)
+		return nil, errors.New(fmt.Sprintf("Can't seem to parse %s. Is this file valid YAML? Please consult https://appcanary.com/servers/new for more instructions.", env.ConfFile))
 	}
 
 	// bail if there's nothing configured
 	if len(conf.Watchers) == 0 {
-		log.Fatal("No watchers configured! Please consult https://appcanary.com/servers/new for more instructions.")
+		return nil, errors.New("No watchers configured! Please consult https://appcanary.com/servers/new for more instructions.")
 	}
 
 	// load the server conf (probably) from /var/db if there is one
 	tryLoadingVarFile(conf)
 
-	return conf
+	return conf, nil
 }
 
 func tryLoadingVarFile(conf *Conf) {
