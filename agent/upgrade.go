@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/appcanary/agent/conf"
 )
 
 type UpgradeCommand struct {
@@ -26,6 +28,8 @@ func buildCentOSUpgrade(packageList map[string]string) UpgradeSequence {
 }
 
 func buildDebianUpgrade(packageList map[string]string) UpgradeSequence {
+	env := conf.FetchEnv()
+
 	updateCmd := "apt-get"
 	updateArg := []string{"update", "-q"}
 
@@ -52,6 +56,9 @@ func buildDebianUpgrade(packageList map[string]string) UpgradeSequence {
 }
 
 func executeUpgradeSequence(commands UpgradeSequence) error {
+	env := conf.FetchEnv()
+	log := conf.FetchLog()
+
 	if env.DryRun {
 		log.Info("Running upgrade in dry-run mode...")
 	}
@@ -66,28 +73,31 @@ func executeUpgradeSequence(commands UpgradeSequence) error {
 }
 
 func runCmd(command UpgradeCommand) error {
-	cmd_name := command.Name
+	log := conf.FetchLog()
+	env := conf.FetchEnv()
+
+	cmdName := command.Name
 	args := command.Args
 
-	_, err := exec.LookPath(cmd_name)
+	_, err := exec.LookPath(cmdName)
 
 	if err != nil {
-		log.Info("Can't find " + cmd_name)
+		log.Info("Can't find " + cmdName)
 		return err
 	}
 
-	cmd := exec.Command(cmd_name, args...)
+	cmd := exec.Command(cmdName, args...)
 
 	var output bytes.Buffer
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 
-	log.Infof("Running: %s %s", cmd_name, strings.Join(args, " "))
+	log.Infof("Running: %s %s", cmdName, strings.Join(args, " "))
 	if env.DryRun {
 		return nil
 	} else {
 		if err := cmd.Start(); err != nil {
-			log.Infof("Was unable to start %s. Error: %v", cmd_name, err)
+			log.Infof("Was unable to start %s. Error: %v", cmdName, err)
 			return err
 		}
 

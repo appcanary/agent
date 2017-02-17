@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/appcanary/agent/agent/detect"
+	"github.com/appcanary/agent/conf"
 )
 
 type Server struct {
@@ -19,18 +20,23 @@ type Server struct {
 }
 
 // Creates a new server and syncs conf if needed
-func NewServer(agentConf *Conf, conf *ServerConf) *Server {
+func NewServer(agentConf *conf.Conf, serverConf *conf.ServerConf) *Server {
+	log := conf.FetchLog()
+
 	var err error
-	var hostname, uname, this_ip, distro, release string
+	var hostname, uname, thisIP, distro, release string
 
 	hostname, err = os.Hostname()
 	if err != nil {
 		hostname = "unknown"
 	}
 
-	// syscall.Uname is only available in linux because in Darwin it's not a syscall (who knew)
-	// furthermore, syscall.Uname returns a struct (syscall.Utsname) of [65]int8 -- which are *signed* integers
-	// instead of convering the signed integers into bytes and processing the whole thing into a string, we're just going to call uname -a for now and upload the returned string
+	// syscall.Uname is only available in linux because in Darwin it's not a
+	// syscall (who knew) furthermore, syscall.Uname returns a struct
+	// (syscall.Utsname) of [65]int8 -- which are *signed* integers instead of
+	// convering the signed integers into bytes and processing the whole thing
+	// into a string, we're just going to call uname -a for now and upload the
+	// returned string
 	cmdUname, err := exec.Command("uname", "-a").Output()
 	if err != nil {
 		uname = "unknown"
@@ -45,7 +51,7 @@ func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 		for _, a := range addrs {
 			//If we can't find a valid ipv4 ip, it will remain "unknown"
 			if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
-				this_ip = ipnet.IP.String()
+				thisIP = ipnet.IP.String()
 				break
 			}
 		}
@@ -69,7 +75,15 @@ func NewServer(agentConf *Conf, conf *ServerConf) *Server {
 		}
 	}
 
-	return &Server{Name: agentConf.ServerName, Hostname: hostname, Uname: uname, Ip: this_ip, UUID: conf.UUID, Distro: distro, Release: release}
+	return &Server{
+		Name:     agentConf.ServerName,
+		Hostname: hostname,
+		Uname:    uname,
+		Ip:       thisIP,
+		UUID:     serverConf.UUID,
+		Distro:   distro,
+		Release:  release,
+	}
 }
 
 func (server *Server) IsNew() bool {

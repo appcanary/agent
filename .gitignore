@@ -45,3 +45,7 @@ test/var/
 test/pkg/centos
 test/pkg/debian
 test/pkg/ubuntu
+
+# Docker bits
+docker_build
+docker_build.pub

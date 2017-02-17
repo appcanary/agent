@@ -8,8 +8,8 @@ import (
 )
 
 type LinuxOSInfo struct {
-	Distro  string `toml:"distro"`
-	Release string `toml:"release"`
+	Distro  string `yaml:"distro,omitempty" toml:"distro"`
+	Release string `yaml:"release,omitempty" toml:"release"`
 }
 
 func loadScript() []byte {

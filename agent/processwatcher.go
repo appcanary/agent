@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/appcanary/agent/conf"
 	"github.com/appcanary/libspector"
 )
 
@@ -114,6 +115,8 @@ func libToMap(lib systemLibrary) map[string]interface{} {
 }
 
 func (pw *processWatcher) acquireState() *systemState {
+	log := conf.FetchLog()
+
 	lsProcs, err := pw.processes()
 	if err != nil {
 		log.Fatalf("Couldn't load processes: %s", err)
@@ -236,6 +239,8 @@ func NewSystemLibrary(lib libspector.Library) (sysLib systemLibrary, err error) 
 }
 
 func NewProcessWatcher(match string, callback ChangeHandler) Watcher {
+	env := conf.FetchEnv()
+
 	watcher := &processWatcher{
 		match:     match,
 		OnChange:  callback,
@@ -285,6 +290,7 @@ func (pw *processWatcher) KeepPolling() bool {
 }
 
 func (pw *processWatcher) setStateAttribute() {
+	log := conf.FetchLog()
 	state := pw.acquireState()
 
 	json, err := json.Marshal(map[string]interface{}{
