@@ -40,8 +40,10 @@ func (t *ClientTestSuite) SetupTest() {
 
 	t.files = Watchers{dpkgFile, gemfile}
 
-	t.client = NewClient(t.apiKey, &Server{UUID: t.serverUUID})
-
+	t.client = NewClient(t.apiKey, &Server{
+		UUID: t.serverUUID,
+		Tags: []string{"dogs", "webserver"},
+	})
 }
 
 func (t *ClientTestSuite) TestHeartbeat() {
@@ -76,6 +78,14 @@ func (t *ClientTestSuite) TestHeartbeat() {
 		t.NotNil(monitoredFile2["updated-at"])
 		t.NotEqual("", monitoredFile2["updated-at"])
 		t.Equal(true, monitoredFile2["being-watched"])
+
+		if rBody["tags"] == nil {
+			t.Fail("tags should not be nil")
+		} else {
+			jsonTags := rBody["tags"].([]interface{})
+			t.Equal("dogs", jsonTags[0].(string))
+			t.Equal("webserver", jsonTags[1].(string))
+		}
 	})
 
 	// the client uses BaseUrl to set up queries.
@@ -196,7 +206,7 @@ func (t *ClientTestSuite) TestSendFile() {
 func (t *ClientTestSuite) TestCreateServer() {
 	env := conf.FetchEnv()
 
-	server := NewServer(&conf.Conf{}, &conf.ServerConf{})
+	server := NewServer(&conf.Conf{Tags: []string{"dogs", "webserver"}}, &conf.ServerConf{})
 
 	testUUID := "12345"
 	jsonResponse := "{\"uuid\":\"" + testUUID + "\"}"
@@ -213,6 +223,14 @@ func (t *ClientTestSuite) TestCreateServer() {
 		t.Equal(server.Uname, json["uname"])
 		t.Equal(server.Ip, json["ip"])
 		t.Nil(json["uuid"])
+
+		if json["tags"] == nil {
+			t.Fail("tags should not be nil")
+		} else {
+			tags := json["tags"].([]interface{})
+			t.Equal(server.Tags[0], tags[0].(string))
+			t.Equal(server.Tags[1], tags[1].(string))
+		}
 	})
 
 	env.BaseUrl = ts.URL
