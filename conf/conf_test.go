@@ -2,6 +2,7 @@ package conf
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/appcanary/testify/assert"
@@ -84,4 +85,62 @@ func TestConfUpgrade(t *testing.T) {
 
 	assert.Nil(os.Rename(OLD_DEV_CONF_FILE+".deprecated", OLD_DEV_CONF_FILE))
 	assert.Nil(os.Rename(OLD_DEV_VAR_FILE+".deprecated", OLD_DEV_VAR_FILE))
+}
+
+func TestCustomConfPathTOMLConf(t *testing.T) {
+	assert := assert.New(t)
+	InitEnv("test")
+
+	// link files to a non-standard location
+	assert.Nil(os.Link(OLD_DEV_CONF_FILE, "/tmp/agent.conf"))
+	assert.Nil(os.Link(OLD_DEV_VAR_FILE, "/tmp/server.conf"))
+
+	// set the new values in the environment
+	env.ConfFile = "/tmp/agent.conf"
+	env.VarFile = "/tmp/server.conf"
+
+	// attempt to load the config
+	conf, err := NewConfFromEnv()
+
+	// there should be an error
+	assert.NotNil(err)
+	assert.True(strings.Contains(err.Error(), "Is this file valid YAML?"))
+
+	// there should not be a configuration
+	assert.Nil(conf)
+
+	// ditch the links
+	assert.Nil(os.Remove("/tmp/agent.conf"))
+	assert.Nil(os.Remove("/tmp/server.conf"))
+}
+
+func TestCustomConfPathYAMLConf(t *testing.T) {
+	assert := assert.New(t)
+	InitEnv("test")
+
+	// link files to a non-standard location
+	assert.Nil(os.Link(DEV_CONF_FILE, "/tmp/agent.yml"))
+	assert.Nil(os.Link(DEV_VAR_FILE, "/tmp/server.yml"))
+
+	// set the new values in the environment
+	env.ConfFile = "/tmp/agent.yml"
+	env.VarFile = "/tmp/server.yml"
+
+	// attempt to load the configuration
+	conf, err := NewConfFromEnv()
+
+	// there should not be an error
+	assert.Nil(err)
+
+	// there SHOULD be a conf with some things in it
+	assert.NotNil(conf)
+	assert.Equal("deployment1", conf.ServerName)
+	assert.Equal("APIKEY", conf.ApiKey)
+	assert.Equal("testDistro", conf.Distro)
+	assert.Equal("testRelease", conf.Release)
+	assert.Equal("123456", conf.ServerConf.UUID)
+
+	// ditch the links
+	assert.Nil(os.Remove("/tmp/agent.yml"))
+	assert.Nil(os.Remove("/tmp/server.yml"))
 }
