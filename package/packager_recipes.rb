@@ -2,19 +2,19 @@ class UbuntuRecipe < Packager
   self.distro = "ubuntu"
   self.releases = "trusty", "precise", "vivid", "utopic", "wily", "xenial", "yakkety"
   self.package_type = "deb"
-  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
-                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.yml" => "/etc/appcanary/agent.yml",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
 end
 
 # amazon/2015.03 == el/6 so perhaps
 # don't use for now.
-class AmazonRecipe < Packager
-  self.distro = "amazon"
-  self.releases = ["2015.03", "2015.09", "2016.03"]
-  self.package_type ="rpm"
-  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
-                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
-end
+# class AmazonRecipe < Packager
+#   self.distro = "amazon"
+#   self.releases = ["2015.03", "2015.09", "2016.03"]
+#   self.package_type ="rpm"
+#   CONFIG_FILES = {"config/etc/appcanary/rpm.agent.yml" => "/etc/appcanary/agent.yml",
+#                   "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
+# end
 
 class CentosRecipe < Packager
   self.distro = "centos"
@@ -29,8 +29,8 @@ class Centos7Recipe < Packager
   self.releases = ["7"]
   self.package_type = "rpm"
 
-  CONFIG_FILES = {"config/etc/appcanary/rpm.agent.conf" => "/etc/appcanary/agent.conf",
-                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
+  CONFIG_FILES = {"config/etc/appcanary/rpm.agent.yml" => "/etc/appcanary/agent.yml",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
 end
 
 
@@ -44,8 +44,8 @@ class DebianRecipe < Packager
   self.distro =  "debian"
   self.releases = ["jessie", "wheezy", "squeeze"]
   self.package_type = "deb"
-  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.conf" => "/etc/appcanary/agent.conf",
-                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.yml" => "/etc/appcanary/agent.yml",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
 end
 
 class MintRecipe < Packager
