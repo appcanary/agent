@@ -19,12 +19,32 @@ type Server struct {
 	Release  string `json:"release,omitempty"`
 }
 
-// Creates a new server and syncs conf if needed
-func NewServer(agentConf *conf.Conf, serverConf *conf.ServerConf) *Server {
+func (s *Server) WithOSInfo() *Server {
 	log := conf.FetchLog()
 
+	// make a copy so we can cache the OS details
+	server := *s
+
+	// if these are already set, it is from config
+	if server.Distro == "" && server.Release == "" {
+		guess, err := detect.DetectOS()
+		if err != nil {
+			log.Error(err)
+			server.Distro = "unknown"
+			server.Release = "unknown"
+		} else {
+			server.Distro = guess.Distro
+			server.Release = guess.Release
+		}
+	}
+
+	return &server
+}
+
+// Creates a new server and syncs conf if needed
+func NewServer(agentConf *conf.Conf, serverConf *conf.ServerConf) (server *Server) {
 	var err error
-	var hostname, uname, thisIP, distro, release string
+	var hostname, uname, thisIP string
 
 	hostname, err = os.Hostname()
 	if err != nil {
@@ -57,33 +77,23 @@ func NewServer(agentConf *conf.Conf, serverConf *conf.ServerConf) *Server {
 		}
 	}
 
-	confOSInfo := agentConf.OSInfo()
-	if confOSInfo != nil {
-		distro = confOSInfo.Distro
-		release = confOSInfo.Release
-
-	} else {
-
-		osInfo, err := detect.DetectOS()
-		if err != nil {
-			log.Error(err.Error())
-			distro = "unknown"
-			release = "unknown"
-		} else {
-			distro = osInfo.Distro
-			release = osInfo.Release
-		}
-	}
-
-	return &Server{
+	server = &Server{
 		Name:     agentConf.ServerName,
 		Hostname: hostname,
 		Uname:    uname,
 		Ip:       thisIP,
 		UUID:     serverConf.UUID,
-		Distro:   distro,
-		Release:  release,
 	}
+
+	// set these if they're provided by conf, otherwise we run detect every
+	// time we need them (via server.WithOSInfo())
+	confOSInfo := agentConf.OSInfo()
+	if confOSInfo != nil {
+		server.Distro = confOSInfo.Distro
+		server.Release = confOSInfo.Release
+	}
+
+	return
 }
 
 func (server *Server) IsNew() bool {
@@ -91,9 +101,9 @@ func (server *Server) IsNew() bool {
 }
 
 func (server *Server) IsUbuntu() bool {
-	return server.Distro == "ubuntu"
+	return server.WithOSInfo().Distro == "ubuntu"
 }
 
 func (server *Server) IsCentOS() bool {
-	return server.Distro == "centos"
+	return server.WithOSInfo().Distro == "centos"
 }
