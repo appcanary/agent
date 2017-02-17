@@ -68,15 +68,8 @@ rake test t=path/to/test # to test an individual file
 
 ## Testing on non-Debian based systems
 
-Note that tests will only pass completely on a system with `dpkg` installed. If you do not, we include a `Dockerfile` which should help. There are extra steps needed to get this working. As a one-off in a new dev environment, you'll need to create a set of deploy keys for use with the private `libspector` repo.
+Note that tests will only pass completely on a system with `dpkg` installed. If you do not, we include a `Dockerfile` which should help. There are extra steps needed to get this working. 
 
-Start by creating the keys:
-
-```shell
-$ ssh-keygen -b 2048 -t rsa -f $AGENT_REPO_ROOT/docker_build
-```
-
-where `AGENT_REPO_ROOT` is set to the correct location on your local filesystem. Now go add the public key to the [libspector repo's keys](https://github.com/appcanary/libspector/settings/keys) as a read-only deploy key.
 
 Now you should be able to build the docker container and run the tests:
 
@@ -87,7 +80,7 @@ $ docker build .
 Successfully built <container-id>
 ```
 
-where `<container-sha>` is actually a hexadecimal container ID. Next, run the tests:
+Where `AGENT_REPO_ROOT` is set to the correct location on your local filesystem and where `<container-sha>` is actually a hexadecimal container ID. Next, run the tests:
 
 ```shell
 $ docker run <container-id> rake test
