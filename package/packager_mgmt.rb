@@ -1,6 +1,6 @@
 class Packager
-  CONFIG_FILES = {"config/etc/appcanary/agent.yml" => "/etc/appcanary/agent.yml",  
-                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
+  CONFIG_FILES = {"config/etc/appcanary/agent.yml" => "/etc/appcanary/agent.yml.sample",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml.sample"}
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
   ARCHS = ["amd64", "i386"]
 
