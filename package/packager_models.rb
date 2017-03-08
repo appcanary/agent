@@ -30,10 +30,6 @@ class PrePackage
     config_files.map {|k, v| "../../../#{k}=#{v}" }.join(" ")
   end
 
-  def list_config_files
-    config_files.map { |k, v| "--config-files #{v} "}.join(" ")
-  end
-
   def full_distro_name
     "#{distro}_#{release}"
   end
