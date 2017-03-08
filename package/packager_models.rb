@@ -42,17 +42,10 @@ class PrePackage
     "releases/appcanary_#{version}_#{arch}_#{full_distro_name}.#{package_type}" 
   end
 
-    
-  def arch_dir
-    # GOXC uses '386' while fpm uses 'i386'. arch => directory it's in
-    {"amd64" => "amd64",
-     "i386" => "386"}[arch]
-  end
-
   # also, remember to document things. why is this
   # four layers deep?
   def bin_path
-    "../../../../dist/#{version}/linux_#{arch_dir}/appcanary"
+    "../../../../dist/#{version}/linux_#{arch}/appcanary"
   end
 
   def bin_file
