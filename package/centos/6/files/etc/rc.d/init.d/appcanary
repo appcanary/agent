@@ -19,57 +19,73 @@
 
 RETVAL=0
 
-prog=appcanary
+proc=appcanary
 user=appcanary
 exec=/usr/sbin/appcanary
-pidfile=/var/run/appcanary.pid
-lockfile=/var/lock/subsys/$prog
+piddir=/var/run/appcanary
+pidfile=${piddir}/appcanary.pid
+lockfile=/var/lock/subsys/appcanary
 
 start() {
-  [ -x $exec ] || exit 5
+    [ -x $exec ] || exit 5
 
-  echo -n "Starting appcanary: "
-  daemon --check $proc --user=$user nohup $exec < /dev/null > /dev/null 2>&1 &
-  RETVAL=$?
-        echo
-        [ $RETVAL -eq 0 ] && touch $lockfile
-        return $RETVAL
-}       
+    mkdir -p /var/db/appcanary ${piddir}
+    chown -R $user /var/db/appcanary $piddir
+
+    echo -n $"Starting appcanary: "
+    daemon --check $proc \
+           --user=$user \
+           --pidfile=$pidfile \
+           " { nohup $exec < /dev/null > /dev/null 2>&1 & } ; echo \$! >| $pidfile "
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+        touch ${lockfile}
+        echo_success
+    else
+        echo_failure
+    fi
+    echo
+    return $RETVAL
+}
 
 stop() {
-  echo -n "Shutting down appcanary: "
-  pid=`pgrep appcanary`
-  killproc $exec
-        RETVAL=$?
-        echo
-        [ $RETVAL -eq 0 ] && rm -f $lockfile
-        return $RETVAL
+    echo -n $"Shutting down appcanary: "
+    killproc -p $pidfile $exec
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+        rm -f ${lockfile} ${pidfile}
+        echo_success
+    else
+        echo_failure
+    fi
+    echo
+    return $RETVAL
 }
 
 case "$1" in
     start)
-  start
-  ;;
+        start
+        ;;
     stop)
-  stop
-  ;;
+        stop
+        ;;
     status)
-  status $proc
-  ;;
+        status $proc
+        ;;
     restart)
-      stop
-  start
-  ;;
+        stop
+        start
+        ;;
     reload)
-  exit 3
-  ;;
+        exit 3
+        ;;
     condrestart)
         rhstatus >/dev/null 2>&1 || exit 0
         restart
-  ;;
+        ;;
     *)
-  echo "Usage: ?0 {start|stop|status|reload|restart}"
-  exit 1
-  ;;
+        echo $"Usage: $0 {start|stop|status|reload|restart}"
+        exit 1
+        ;;
 esac
 exit $?
