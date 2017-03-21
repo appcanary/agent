@@ -67,7 +67,7 @@ task :cross_compile => :release_prep do
   puts "Cross compiling packages."
   puts "#################################\n\n\n"
 
-  @ldflags = %{-X main.CanaryVersion '#{@release_version}'}
+  @ldflags = %{-X main.CanaryVersion='#{@release_version}'}
   shell %{goxc -build-ldflags="#{@ldflags}" -arch="amd64,386" -bc="linux" -os="linux" -pv="#{@release_version}"  -d="dist/" xc}
 end
 
