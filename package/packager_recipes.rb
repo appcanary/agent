@@ -2,8 +2,8 @@ class UbuntuRecipe < Packager
   self.distro = "ubuntu"
   self.releases = "trusty", "precise", "vivid", "utopic", "wily", "xenial", "yakkety"
   self.package_type = "deb"
-  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.yml" => "/etc/appcanary/agent.yml",
-                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.yml" => "/etc/appcanary/agent.yml.sample",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml.sample"}
 end
 
 # amazon/2015.03 == el/6 so perhaps
@@ -12,8 +12,8 @@ end
 #   self.distro = "amazon"
 #   self.releases = ["2015.03", "2015.09", "2016.03"]
 #   self.package_type ="rpm"
-#   CONFIG_FILES = {"config/etc/appcanary/rpm.agent.yml" => "/etc/appcanary/agent.yml",
-#                   "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
+#   CONFIG_FILES = {"config/etc/appcanary/rpm.agent.yml" => "/etc/appcanary/agent.yml.sample",
+#                   "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml.sample"}
 # end
 
 class CentosRecipe < Packager
@@ -29,8 +29,8 @@ class Centos7Recipe < Packager
   self.releases = ["7"]
   self.package_type = "rpm"
 
-  CONFIG_FILES = {"config/etc/appcanary/rpm.agent.yml" => "/etc/appcanary/agent.yml",
-                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
+  CONFIG_FILES = {"config/etc/appcanary/rpm.agent.yml" => "/etc/appcanary/agent.yml.sample",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml.sample"}
 end
 
 
@@ -44,8 +44,8 @@ class DebianRecipe < Packager
   self.distro =  "debian"
   self.releases = ["jessie", "wheezy", "squeeze"]
   self.package_type = "deb"
-  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.yml" => "/etc/appcanary/agent.yml",
-                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml"}
+  CONFIG_FILES = {"config/etc/appcanary/dpkg.agent.yml" => "/etc/appcanary/agent.yml.sample",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml.sample"}
 end
 
 class MintRecipe < Packager

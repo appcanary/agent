@@ -20,7 +20,7 @@ type Conf struct {
 	Watchers           []WatcherConf `yaml:"watchers" toml:"files"`
 	StartupDelay       int           `yaml:"startup_delay,omitempty" toml:"startup_delay"`
 	ServerConf         *ServerConf   `yaml:"-" toml:"-"`
-	Tags               []string      `yaml:"tags"` // no toml support for this
+	Tags               []string      `yaml:"tags,omitempty"` // no toml support for this
 }
 
 type WatcherConf struct {
