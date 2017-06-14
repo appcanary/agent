@@ -23,7 +23,7 @@ If you're reading this because you want to audit the code, the magic starts in [
 
 3. `cd` into the brand new agent folder, and install all of our go dependencies by typing: 
 
-  `go get -t -d -v ./…`
+  `go get -t -d -v ./...`
 
 4. We'll also need [go-bindata](https://github.com/jteeuwen/go-bindata):
 
