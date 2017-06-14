@@ -1,18 +1,22 @@
 package agent
 
-import "os"
+import (
+	"os"
+
+	"github.com/appcanary/agent/conf"
+)
 
 var CanaryVersion string
 
 type Agent struct {
-	conf        *Conf
+	conf        *conf.Conf
 	client      Client
 	server      *Server
 	files       Watchers
 	DoneChannel chan os.Signal
 }
 
-func NewAgent(version string, conf *Conf, clients ...Client) *Agent {
+func NewAgent(version string, conf *conf.Conf, clients ...Client) *Agent {
 	agent := &Agent{conf: conf, files: Watchers{}}
 
 	// Find out what we need about machine
@@ -37,42 +41,69 @@ func (agent *Agent) StartPolling() {
 }
 
 func (agent *Agent) BuildAndSyncWatchers() {
-	for _, f := range agent.conf.Files {
+	for _, w := range agent.conf.Watchers {
 		var watcher Watcher
 
-		if f.Process == "" {
-			watcher = NewFileWatcherWithHook(f.Path, agent.OnChange)
-		} else {
-			watcher = NewProcessWatcherWithHook(f.Process, agent.OnChange)
+		if w.Process != "" {
+			watcher = NewProcessWatcher(w.Process, agent.OnChange)
+		} else if w.Command != "" {
+			watcher = NewCommandOutputWatcher(w.Command, agent.OnChange)
+		} else if w.Path != "" {
+			watcher = NewFileWatcher(w.Path, agent.OnChange)
 		}
 		agent.files = append(agent.files, watcher)
 	}
-
 }
 
-func (agent *Agent) OnChange(file Watcher) {
-	log.Infof("File change: %s", file.Path())
+func (agent *Agent) OnChange(w Watcher) {
+	log := conf.FetchLog()
+
+	switch wt := w.(type) {
+	default:
+		log.Errorf("Don't know what to do with %T", wt)
+	case TextWatcher:
+		agent.handleTextChange(wt)
+	case ProcessWatcher:
+		agent.handleProcessChange(wt)
+	}
+}
+
+func (agent *Agent) handleProcessChange(pw ProcessWatcher) {
+	log := conf.FetchLog()
+
+	match := pw.Match()
+	if match == "*" {
+		log.Infof("Shipping process map")
+	} else {
+		log.Infof("Shipping process map for %s", match)
+	}
+	agent.client.SendProcessState(match, pw.StateJson())
+}
+
+func (agent *Agent) handleTextChange(tw TextWatcher) {
+	log := conf.FetchLog()
+	log.Infof("File change: %s", tw.Path())
 
 	// should probably be in the actual hook code
-	contents, err := file.Contents()
-
+	contents, err := tw.Contents()
 	if err != nil {
-		// we couldn't read it; something weird is happening
-		// let's just wait until this callback gets issued
-		// again when the file reappears.
+		// we couldn't read it; something weird is happening let's just wait
+		// until this callback gets issued again when the file reappears.
 		log.Infof("File contents error: %s", err)
 		return
 	}
-	err = agent.client.SendFile(file.Path(), file.Kind(), contents)
+
+	err = agent.client.SendFile(tw.Path(), tw.Kind(), contents)
 	if err != nil {
-		// TODO: some kind of queuing mechanism to keep trying
-		// beyond the exponential backoff in the client.
-		// What if the connection fails for whatever reason?
+		// TODO: some kind of queuing mechanism to keep trying beyond the
+		// exponential backoff in the client. What if the connection fails for
+		// whatever reason?
 		log.Infof("Sendfile error: %s", err)
 	}
 }
 
 func (agent *Agent) SyncAllFiles() {
+	log := conf.FetchLog()
 	log.Info("Synching all files.")
 
 	for _, f := range agent.files {
@@ -102,6 +133,8 @@ func (agent *Agent) RegisterServer() error {
 }
 
 func (agent *Agent) PerformUpgrade() {
+	log := conf.FetchLog()
+
 	var cmds UpgradeSequence
 	packageList, err := agent.client.FetchUpgradeablePackages()
 

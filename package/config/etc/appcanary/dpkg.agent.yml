@@ -1,0 +1,11 @@
+# Get your api key at https://www.appcanary.com/settings
+api_key: ""
+
+# Name your server (optional)
+#server_name: ""
+
+# ubuntu packages
+# add a gemfile by uncommenting the bottom line:
+watchers:
+  - path: "/var/lib/dpkg/status"
+  # - path: "/var/www/someapp/current/Gemfile.lock"

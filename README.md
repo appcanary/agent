@@ -23,7 +23,7 @@ If you're reading this because you want to audit the code, the magic starts in [
 
 3. `cd` into the brand new agent folder, and install all of our go dependencies by typing: 
 
-  `go get -t -d -v ./…`
+  `go get -t -d -v ./...`
 
 4. We'll also need [go-bindata](https://github.com/jteeuwen/go-bindata):
 
@@ -65,6 +65,28 @@ rake build # to compile
 rake test  # to test
 rake test t=path/to/test # to test an individual file
 ```
+
+## Testing on non-Debian based systems
+
+Note that tests will only pass completely on a system with `dpkg` installed. If you do not, we include a `Dockerfile` which should help. There are extra steps needed to get this working. 
+
+
+Now you should be able to build the docker container and run the tests:
+
+```shell
+$ cd $AGENT_REPO_ROOT
+$ docker build .
+[ ... lots of output elided ... ]
+Successfully built <container-id>
+```
+
+Where `AGENT_REPO_ROOT` is set to the correct location on your local filesystem and where `<container-sha>` is actually a hexadecimal container ID. Next, run the tests:
+
+```shell
+$ docker run <container-id> rake test
+```
+
+You will need to rebuild the container for any code changes - don't forget! The container building process caches intermediate layers, so subsequent builds will be faster.
 
 ## Packaging
 

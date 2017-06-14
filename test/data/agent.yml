@@ -1,0 +1,15 @@
+server_name: "deployment1"
+
+api_key: "APIKEY"
+log_level: "info"
+distro: "testDistro"
+release: "testRelease"
+tags:
+  - dogs
+  - webserver
+
+watchers:
+  - path: "/var/lib/dpkg/available"
+  - path: "/path/to/Gemfile.lock"
+  - command: "fakecmdhere"
+  - process: "*"

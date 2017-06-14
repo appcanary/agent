@@ -14,6 +14,7 @@ import (
 	_ "crypto/sha512"
 	//http://bridge.grumpy-troll.org/2014/05/golang-tls-comodo/
 
+	"github.com/appcanary/agent/conf"
 	"github.com/cenkalti/backoff"
 )
 
@@ -25,6 +26,7 @@ var (
 type Client interface {
 	Heartbeat(string, Watchers) error
 	SendFile(string, string, []byte) error
+	SendProcessState(string, []byte) error
 	CreateServer(*Server) (string, error)
 	FetchUpgradeablePackages() (map[string]string, error)
 }
@@ -40,15 +42,22 @@ func NewClient(apiKey string, server *Server) *CanaryClient {
 }
 
 func (client *CanaryClient) Heartbeat(uuid string, files Watchers) error {
+	log := conf.FetchLog()
 
-	body, err := json.Marshal(map[string]interface{}{"files": files, "agent-version": CanaryVersion, "distro": client.server.Distro, "release": client.server.Release})
+	body, err := json.Marshal(map[string]interface{}{
+		"files":         files,
+		"agent-version": CanaryVersion,
+		"distro":        client.server.Distro,
+		"release":       client.server.Release,
+		"tags":          client.server.Tags,
+	})
 
 	if err != nil {
 		return err
 	}
 
 	// TODO SANITIZE UUID input cos this feels abusable
-	respBody, err := client.post(ApiHeartbeatPath(uuid), body)
+	respBody, err := client.post(conf.ApiHeartbeatPath(uuid), body)
 
 	if err != nil {
 		return err
@@ -91,10 +100,15 @@ func (client *CanaryClient) SendFile(path string, kind string, contents []byte) 
 		return err
 	}
 
-	_, err = client.put(ApiServerPath(client.server.UUID), file_json)
+	_, err = client.put(conf.ApiServerPath(client.server.UUID), file_json)
 
 	return err
+}
 
+func (client *CanaryClient) SendProcessState(match string, body []byte) error {
+	// match is unused for now - should it get shipped?
+	_, err := client.put(conf.ApiServerProcsPath(client.server.UUID), body)
+	return err
 }
 
 func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
@@ -104,7 +118,7 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 		return "", err
 	}
 
-	respBody, err := c.post(ApiServersPath(), body)
+	respBody, err := c.post(conf.ApiServersPath(), body)
 	if err != nil {
 		return "", err
 	}
@@ -118,20 +132,20 @@ func (c *CanaryClient) CreateServer(srv *Server) (string, error) {
 }
 
 func (client *CanaryClient) FetchUpgradeablePackages() (map[string]string, error) {
-	respBody, err := client.get(ApiServerPath(client.server.UUID))
+	respBody, err := client.get(conf.ApiServerPath(client.server.UUID))
 
 	if err != nil {
 		return nil, err
 	}
 
-	var package_list map[string]string
-	err = json.Unmarshal(respBody, &package_list)
+	var packageList map[string]string
+	err = json.Unmarshal(respBody, &packageList)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return package_list, nil
+	return packageList, nil
 }
 
 func (client *CanaryClient) post(rPath string, body []byte) ([]byte, error) {
@@ -147,6 +161,8 @@ func (client *CanaryClient) get(rPath string) ([]byte, error) {
 }
 
 func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, error) {
+	log := conf.FetchLog()
+
 	client := &http.Client{}
 	req, err := http.NewRequest(method, uri, bytes.NewBuffer(body))
 	if err != nil {
@@ -171,8 +187,7 @@ func (c *CanaryClient) send(method string, uri string, body []byte) ([]byte, err
 		}
 
 		return err
-	},
-		backoff.NewExponentialBackOff())
+	}, backoff.NewExponentialBackOff())
 
 	if err != nil {
 		log.Debug("Do err: ", err.Error())

@@ -1,10 +1,11 @@
 # Get your api key at https://www.appcanary.com/settings
-api_key = ""
+api_key: ""
 
 # Name your server (optional)
-# server_name = ""
+#server_name: ""
 
 # add your gemfiles by uncommenting these lines:
 
-#[[files]]
-# path = "/var/www/someapp/current/Gemfile.lock"
+#watchers:
+#- path: "/var/www/someapp/current/Gemfile.lock"
+

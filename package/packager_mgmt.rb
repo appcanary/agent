@@ -1,6 +1,6 @@
 class Packager
-  CONFIG_FILES = {"config/etc/appcanary/agent.conf" => "/etc/appcanary/agent.conf",  
-                  "config/var/db/appcanary/server.conf" => "/var/db/appcanary/server.conf"}
+  CONFIG_FILES = {"config/etc/appcanary/agent.yml" => "/etc/appcanary/agent.yml.sample",
+                  "config/var/db/appcanary/server.yml" => "/var/db/appcanary/server.yml.sample"}
   DIRECTORIES = ["/etc/appcanary/", "/var/db/appcanary/"]
   ARCHS = ["amd64", "i386"]
 
@@ -59,9 +59,8 @@ class PackageBuilder
       "#{p.dir_args}",                # use the following directories when building
       "#{p.post_install_files}",      # after install, use this file
       "--license #{LICENSE} --vendor #{VENDOR}",
-      "#{p.list_config_files}",       # mark these files as being config
       "./ #{p.bin_file}",             # where should the binary be copied to?
-      "#{p.config_files_path}"        # where are the config files marked above?
+      "#{p.config_files_path}"        # find the config files to install
     ].join(" ")
 
     execute build_cmd

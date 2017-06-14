@@ -1,11 +1,11 @@
-package agent
+package conf
 
 import (
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/op/go-logging"
+	logging "github.com/op/go-logging"
 )
 
 var log = logging.MustGetLogger("canary-agent")
@@ -47,9 +47,9 @@ func FetchLog() *logging.Logger {
 	return log
 }
 
-func InitEnv(env_str string) {
-	env.Env = env_str
-	if env_str == "test" || env_str == "debug" {
+func InitEnv(envStr string) {
+	env.Env = envStr
+	if envStr == "test" || envStr == "debug" {
 		env.Prod = false
 	}
 
@@ -64,13 +64,11 @@ func InitEnv(env_str string) {
 			DEV_CONF_PATH, _ = filepath.Abs("../test/data")
 		}
 
-		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "test.conf")
+		DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "agent.yml")
+		OLD_DEV_CONF_FILE = filepath.Join(DEV_CONF_PATH, "old_toml_test.conf")
 
-		DEV_VAR_PATH, _ = filepath.Abs("test/var")
-		if _, err := os.Stat(DEV_VAR_PATH); err != nil {
-			DEV_VAR_PATH, _ = filepath.Abs("../test/var")
-		}
-		DEV_VAR_FILE = filepath.Join(DEV_VAR_PATH, "server.conf")
+		DEV_VAR_FILE = filepath.Join(DEV_CONF_PATH, "server.yml")
+		OLD_DEV_VAR_FILE = filepath.Join(DEV_CONF_PATH, "old_toml_server.conf")
 
 		// set dev vals
 
@@ -91,13 +89,17 @@ func InitEnv(env_str string) {
 }
 
 func InitLogging() {
+	// TODO: SetLevel must come before SetBackend
 	format := logging.MustStringFormatter("%{time} %{pid} %{shortfile}] %{message}")
 	stdoutBackend := logging.NewBackendFormatter(logging.NewLogBackend(os.Stdout, "", 0), format)
-	var err error
 	if env.Prod {
 		logging.SetLevel(logging.INFO, "canary-agent")
 
-		conf := NewConfFromEnv()
+		conf, err := NewConfFromEnv()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		var logPath string
 		if conf.LogPath != "" {
 			logPath = conf.LogPath
@@ -114,7 +116,6 @@ func InitLogging() {
 			logging.SetBackend(fileBackend, stdoutBackend)
 		}
 	} else {
-
 		logging.SetLevel(logging.DEBUG, "canary-agent")
 		logging.SetBackend(stdoutBackend)
 	}
@@ -130,6 +131,10 @@ func ApiServersPath() string {
 
 func ApiServerPath(ident string) string {
 	return ApiServersPath() + "/" + ident
+}
+
+func ApiServerProcsPath(ident string) string {
+	return ApiServerPath(ident) + "/processes"
 }
 
 func ApiPath(resource string) string {

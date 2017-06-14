@@ -9,6 +9,7 @@ import (
 
 	"io/ioutil"
 
+	"github.com/appcanary/agent/conf"
 	"github.com/appcanary/testify/assert"
 )
 
@@ -16,7 +17,7 @@ import (
 // when file changes. TODO: test all other fs events.
 func TestWatchFile(t *testing.T) {
 	assert := assert.New(t)
-	InitEnv("test")
+	conf.InitEnv("test")
 
 	file_content := "tst1"
 	tf, _ := ioutil.TempFile("", "gems.lock")
@@ -29,7 +30,7 @@ func TestWatchFile(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewFileWatcher(tf.Name(), testcb)
+	wfile := NewFileWatcher(tf.Name(), testcb).(TextWatcher)
 
 	wfile.Start()
 
@@ -68,7 +69,7 @@ func TestWatchFile(t *testing.T) {
 
 func TestWatchProcess(t *testing.T) {
 	assert := assert.New(t)
-	InitEnv("test")
+	conf.InitEnv("test")
 
 	timer := time.Tick(5 * time.Second)
 	cbInvoked := make(chan bool)
@@ -76,7 +77,7 @@ func TestWatchProcess(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewProcessWatcher("date +%S", testcb)
+	wfile := NewCommandOutputWatcher("date +%S", testcb).(TextWatcher)
 
 	wfile.Start()
 
@@ -111,7 +112,7 @@ func TestWatchProcess(t *testing.T) {
 
 func TestWatchFileFailure(t *testing.T) {
 	assert := assert.New(t)
-	InitEnv("test")
+	conf.InitEnv("test")
 
 	file_content := "tst1"
 	tf, _ := ioutil.TempFile("", "gems.lock")
@@ -123,13 +124,15 @@ func TestWatchFileFailure(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewFileWatcher(tf.Name(), testcb).(*watcher)
+	wfile := NewFileWatcher(tf.Name(), testcb).(*textWatcher)
 	wfile.Start()
+	<-cbInvoked
+
 	// File is being watched
-	time.Sleep(TEST_POLL_SLEEP)
+	time.Sleep(conf.TEST_POLL_SLEEP)
 	assert.True(wfile.GetBeingWatched())
 	os.Remove(tf.Name())
-	time.Sleep(TEST_POLL_SLEEP)
+	time.Sleep(conf.TEST_POLL_SLEEP)
 	//Since the file is gone, we stopped watching it
 	assert.False(wfile.GetBeingWatched())
 	wfile.Stop()
@@ -140,7 +143,7 @@ func TestWatchFileFailure(t *testing.T) {
 // TODO: replace with tempfiles.
 func TestWatchFileRenameDirectory(t *testing.T) {
 	assert := assert.New(t)
-	InitEnv("test")
+	conf.InitEnv("test")
 
 	folder := "/tmp/CANARYTEST"
 	file_name := folder + "/test1.gems"
@@ -159,7 +162,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 		cbInvoked <- true
 	}
 
-	wfile := NewFileWatcher(file_name, testcb).(*watcher)
+	wfile := NewFileWatcher(file_name, testcb).(*textWatcher)
 
 	// file gets read on hook add
 	wfile.Start()
@@ -172,7 +175,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 	os.Rename(folder, folder2)
 
 	// file should now be missing.
-	time.Sleep(TEST_POLL_SLEEP)
+	time.Sleep(conf.TEST_POLL_SLEEP)
 
 	assert.False(wfile.GetBeingWatched())
 
@@ -182,7 +185,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 	// write new file
 	ioutil.WriteFile(file_name, []byte("tst2"), 0644)
 
-	time.Sleep(TEST_POLL_SLEEP)
+	time.Sleep(conf.TEST_POLL_SLEEP)
 	// this file should be different, thus triggering
 	// another callback
 
@@ -197,7 +200,7 @@ func TestWatchFileRenameDirectory(t *testing.T) {
 func TestWatchFileHookLoop(t *testing.T) {
 
 	assert := assert.New(t)
-	InitEnv("test")
+	conf.InitEnv("test")
 
 	file_content := []byte("tst1")
 	tf, _ := ioutil.TempFile("", "gems.lock")
@@ -264,7 +267,7 @@ func TestWatchFileHookLoop(t *testing.T) {
 	assert.Nil(err)
 	<-cbInvoked
 
-	fmt.Println("cleaning up\n")
+	fmt.Println("cleaning up")
 	// we wrote the file five times, plus the init read
 	mutex.Lock()
 	assert.True(counter >= 6)

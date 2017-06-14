@@ -16,8 +16,8 @@ end
 
 # gets result of shell command
 def shell(str)
-	puts str
-	`#{str}`.strip
+  puts str
+  `#{str}`.strip
 end
 
 # execute a shell command and print stderr
@@ -39,26 +39,26 @@ task :build do
 end
 
 desc "Build and run all go tests"
-task :test => :build_all do 
-	sh "go test -v ./... -race -timeout 20s"
+task :test => :build_all do
+  sh "go test -v ./... -race -timeout 100s"
 end
 
 desc "Build and run a specific go test"
 task :testr => :build_all do
-	sh "go test -v ./... -race -timeout 20s -run #{ENV["t"]}"
+  sh "go test -v ./... -race -timeout 100s -run #{ENV["t"]}"
 end
 
 desc "Generate release version from date"
 task :release_prep do
   if production?
-	  if `git diff --shortstat` != ""
+    if `git diff --shortstat` != ""
       puts "Whoa there, partner. Dirty trees can't deploy. Git yourself clean"
       exit 1
-	  end
+    end
   end
 
-	@date = `date -u +"%Y.%m.%d-%H%M%S-%Z"`.strip
-	@release_version = "#{CURRENT_VERSION}-#{@date}"
+  @date = `date -u +"%Y.%m.%d-%H%M%S-%Z"`.strip
+  @release_version = "#{CURRENT_VERSION}-#{@date}"
 end
 
 desc "Cross compile a binary for every architecture"
@@ -117,6 +117,6 @@ end
 task :release => [:release_prep, :default, :package]
 
 task :setup do
-	`mkdir -p ./bin`
-	`rm -f ./bin/*`
+  `mkdir -p ./bin`
+  `rm -f ./bin/*`
 end

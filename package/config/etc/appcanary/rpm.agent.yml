@@ -1,0 +1,12 @@
+# Get your api key at https://www.appcanary.com/settings
+api_key: ""
+
+# Name your server (optional)
+#server_name: ""
+
+# centos packages
+# add a gemfile by uncommenting the bottom line:
+watchers:
+  - command: "rpm -qa"
+# - path: "/var/www/someapp/current/Gemfile.lock"
+
