@@ -2,9 +2,10 @@ dependencies:
   override:
     - go get -t -d -v ./...
     - go get -u github.com/jteeuwen/go-bindata/...
+    - bundle install
 test:
   override: 
-    - rake test
+    - bundle exec rake test
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/appcanary/agent
