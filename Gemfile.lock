@@ -38,7 +38,7 @@ GEM
     rack-protection (1.5.3)
       rack
     rake (10.4.2)
-    rdoc (4.2.0)
+    rdoc (5.1.0)
     rest-client (1.6.8)
       mime-types (~> 1.16)
       rdoc (>= 2.4.2)
@@ -62,4 +62,4 @@ DEPENDENCIES
   sinatra
 
 BUNDLED WITH
-   1.10.6
+   1.15.0
