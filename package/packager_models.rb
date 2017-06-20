@@ -10,14 +10,12 @@ class Package
 end
 
 class PrePackage
-  attr_accessor :distro, :release, :package_type, :arch, :arch_path, :version, :config_files, :directories, :skip_docker
+  attr_accessor :distro, :release, :package_type, :arch, :version, :config_files, :directories, :skip_docker
   def initialize(distro, release, package_type, arch, version, config_files, directories, skip_docker)
     self.distro = distro
     self.release = release
     self.package_type = package_type
     self.arch = arch
-    # i386 is the arch but 386 is the path
-    self.arch_path = arch == "i386" ? "386" : arch
     self.version = version
     self.config_files = config_files
     self.directories = directories
@@ -37,13 +35,13 @@ class PrePackage
   end
 
   def release_path
-    "releases/appcanary_#{version}_#{arch_path}_#{full_distro_name}.#{package_type}"
+    "releases/appcanary_#{version}_#{arch}_#{full_distro_name}.#{package_type}"
   end
 
   # also, remember to document things. why is this
   # four layers deep?
   def bin_path
-    "../../../../dist/#{version}/linux_#{arch_path}/appcanary"
+    "../../../../dist/#{version}/linux_#{arch}/appcanary"
   end
 
   def bin_file
