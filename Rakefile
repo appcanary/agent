@@ -3,7 +3,7 @@ require 'json'
 require 'yaml'
 load 'test/pkg/Rakefile'
 
-CURRENT_VERSION = "0.1.0"
+CURRENT_VERSION = "0.2.0"
 PC_USER = "appcanary"
 PC_REPO = "agent"
 PC_STAGING_REPO = "appcanary-stg"
