@@ -44,7 +44,7 @@ func parseFlags(argRange int, env *conf.Env) {
 	defaultFlags.Usage = usage
 	defaultFlags.StringVar(&env.ConfFile, "conf", env.ConfFile, "Set the config file")
 	defaultFlags.StringVar(&env.VarFile, "server", env.VarFile, "Set the server file")
-
+	defaultFlags.StringVar(&env.LogFile, "log", env.LogFile, "Set the log file (will not override if set in config file)")
 	defaultFlags.BoolVar(&env.DryRun, "dry-run", false, "Only print, and do not execute, potentially destructive commands")
 	// -version is handled in parseArguments, but is set here for the usage print out
 	defaultFlags.BoolVar(&displayVersionFlagged, "version", false, "Display version information")
