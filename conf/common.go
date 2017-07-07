@@ -77,9 +77,16 @@ func convertOldConf() (*Conf, error) {
 	if fileExists(confFile) {
 		log.Info("Old configuration file detected, converting to new format")
 	} else {
-		// we know things are set to default AND the default yml file is missing
-		// AND the old file is missing... well there's nothing for us to do here
-		return nil, errors.New("We can't find any configuration files! Please consult https://appcanary.com/servers/new for more instructions.")
+		// One more thing to try, on RPM systems the confile may have been moved to .rpmsave during the upgrade process
+		confFile = confFile + ".rpmsave"
+		varFile = varFile + ".rpmsave"
+		if fileExists(confFile) {
+			log.Info("Old configuration file detected, converting to new format")
+		} else {
+			// we know things are set to default AND the default yml file is missing
+			// AND the old file is missing... well there's nothing for us to do here
+			return nil, errors.New("We can't find any configuration files! Please consult https://appcanary.com/servers/new for more instructions.")
+		}
 	}
 
 	c, err := NewTomlConfFromEnv(confFile, varFile)
