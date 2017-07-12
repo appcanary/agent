@@ -11,7 +11,7 @@ import (
 func save(fileName string, data []byte) {
 	log := FetchLog()
 
-	err := ioutil.WriteFile(fileName, data, 0600)
+	err := ioutil.WriteFile(fileName, data, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
