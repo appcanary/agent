@@ -20,7 +20,7 @@
 RETVAL=0
 
 proc=appcanary
-user=appcanary
+user=root
 exec=/usr/sbin/appcanary
 piddir=/var/run/appcanary
 pidfile=${piddir}/appcanary.pid
