@@ -19,9 +19,9 @@ class Packager
   end
 
   def build_packages
-    releases.map do |rel|
+    releases.map do |rel, service|
       ARCHS.map do |arch|
-        pre_pkg = PrePackage.new(distro, rel, package_type, arch, version, self.class::CONFIG_FILES, DIRECTORIES, skip_docker)
+        pre_pkg = PrePackage.new(distro, rel, service, package_type, arch, version, self.class::CONFIG_FILES, DIRECTORIES, skip_docker)
         PackageBuilder.new(pre_pkg).build!
       end
     end.flatten
