@@ -10,10 +10,15 @@ class Package
 end
 
 class PrePackage
-  attr_accessor :distro, :release, :package_type, :arch, :version, :config_files, :directories, :skip_docker
-  def initialize(distro, release, package_type, arch, version, config_files, directories, skip_docker)
+  SERVICES = [:upstart, :systemd, :systemv]
+  attr_accessor :distro, :release, :service, :package_type, :arch, :version, :config_files, :directories, :skip_docker
+  def initialize(distro, release, service, package_type, arch, version, config_files, directories, skip_docker)
     self.distro = distro
     self.release = release
+    self.service = service
+    if !SERVICES.include? service
+      raise "Service must be one of #{SERVICES}"
+    end
     self.package_type = package_type
     self.arch = arch
     self.version = version
@@ -66,6 +71,6 @@ class PrePackage
   end
 
   def package_dir
-    "package/#{distro}/#{release}"
+    "package_files/#{package_type}/#{service}/"
   end
 end

@@ -80,7 +80,7 @@ task :package => :cross_compile do
   puts "Building packages."
   puts "#################################\n\n\n"
 
-  [UbuntuRecipe, CentosRecipe, Centos7Recipe, DebianRecipe, MintRecipe, FedoraRecipe].each do |rcp|
+  [UbuntuRecipe, CentosRecipe, DebianRecipe, MintRecipe, FedoraRecipe].each do |rcp|
     puts "#######"
     puts "#{rcp.distro}"
     puts "#######\n\n"

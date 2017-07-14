@@ -1,0 +1,91 @@
+#!/bin/bash
+#
+# appcanary        Startup script for appcanary.
+#
+# chkconfig: 2345 12 88
+# description: The appcanary
+### BEGIN INIT INFO
+# Provides: $appcanary
+# Required-Start: $local_fs
+# Required-Stop: $local_fs
+# Default-Start:  2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: appcanary
+# Description: appcanary agent
+### END INIT INFO
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+
+proc=appcanary
+user=root
+exec=/usr/sbin/appcanary
+piddir=/var/run/appcanary
+pidfile=${piddir}/appcanary.pid
+lockfile=/var/lock/subsys/appcanary
+
+start() {
+    [ -x $exec ] || exit 5
+
+    mkdir -p /var/db/appcanary ${piddir}
+    chown -R $user /var/db/appcanary $piddir
+
+    echo -n $"Starting appcanary: "
+    daemon --check $proc \
+           --user=$user \
+           --pidfile=$pidfile \
+           " { nohup $exec < /dev/null > /dev/null 2>&1 & } ; echo \$! >| $pidfile "
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+        touch ${lockfile}
+        echo_success
+    else
+        echo_failure
+    fi
+    echo
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Shutting down appcanary: "
+    killproc -p $pidfile $exec
+    RETVAL=$?
+    if [ $RETVAL = 0 ]; then
+        rm -f ${lockfile} ${pidfile}
+        echo_success
+    else
+        echo_failure
+    fi
+    echo
+    return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status $proc
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    reload)
+        exit 3
+        ;;
+    condrestart)
+        rhstatus >/dev/null 2>&1 || exit 0
+        restart
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|reload|restart}"
+        exit 1
+        ;;
+esac
+exit $?
