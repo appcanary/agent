@@ -2,7 +2,7 @@
   <a href="https://appcanary.com"><img src="https://github.com/appcanary/agent/raw/master/appcanary-hero.png" /></a>
 </div>
 
-# Hello.
+# Hello. 
 
 ![circle ci](https://circleci.com/gh/appcanary/agent.png?circle-token=e005a24f2a9e1202caede198cb41d3c09e3eccd6)
 
